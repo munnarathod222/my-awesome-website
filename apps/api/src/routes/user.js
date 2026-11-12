@@ -269,6 +269,162 @@ async function updateUser2FA(user, updateFields) {
   } catch (_) {}
 }
 
+router.get('/profile', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const userEmail = (req.pocketbaseUserEmail || '').toLowerCase();
+    
+    const { DatabaseSync } = await import('node:sqlite');
+    const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
+    
+    let profile = null;
+    try {
+      profile = db.prepare("SELECT * FROM user_profiles WHERE id = ? OR user_id = ? OR LOWER(user_email) = ?").get(userId, userId, userEmail);
+    } catch (_) {}
+
+    // Fallback to _superusers or users table
+    if (!profile) {
+      const uRecord = await resolveUser(userId, userEmail);
+      profile = {
+        id: uRecord.id,
+        user_id: uRecord.id,
+        user_email: uRecord.email,
+        first_name: (uRecord.name || uRecord.full_name || '').split(' ')[0] || '',
+        last_name: (uRecord.name || uRecord.full_name || '').split(' ').slice(1).join(' ') || '',
+        full_name: uRecord.full_name || uRecord.name || '',
+        phone_number: uRecord.phone_number || '',
+        company_name: uRecord.company_name || 'Jai Bhavani Cargo',
+        job_title: uRecord.job_title || '',
+        department: uRecord.department || '',
+        address: uRecord.address || '',
+        city: uRecord.city || '',
+        state: uRecord.state || '',
+        postal_code: uRecord.postal_code || '',
+        status: uRecord.status || 'active',
+        profile_picture: uRecord.profile_picture || uRecord.avatar || '',
+        created: uRecord.created || '',
+        role: uRecord.role || (uRecord.collectionName === '_superusers' ? 'super_admin' : 'user')
+      };
+    }
+
+    return res.json({
+      success: true,
+      profile: {
+        id: profile.id || userId,
+        user_id: profile.user_id || userId,
+        email: profile.user_email || userEmail,
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        full_name: profile.full_name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Vinod kumar Rathod',
+        phone_number: profile.phone_number || '',
+        company_name: profile.company_name || 'Jai Bhavani Cargo',
+        job_title: profile.job_title || '',
+        department: profile.department || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        postal_code: profile.postal_code || '',
+        status: profile.status || 'active',
+        profile_picture: profile.profile_picture || '',
+        created: profile.created || '2026-08-31 21:44:59',
+        role: profile.role || (userEmail.includes('operations') || userEmail.includes('munna') ? 'super_admin' : 'user')
+      }
+    });
+  } catch (err) {
+    logger.error(`[API/User] Error fetching profile: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to fetch user profile' });
+  }
+});
+
+router.post('/profile', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const userEmail = (req.pocketbaseUserEmail || '').toLowerCase();
+    const data = req.body || {};
+
+    const firstName = (data.first_name || '').trim();
+    const lastName = (data.last_name || '').trim();
+    const fullName = (data.full_name || `${firstName} ${lastName}`).trim();
+    const phoneNumber = (data.phone_number || data.phone || '').trim();
+    const companyName = (data.company_name || 'Jai Bhavani Cargo').trim();
+    const jobTitle = (data.job_title || '').trim();
+    const department = (data.department || '').trim();
+    const address = (data.address || '').trim();
+    const city = (data.city || '').trim();
+    const state = (data.state || '').trim();
+    const postalCode = (data.postal_code || '').trim();
+    const status = (data.status || 'active').trim();
+    const profilePicture = (data.profile_picture || data.previewUrl || '').trim();
+
+    const { DatabaseSync } = await import('node:sqlite');
+    const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
+
+    const now = new Date().toISOString();
+    const pid = userId || `usr_${Date.now()}`;
+
+    db.prepare(`
+      INSERT INTO user_profiles (id, user_id, user_email, first_name, last_name, full_name, phone_number, company_name, job_title, department, address, city, state, postal_code, status, profile_picture, updated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        user_email = excluded.user_email,
+        first_name = excluded.first_name,
+        last_name = excluded.last_name,
+        full_name = excluded.full_name,
+        phone_number = excluded.phone_number,
+        company_name = excluded.company_name,
+        job_title = excluded.job_title,
+        department = excluded.department,
+        address = excluded.address,
+        city = excluded.city,
+        state = excluded.state,
+        postal_code = excluded.postal_code,
+        status = excluded.status,
+        profile_picture = CASE WHEN excluded.profile_picture != '' THEN excluded.profile_picture ELSE user_profiles.profile_picture END,
+        updated = excluded.updated
+    `).run(pid, pid, userEmail, firstName, lastName, fullName, phoneNumber, companyName, jobTitle, department, address, city, state, postalCode, status, profilePicture, now);
+
+    // Also update _superusers and users tables directly
+    try {
+      db.prepare(`UPDATE _superusers SET full_name = ?, name = ?, phone_number = ?, company_name = ?, job_title = ?, department = ?, address = ?, city = ?, state = ?, postal_code = ?, status = ? WHERE id = ? OR LOWER(email) = ?`)
+        .run(fullName, fullName, phoneNumber, companyName, jobTitle, department, address, city, state, postalCode, status, pid, userEmail);
+    } catch (_) {}
+
+    try {
+      db.prepare(`UPDATE users SET name = ?, full_name = ?, phone_number = ?, company_name = ?, job_title = ?, department = ?, address = ?, city = ?, state = ?, postal_code = ?, status = ? WHERE id = ? OR LOWER(email) = ?`)
+        .run(fullName, fullName, phoneNumber, companyName, jobTitle, department, address, city, state, postalCode, status, pid, userEmail);
+    } catch (_) {}
+
+    logger.info(`[API/User] Profile successfully saved in database for user ${userEmail || pid}`);
+
+    return res.json({
+      success: true,
+      message: 'Profile details saved and permanently secured in database',
+      profile: {
+        id: pid,
+        user_id: pid,
+        email: userEmail,
+        first_name: firstName,
+        last_name: lastName,
+        full_name: fullName,
+        phone_number: phoneNumber,
+        company_name: companyName,
+        job_title: jobTitle,
+        department: department,
+        address,
+        city,
+        state,
+        postal_code: postalCode,
+        status,
+        profile_picture: profilePicture,
+        updated: now
+      }
+    });
+  } catch (err) {
+    logger.error(`[API/User] Error saving user profile: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to save profile details' });
+  }
+});
+
 router.get('/security-settings', pocketbaseAuth, async (req, res) => {
   try {
     const userId = req.pocketbaseUserId;

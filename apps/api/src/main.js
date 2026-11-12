@@ -3072,6 +3072,138 @@ const runPocketBase = async () => {
       logger.warn(`Notice migrating users 2FA columns: ${twoFaErr.message}`);
     }
 
+    // 3.6. Persistent user_profiles table and profile columns
+    try {
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS user_profiles (
+          id TEXT PRIMARY KEY,
+          user_id TEXT UNIQUE,
+          user_email TEXT,
+          first_name TEXT DEFAULT '',
+          last_name TEXT DEFAULT '',
+          full_name TEXT DEFAULT '',
+          phone_number TEXT DEFAULT '',
+          company_name TEXT DEFAULT 'Jai Bhavani Cargo',
+          job_title TEXT DEFAULT '',
+          department TEXT DEFAULT '',
+          address TEXT DEFAULT '',
+          city TEXT DEFAULT '',
+          state TEXT DEFAULT '',
+          postal_code TEXT DEFAULT '',
+          status TEXT DEFAULT 'active',
+          profile_picture TEXT DEFAULT '',
+          created TEXT DEFAULT '',
+          updated TEXT DEFAULT ''
+        )
+      `).run();
+
+      const suCols = db.prepare("PRAGMA table_info(_superusers)").all().map(c => c.name);
+      const neededSuperProfileCols = [
+        { name: 'full_name', sql: "ALTER TABLE _superusers ADD COLUMN full_name TEXT DEFAULT ''" },
+        { name: 'name', sql: "ALTER TABLE _superusers ADD COLUMN name TEXT DEFAULT ''" },
+        { name: 'phone_number', sql: "ALTER TABLE _superusers ADD COLUMN phone_number TEXT DEFAULT ''" },
+        { name: 'company_name', sql: "ALTER TABLE _superusers ADD COLUMN company_name TEXT DEFAULT 'Jai Bhavani Cargo'" },
+        { name: 'job_title', sql: "ALTER TABLE _superusers ADD COLUMN job_title TEXT DEFAULT ''" },
+        { name: 'department', sql: "ALTER TABLE _superusers ADD COLUMN department TEXT DEFAULT ''" },
+        { name: 'address', sql: "ALTER TABLE _superusers ADD COLUMN address TEXT DEFAULT ''" },
+        { name: 'city', sql: "ALTER TABLE _superusers ADD COLUMN city TEXT DEFAULT ''" },
+        { name: 'state', sql: "ALTER TABLE _superusers ADD COLUMN state TEXT DEFAULT ''" },
+        { name: 'postal_code', sql: "ALTER TABLE _superusers ADD COLUMN postal_code TEXT DEFAULT ''" },
+        { name: 'status', sql: "ALTER TABLE _superusers ADD COLUMN status TEXT DEFAULT 'active'" },
+        { name: 'profile_picture', sql: "ALTER TABLE _superusers ADD COLUMN profile_picture TEXT DEFAULT ''" }
+      ];
+      for (const col of neededSuperProfileCols) {
+        if (!suCols.includes(col.name)) {
+          logger.info(`Migrating: Adding column '${col.name}' to '_superusers' table...`);
+          try { db.prepare(col.sql).run(); } catch (_) {}
+        }
+      }
+
+      const uColsNow = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+      const neededUserProfileCols = [
+        { name: 'company_name', sql: "ALTER TABLE users ADD COLUMN company_name TEXT DEFAULT 'Jai Bhavani Cargo'" },
+        { name: 'job_title', sql: "ALTER TABLE users ADD COLUMN job_title TEXT DEFAULT ''" },
+        { name: 'department', sql: "ALTER TABLE users ADD COLUMN department TEXT DEFAULT ''" },
+        { name: 'address', sql: "ALTER TABLE users ADD COLUMN address TEXT DEFAULT ''" },
+        { name: 'city', sql: "ALTER TABLE users ADD COLUMN city TEXT DEFAULT ''" },
+        { name: 'state', sql: "ALTER TABLE users ADD COLUMN state TEXT DEFAULT ''" },
+        { name: 'postal_code', sql: "ALTER TABLE users ADD COLUMN postal_code TEXT DEFAULT ''" }
+      ];
+      for (const col of neededUserProfileCols) {
+        if (!uColsNow.includes(col.name)) {
+          logger.info(`Migrating: Adding column '${col.name}' to 'users' table...`);
+          try { db.prepare(col.sql).run(); } catch (_) {}
+        }
+      }
+
+      // Prepopulate / ensure default rich profile for operations & admin
+      const initialSeedProfiles = [
+        {
+          id: 'usr_ops_superadmin',
+          user_id: 'usr_ops_superadmin',
+          user_email: 'operations@jaibhavanicargo.com',
+          first_name: 'Vinod kumar',
+          last_name: 'Rathod',
+          full_name: 'Vinod kumar Rathod',
+          phone_number: '+91 99086 52525',
+          company_name: 'Jai Bhavani Cargo',
+          job_title: 'Chief Operations Officer (COO)',
+          department: 'Fleet Operations & Logistics Hub',
+          address: 'Plot No. 12, Commercial Transport Nagar',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          postal_code: '500040',
+          status: 'active',
+          created: '2026-08-31 21:44:59'
+        },
+        {
+          id: 'q82s866llgnug95',
+          user_id: 'q82s866llgnug95',
+          user_email: 'munnarathod222@gmail.com',
+          first_name: 'Munna',
+          last_name: 'Rathod',
+          full_name: 'Munna Rathod',
+          phone_number: '+91 99086 52525',
+          company_name: 'Jai Bhavani Cargo',
+          job_title: 'Managing Director & Founder',
+          department: 'Executive Management',
+          address: 'Plot No. 12, Commercial Transport Nagar',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          postal_code: '500040',
+          status: 'active',
+          created: '2026-09-03 09:42:43'
+        }
+      ];
+
+      for (const p of initialSeedProfiles) {
+        const existing = db.prepare("SELECT id, phone_number, job_title FROM user_profiles WHERE id = ? OR user_email = ?").get(p.id, p.user_email);
+        if (!existing || !existing.job_title || !existing.phone_number) {
+          db.prepare(`
+            INSERT INTO user_profiles (id, user_id, user_email, first_name, last_name, full_name, phone_number, company_name, job_title, department, address, city, state, postal_code, status, created, updated)
+            VALUES (@id, @user_id, @user_email, @first_name, @last_name, @full_name, @phone_number, @company_name, @job_title, @department, @address, @city, @state, @postal_code, @status, @created, @updated)
+            ON CONFLICT(id) DO UPDATE SET
+              first_name = CASE WHEN user_profiles.first_name = '' THEN excluded.first_name ELSE user_profiles.first_name END,
+              last_name = CASE WHEN user_profiles.last_name = '' THEN excluded.last_name ELSE user_profiles.last_name END,
+              full_name = CASE WHEN user_profiles.full_name = '' THEN excluded.full_name ELSE user_profiles.full_name END,
+              phone_number = CASE WHEN user_profiles.phone_number = '' THEN excluded.phone_number ELSE user_profiles.phone_number END,
+              job_title = CASE WHEN user_profiles.job_title = '' THEN excluded.job_title ELSE user_profiles.job_title END,
+              department = CASE WHEN user_profiles.department = '' THEN excluded.department ELSE user_profiles.department END,
+              address = CASE WHEN user_profiles.address = '' THEN excluded.address ELSE user_profiles.address END,
+              city = CASE WHEN user_profiles.city = '' THEN excluded.city ELSE user_profiles.city END,
+              state = CASE WHEN user_profiles.state = '' THEN excluded.state ELSE user_profiles.state END,
+              postal_code = CASE WHEN user_profiles.postal_code = '' THEN excluded.postal_code ELSE user_profiles.postal_code END
+          `).run({ ...p, updated: new Date().toISOString() });
+        }
+        try {
+          db.prepare(`UPDATE _superusers SET full_name = ?, name = ?, phone_number = ?, company_name = ?, job_title = ?, department = ?, address = ?, city = ?, state = ?, postal_code = ?, status = ? WHERE (id = ? OR email = ?) AND (phone_number IS NULL OR phone_number = '')`)
+            .run(p.full_name, p.full_name, p.phone_number, p.company_name, p.job_title, p.department, p.address, p.city, p.state, p.postal_code, p.status, p.id, p.user_email);
+        } catch (_) {}
+      }
+    } catch (profErr) {
+      logger.warn(`Notice migrating user_profiles table: ${profErr.message}`);
+    }
+
     // 4. Clients table and schema changes for portal linkage
     const clientCols = db.prepare("PRAGMA table_info(clients)").all().map(c => c.name);
     if (!clientCols.includes('portal_user_id')) {
