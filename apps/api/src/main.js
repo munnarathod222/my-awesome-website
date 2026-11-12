@@ -2767,27 +2767,32 @@ const runPocketBase = async () => {
         }
       }
 
-      // Ensure 'Arrived at Dock' and required workflow statuses are in trip_status select values
+      // Ensure 'Arrived at Dock' and realistic logistics statuses are in trip_status select values
       const tripStatusField = fields.find(f => f.name === 'trip_status');
       if (tripStatusField && Array.isArray(tripStatusField.values)) {
-        const allowedTripStatuses = [
+        const realisticStatuses = [
           'Upcoming',
+          'Vehicle Assigned',
           'Arrived at Dock',
+          'Loading in Progress',
           'Dispatched',
           'In Transit',
+          'Reached Delivery Docket',
+          'Unloading in Progress',
           'Delivered',
           'Completed',
+          'Delayed / Breakdown',
           'Cancelled'
         ];
         let tripStatusModified = false;
-        allowedTripStatuses.forEach(val => {
+        realisticStatuses.forEach(val => {
           if (!tripStatusField.values.includes(val)) {
             tripStatusField.values.push(val);
             tripStatusModified = true;
           }
         });
         if (tripStatusModified) {
-          logger.info("Migrating: Added 'Arrived at Dock' and workflow statuses to PocketBase trip_logs.trip_status values!");
+          logger.info("Migrating: Updated PocketBase 'trip_logs.trip_status' with realistic logistics statuses!");
           recordUpdated = true;
         }
       }
@@ -2842,36 +2847,6 @@ const runPocketBase = async () => {
           recordUpdated = true;
         }
       });
-
-      // Ensure realistic trip statuses exist in trip_logs.trip_status schema
-      const tripStatusField = fields.find(f => f.name === 'trip_status');
-      if (tripStatusField && Array.isArray(tripStatusField.values)) {
-        const realisticStatuses = [
-          'Upcoming',
-          'Vehicle Assigned',
-          'Arrived at Dock',
-          'Loading in Progress',
-          'Dispatched',
-          'In Transit',
-          'Reached Delivery Docket',
-          'Unloading in Progress',
-          'Delivered',
-          'Completed',
-          'Delayed / Breakdown',
-          'Cancelled'
-        ];
-        let statusValuesModified = false;
-        realisticStatuses.forEach(st => {
-          if (!tripStatusField.values.includes(st)) {
-            tripStatusField.values.push(st);
-            statusValuesModified = true;
-          }
-        });
-        if (statusValuesModified) {
-          logger.info("Migrating: Updated PocketBase 'trip_logs.trip_status' with realistic logistics statuses!");
-          recordUpdated = true;
-        }
-      }
 
       if (recordUpdated) {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
