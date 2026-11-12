@@ -2577,7 +2577,6 @@ const runPocketBase = async () => {
     try {
       db.prepare("CREATE INDEX IF NOT EXISTS idx_trip_logs_driver_code ON trip_logs(driver_employee_code)").run();
       db.prepare("CREATE INDEX IF NOT EXISTS idx_trip_logs_driver_emp_id ON trip_logs(driver_employee_id)").run();
-    } 
     } catch (_) {}
 
     // 1.6 Add security seal columns to trip_logs table
