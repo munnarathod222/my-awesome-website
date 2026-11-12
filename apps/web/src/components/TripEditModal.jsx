@@ -48,7 +48,11 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     eway_bill_number: '',
     eway_expiry_date: '',
     eway_bill_file_url: '',
-    delivery_deadline: ''
+    delivery_deadline: '',
+    is_sealed: false,
+    seal_numbers: [''],
+    seal_number: '',
+    seal_photo_url: ''
   });
 
   useEffect(() => {
@@ -90,7 +94,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           eway_bill_number: trip.eway_bill_number || '',
           eway_expiry_date: trip.eway_expiry_date || '',
           eway_bill_file_url: trip.eway_bill_file_url || '',
-          delivery_deadline: trip.delivery_deadline || ''
+          delivery_deadline: trip.delivery_deadline || '',
+          is_sealed: Boolean(trip.is_sealed),
+          seal_numbers: Array.isArray(trip.seal_numbers) && trip.seal_numbers.length > 0 
+            ? trip.seal_numbers 
+            : (trip.seal_number ? trip.seal_number.split(',').map(s => s.trim()).filter(Boolean) : ['']),
+          seal_number: trip.seal_number || '',
+          seal_photo_url: trip.seal_photo_url || ''
         });
       } catch (error) {
         console.error('[TripEditModal] Failed to fetch trip details:', error);
@@ -140,6 +150,14 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         eway_expiry_date: formData.eway_expiry_date || '',
         eway_bill_file_url: formData.eway_bill_file_url || '',
         delivery_deadline: formData.delivery_deadline || '',
+        is_sealed: Boolean(formData.is_sealed),
+        seal_number: Array.isArray(formData.seal_numbers) 
+          ? formData.seal_numbers.filter(Boolean).map(s => s.trim()).join(', ') 
+          : (formData.seal_number || ''),
+        seal_numbers: Array.isArray(formData.seal_numbers) 
+          ? formData.seal_numbers.filter(Boolean).map(s => s.trim()) 
+          : (formData.seal_number ? [formData.seal_number.trim()] : []),
+        seal_photo_url: formData.seal_photo_url || '',
         
         ownership_type: isAttachedFamily ? 'AttachedFamily' : (isAttached ? 'Attached' : 'Owned'),
         payment_model: isAttachedFamily ? 'ModelFamilySettlement' : (isAttached ? formData.payment_model : 'Model1'),

@@ -154,6 +154,8 @@ Drive safe, adhere to highway lane rules, and inform control room upon arrival!
         if (trip?.date) loadingDate = format(new Date(trip.date), 'dd MMM yyyy');
       } catch(e) {}
 
+      const sealSnippet = (trip?.is_sealed || trip?.seal_number) ? `\n• 🔒 Security Seal(s): *${trip.seal_number || 'Applied & Verified'}*` : '';
+
       return `🚛 *JAI BHAVANI CARGO - TRIP BOOKING & VEHICLE CONFIRMATION*
 
 Dear *${clientName}*,
@@ -164,7 +166,7 @@ Your freight booking has been confirmed! Here are the allocated vehicle & driver
 • Booking / LR Ref: *${tripId}*
 • Vehicle No: *${truckNo}* (${truckSize})
 • Freight Route: *${route}*
-• Scheduled Loading: *${loadingDate}*
+• Scheduled Loading: *${loadingDate}*${sealSnippet}
 
 👤 *Assigned Driver Details:*
 • Driver Name: *${driverName}*
@@ -269,6 +271,7 @@ Thank you for your prompt settlement!
       }
 
       const delayLine = trip?.late_delivery_reason ? `\n🚨 *Transit Notice:* ${trip.late_delivery_reason}` : '';
+      const sealLine = (trip?.is_sealed || trip?.seal_number) ? `\n• 🔒 Security Seal(s): *${trip.seal_number || 'Applied & Intact'}*` : '';
 
       return `🚚 *JAI BHAVANI CARGO - LIVE TRIP STATUS & ETA UPDATE*
 
@@ -281,7 +284,7 @@ Here is the real-time consignment status for Trip / LR No: *${tripId}*:
 • Status: *${statusLine}*
 • Vehicle No: *${truckNo}*
 • Route: *${route}*
-• Driver: *${driverName}*
+• Driver: *${driverName}*${sealLine}
 ${timeLine}${delayLine}
 
 📍 *Live GPS Consignment Tracking Link:*

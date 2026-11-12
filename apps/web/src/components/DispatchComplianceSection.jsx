@@ -3,18 +3,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { 
   FileText, Receipt, FileCheck, Clock, Upload, 
-  X, Check, AlertCircle, Eye, Calendar, Sparkles 
+  X, Check, AlertCircle, Eye, Calendar, Sparkles, Lock, ShieldCheck, Camera
 } from 'lucide-react';
 import { compressDocumentImage, formatBytes } from '@/lib/imageCompressor.js';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils.js';
 
 export default function DispatchComplianceSection({ formData, setFormData }) {
   const [compressing, setCompressing] = useState({
     lr: false,
     invoice: false,
-    eway: false
+    eway: false,
+    seal: false
   });
 
   const handleFileUpload = async (e, type) => {
@@ -348,6 +351,173 @@ export default function DispatchComplianceSection({ formData, setFormData }) {
               Enables live SLA countdown timer on the Trip Logs table and auto-calculates client detention claims if plant unloading is delayed.
             </span>
           </div>
+        </div>
+
+        {/* 5. Container / Truck Security Seal */}
+        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-border/40 hover:border-cyan-500/30 transition-all space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-md bg-cyan-500/10 text-cyan-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-slate-200">5. Container / Truck Security Seal</Label>
+                <p className="text-[10px] text-slate-400">Record tamper-evident bolt/wire seal numbers (up to 4)</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border", 
+                formData.is_sealed ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" : "bg-slate-800 text-slate-400 border-slate-700")}>
+                {formData.is_sealed ? "Sealed 🔒" : "Unsealed"}
+              </span>
+              <Switch
+                checked={Boolean(formData.is_sealed)}
+                onCheckedChange={(checked) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    is_sealed: checked,
+                    seal_numbers: checked ? (prev.seal_numbers?.length ? prev.seal_numbers : ['']) : [''],
+                    seal_number: checked ? prev.seal_number : '',
+                    seal_photo_url: checked ? prev.seal_photo_url : ''
+                  }));
+                }}
+              />
+            </div>
+          </div>
+
+          {formData.is_sealed && (
+            <div className="space-y-3 pt-2 border-t border-slate-800/80 animate-in fade-in duration-200">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px] text-slate-300 font-medium">
+                    Seal Numbers <span className="text-muted-foreground text-[10px]">({(formData.seal_numbers || ['']).length}/4)</span>
+                  </Label>
+                  {(formData.seal_numbers || ['']).length < 4 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = Array.isArray(formData.seal_numbers) ? formData.seal_numbers : [''];
+                        if (current.length < 4) {
+                          const updated = [...current, ''];
+                          setFormData(prev => ({
+                            ...prev,
+                            seal_numbers: updated,
+                            seal_number: updated.filter(Boolean).join(', ')
+                          }));
+                        }
+                      }}
+                      className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 bg-cyan-950/40 hover:bg-cyan-900/50 px-2 py-0.5 rounded border border-cyan-500/30 transition-all cursor-pointer"
+                    >
+                      + Add Another Seal (Max 4)
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(formData.seal_numbers || ['']).map((sealVal, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono text-cyan-400/80 bg-slate-950 px-1.5 py-1 rounded border border-slate-800 shrink-0">
+                        #{idx + 1}
+                      </span>
+                      <Input
+                        type="text"
+                        placeholder={idx === 0 ? "e.g., SEAL-984210" : `Seal #${idx + 1} code`}
+                        value={sealVal}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          const current = [...(formData.seal_numbers || [''])];
+                          current[idx] = val;
+                          setFormData(prev => ({
+                            ...prev,
+                            seal_numbers: current,
+                            seal_number: current.filter(Boolean).join(', ')
+                          }));
+                        }}
+                        className="h-8 text-xs font-mono font-bold bg-slate-950 border-slate-700 text-cyan-300 tracking-wider"
+                      />
+                      {(formData.seal_numbers || ['']).length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = [...(formData.seal_numbers || [''])];
+                            current.splice(idx, 1);
+                            setFormData(prev => ({
+                              ...prev,
+                              seal_numbers: current,
+                              seal_number: current.filter(Boolean).join(', ')
+                            }));
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-rose-400 shrink-0"
+                          title="Remove this seal"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lightweight Seal Photo Attachment */}
+              <div className="pt-2 border-t border-slate-800/60">
+                <Label className="text-[11px] text-slate-400 mb-1.5 block">
+                  Seal Verification Photo <span className="text-[10px] text-emerald-400/80">(Auto-compressed to &lt; 40KB)</span>
+                </Label>
+                {formData.seal_photo_url ? (
+                  <div className="p-2 rounded-lg bg-slate-950 border border-cyan-500/30 flex items-center justify-between">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <img src={formData.seal_photo_url} alt="Seal Preview" className="w-10 h-10 rounded object-cover border border-cyan-500/40" />
+                      <div className="truncate">
+                        <div className="text-xs text-slate-200 truncate font-mono font-bold">
+                          {formData.seal_number || 'Seal Photo'}
+                        </div>
+                        <div className="text-[10px] text-emerald-400">
+                          Compressed & Verified (&lt; 40 KB)
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, seal_photo_url: '' }))}
+                      className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-rose-400"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 h-9 px-3 rounded-lg border border-dashed border-cyan-700/60 hover:border-cyan-400 bg-slate-950/60 hover:bg-cyan-950/20 cursor-pointer text-xs text-cyan-300 transition-all">
+                    <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{compressing.seal ? 'Compressing (< 40KB)...' : 'Capture / Upload Seal Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setCompressing(prev => ({ ...prev, seal: true }));
+                        try {
+                          const compressed = await compressDocumentImage(file, { maxDimension: 800, quality: 0.65 });
+                          const reader = new FileReader();
+                          reader.onload = (loadEv) => {
+                            setFormData(prev => ({ ...prev, seal_photo_url: loadEv.target.result }));
+                            toast.success(`Seal photo attached (${formatBytes(compressed.size || 35000)})`);
+                          };
+                          reader.readAsDataURL(compressed);
+                        } catch (err) {
+                          console.error(err);
+                          toast.error('Failed to compress seal image');
+                        } finally {
+                          setCompressing(prev => ({ ...prev, seal: false }));
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

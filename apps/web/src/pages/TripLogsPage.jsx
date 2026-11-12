@@ -1132,6 +1132,17 @@ const TripLogsPage = () => {
                                   );
                                 })()}
 
+                                {(log.is_sealed || log.seal_number) && (
+                                  <span
+                                    onClick={() => setSelectedDocsTrip(log)}
+                                    className="cursor-pointer inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-900/60 transition-all shadow-xs"
+                                    title={`Security Seal: ${log.seal_number || 'Applied'}`}
+                                  >
+                                    <span>🔒</span>
+                                    <span className="truncate max-w-[85px]">{log.seal_number || 'Sealed'}</span>
+                                  </span>
+                                )}
+
                                 {log.delivery_deadline ? (() => {
                                   const dl = new Date(log.delivery_deadline);
                                   const isPast = dl < new Date() && log.trip_status !== 'Delivered';
@@ -1524,6 +1535,16 @@ const TripLogsPage = () => {
                             </button>
                           );
                         })()}
+
+                        {(log.is_sealed || log.seal_number) && (
+                          <span 
+                            onClick={() => setSelectedDocsTrip(log)}
+                            className="cursor-pointer px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 flex items-center gap-1"
+                          >
+                            <span>🔒</span>
+                            <span>Seal: {log.seal_number}</span>
+                          </span>
+                        )}
 
                         {log.delivery_deadline && (() => {
                           const dl = new Date(log.delivery_deadline);

@@ -2467,6 +2467,56 @@
         "system": false,
         "presentable": false,
         "hidden": false
+      },
+      {
+        "system": false,
+        "id": "fld_is_sealed",
+        "name": "is_sealed",
+        "type": "bool",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {}
+      },
+      {
+        "system": false,
+        "id": "fld_seal_number",
+        "name": "seal_number",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "fld_seal_numbers",
+        "name": "seal_numbers",
+        "type": "json",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSize": 2000000
+        }
+      },
+      {
+        "system": false,
+        "id": "fld_seal_photo_url",
+        "name": "seal_photo_url",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
       }
     ],
     "indexes": [

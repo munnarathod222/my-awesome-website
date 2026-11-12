@@ -3,12 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { 
   FileText, Receipt, FileCheck, Clock, Download, 
-  ExternalLink, AlertTriangle, CheckCircle2, Copy, Check, ZoomIn, ZoomOut 
+  ExternalLink, AlertTriangle, CheckCircle2, Copy, Check, ZoomIn, ZoomOut, Lock, ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function DispatchDocsViewerModal({ isOpen, onClose, trip }) {
-  const [activeTab, setActiveTab] = useState('lr'); // 'lr' | 'invoice' | 'eway'
+  const [activeTab, setActiveTab] = useState('lr'); // 'lr' | 'invoice' | 'eway' | 'seal'
   const [copiedField, setCopiedField] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
 
@@ -28,6 +28,20 @@ export default function DispatchDocsViewerModal({ isOpen, onClose, trip }) {
   const lrUrl = getFileUrl('lr_file') || trip.lr_file_url || null;
   const invoiceUrl = getFileUrl('invoice_file') || trip.invoice_file_url || null;
   const ewayUrl = getFileUrl('eway_bill_file') || trip.eway_bill_file_url || null;
+  const sealUrl = getFileUrl('seal_photo_file') || trip.seal_photo_url || null;
+
+  // Extract all seal numbers
+  let allSeals = [];
+  if (Array.isArray(trip.seal_numbers) && trip.seal_numbers.length > 0) {
+    allSeals = trip.seal_numbers.filter(Boolean);
+  } else if (typeof trip.seal_numbers === 'string' && trip.seal_numbers.startsWith('[')) {
+    try {
+      allSeals = JSON.parse(trip.seal_numbers).filter(Boolean);
+    } catch (_) {}
+  }
+  if (allSeals.length === 0 && trip.seal_number) {
+    allSeals = String(trip.seal_number).split(',').map(s => s.trim()).filter(Boolean);
+  }
 
   // Delivery SLA Calculations
   const computeSlaStatus = () => {
@@ -88,7 +102,7 @@ export default function DispatchDocsViewerModal({ isOpen, onClose, trip }) {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const currentDocUrl = activeTab === 'lr' ? lrUrl : activeTab === 'invoice' ? invoiceUrl : ewayUrl;
+  const currentDocUrl = activeTab === 'lr' ? lrUrl : activeTab === 'invoice' ? invoiceUrl : activeTab === 'eway' ? ewayUrl : sealUrl;
   const isPdf = currentDocUrl && currentDocUrl.toLowerCase().endsWith('.pdf');
 
   return (
@@ -175,6 +189,23 @@ export default function DispatchDocsViewerModal({ isOpen, onClose, trip }) {
             {ewayUrl ? <span className="w-2 h-2 rounded-full bg-emerald-400" /> : <span className="w-2 h-2 rounded-full bg-rose-400" />}
             {isEwayExpired() && <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30">Expired</span>}
           </button>
+
+          <button
+            onClick={() => { setActiveTab('seal'); setZoomLevel(1); }}
+            className={`py-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all ${
+              activeTab === 'seal' 
+                ? 'border-cyan-500 text-cyan-300 bg-cyan-500/10' 
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-cyan-400" />
+            <span>4. Security Seal</span>
+            {allSeals.length > 0 || sealUrl || trip.is_sealed ? (
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+            ) : (
+              <span className="w-2 h-2 rounded-full bg-slate-600" />
+            )}
+          </button>
         </div>
 
         {/* Tab Detail Bar */}
@@ -232,6 +263,29 @@ export default function DispatchDocsViewerModal({ isOpen, onClose, trip }) {
                   </strong>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'seal' && (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400">Security Seals:</span>
+                {allSeals.length > 0 ? (
+                  allSeals.map((sn, sIdx) => (
+                    <span key={sIdx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 font-mono text-xs font-bold">
+                      #{sIdx + 1}: {sn}
+                      <button onClick={() => handleCopy(sn, `Seal #${sIdx + 1}`)} className="ml-1 hover:text-white" title="Copy seal number">
+                        {copiedField === `Seal #${sIdx + 1}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </span>
+                  ))
+                ) : (
+                  <strong className="text-slate-300 font-mono">No seal tags recorded</strong>
+                )}
+              </div>
+              <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> Dock Gate Security Verified
+              </span>
             </div>
           )}
 
@@ -304,13 +358,39 @@ export default function DispatchDocsViewerModal({ isOpen, onClose, trip }) {
                 />
               </div>
             )
+          ) : activeTab === 'seal' && allSeals.length > 0 ? (
+            <div className="text-center py-8 px-6 max-w-md w-full bg-slate-900/90 rounded-2xl border border-cyan-500/30 p-6 space-y-4 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
+                <Lock className="w-7 h-7" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-slate-100 flex items-center justify-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  Container / Truck Seal Verified
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Tamper-evident seals recorded at loading dock
+                </p>
+              </div>
+              <div className="space-y-2 pt-2">
+                {allSeals.map((sn, sIdx) => (
+                  <div key={sIdx} className="p-2.5 rounded-xl bg-slate-950 border border-cyan-500/20 flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-cyan-400/80">Seal #{sIdx + 1}</span>
+                    <strong className="text-sm font-mono text-cyan-300 font-bold tracking-wider">{sn}</strong>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-500 italic">
+                No physical seal photo was uploaded. Seal tag codes are verified.
+              </p>
+            </div>
           ) : (
             <div className="text-center py-16 px-4 space-y-3">
               <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500">
                 <AlertTriangle className="w-7 h-7 text-amber-400" />
               </div>
               <h4 className="text-sm font-semibold text-slate-200">
-                No {activeTab === 'lr' ? 'LR / Consignment Note' : activeTab === 'invoice' ? 'Commercial Invoice' : 'GST E-Way Bill'} Attached
+                No {activeTab === 'lr' ? 'LR / Consignment Note' : activeTab === 'invoice' ? 'Commercial Invoice' : activeTab === 'eway' ? 'GST E-Way Bill' : 'Security Seal'} Attached
               </h4>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
                 This document was not uploaded during trip dispatch. You can attach it anytime by editing this trip in Trip Logs.

@@ -75,7 +75,11 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     eway_bill_file_url: '',
     eway_bill_file_name: '',
     eway_bill_file_meta: null,
-    delivery_deadline: ''
+    delivery_deadline: '',
+    is_sealed: false,
+    seal_numbers: [''],
+    seal_number: '',
+    seal_photo_url: ''
   });
 
   useEffect(() => {
@@ -208,7 +212,11 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
       eway_bill_file_url: '',
       eway_bill_file_name: '',
       eway_bill_file_meta: null,
-      delivery_deadline: ''
+      delivery_deadline: '',
+      is_sealed: false,
+      seal_numbers: [''],
+      seal_number: '',
+      seal_photo_url: ''
     });
     setClientMetrics(null);
     setSelectedClientInfo(null);
@@ -389,7 +397,15 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         eway_bill_number: formData.eway_bill_number || '',
         eway_expiry_date: formData.eway_expiry_date || '',
         eway_bill_file_url: formData.eway_bill_file_url || '',
-        delivery_deadline: formData.delivery_deadline || ''
+        delivery_deadline: formData.delivery_deadline || '',
+        is_sealed: Boolean(formData.is_sealed),
+        seal_number: Array.isArray(formData.seal_numbers) 
+          ? formData.seal_numbers.filter(Boolean).map(s => s.trim()).join(', ') 
+          : (formData.seal_number || ''),
+        seal_numbers: Array.isArray(formData.seal_numbers) 
+          ? formData.seal_numbers.filter(Boolean).map(s => s.trim()) 
+          : (formData.seal_number ? [formData.seal_number.trim()] : []),
+        seal_photo_url: formData.seal_photo_url || ''
       };
 
       await pb.collection('trip_logs').create(payload, { $autoCancel: false });
