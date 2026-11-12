@@ -135,41 +135,28 @@ const TripRow = ({ trip }) => {
 };
 
 // ── Robust IST Same-Day Date Matcher ─────────────────────────────────────────
+const getISTDateStr = (val) => {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    try {
+      const d = new Date(s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s);
+      if (!isNaN(d.getTime())) {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+      }
+    } catch (_) {}
+  }
+  const parts = s.split(/[-/]/);
+  if (parts.length >= 3 && parts[0].length === 2 && parts[2].slice(0, 4).length === 4) {
+    return `${parts[2].slice(0, 4)}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  }
+  return s.slice(0, 10);
+};
+
 const isSameDayIST = (dateVal, targetISTDateStr) => {
   if (!dateVal || !targetISTDateStr) return false;
-  const str = String(dateVal).trim();
-  if (!str) return false;
-
-  // 1. Pure YYYY-MM-DD format (from <input type="date">)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    return str === targetISTDateStr;
-  }
-
-  // 2. Format DD/MM/YYYY or DD-MM-YYYY
-  const parts = str.split(/[-/]/);
-  if (parts.length >= 3 && parts[0].length === 2 && parts[2].slice(0, 4).length === 4) {
-    const normalized = `${parts[2].slice(0, 4)}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-    return normalized === targetISTDateStr;
-  }
-
-  // 3. Midday UTC anchor (e.g. "YYYY-MM-DD 12:00:00.000Z") - user selected date stored with noon UTC
-  if (/^\d{4}-\d{2}-\d{2}\s+12:00:00/.test(str)) {
-    return str.slice(0, 10) === targetISTDateStr;
-  }
-
-  // 4. ISO Date with time - convert UTC timestamp to IST (+05:30)
-  try {
-    const d = new Date(str.includes(' ') && !str.includes('T') ? str.replace(' ', 'T') : str);
-    if (!isNaN(d.getTime())) {
-      const istDate = new Date(d.getTime() + (330 * 60000));
-      const yyyy = istDate.getUTCFullYear();
-      const mm = String(istDate.getUTCMonth() + 1).padStart(2, '0');
-      const dd = String(istDate.getUTCDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}` === targetISTDateStr;
-    }
-  } catch (_) {}
-
-  return str.slice(0, 10) === targetISTDateStr;
+  return getISTDateStr(dateVal) === targetISTDateStr;
 };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -356,8 +343,7 @@ const DashboardPage = () => {
       });
 
       // ── Today's Business & Expenses Calculations (IST: UTC + 5:30) ─────────
-      const now = new Date();
-      const istDateStr = new Date(now.getTime() + (330 + now.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
+      const istDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
       const safeAllTrips = Array.isArray(allTripsFullList) ? allTripsFullList : [];
       const todayTrips = safeAllTrips.filter(t => {

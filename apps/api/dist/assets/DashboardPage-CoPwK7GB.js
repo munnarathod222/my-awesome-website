@@ -1329,7 +1329,7 @@ const _isSameDayIST = (dVal, targetStr) => {
   return str.slice(0, 10) === targetStr;
 };
 const _now = new Date();
-const _istDateStr = new Date(_now.getTime() + (330 + _now.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
+const _istDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const _safeAllTrips = Array.isArray(allTripsList) ? allTripsList : [];
 const _todayTrips = _safeAllTrips.filter(N => {
   if (!N) return false;
