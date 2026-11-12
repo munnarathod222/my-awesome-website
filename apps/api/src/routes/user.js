@@ -330,13 +330,19 @@ router.get('/profile', pocketbaseAuth, async (req, res) => {
       } catch (_) {}
 
       const isOps = userEmail.includes('operations');
+      const rawName = uRecord.full_name || uRecord.name || '';
+      const resolvedFullName = (rawName && rawName !== 'Jai Bhavani Operations') ? rawName : (isOps ? 'Vinod kumar Rathod' : 'Munna Rathod');
+      const parts = resolvedFullName.split(' ');
+      const resolvedFirst = parts[0] || (isOps ? 'Vinod kumar' : 'Munna');
+      const resolvedLast = parts.slice(1).join(' ') || 'Rathod';
+
       profile = {
         id: uRecord.id || userId,
         user_id: uRecord.id || userId,
         user_email: uRecord.email || userEmail,
-        first_name: (uRecord.name || uRecord.full_name || '').split(' ')[0] || (isOps ? 'Vinod kumar' : 'Munna'),
-        last_name: (uRecord.name || uRecord.full_name || '').split(' ').slice(1).join(' ') || 'Rathod',
-        full_name: uRecord.full_name || uRecord.name || (isOps ? 'Vinod kumar Rathod' : 'Munna Rathod'),
+        first_name: resolvedFirst,
+        last_name: resolvedLast,
+        full_name: resolvedFullName,
         phone_number: uRecord.phone_number || '+91 99086 52525',
         company_name: uRecord.company_name || 'Jai Bhavani Cargo',
         job_title: uRecord.job_title || (isOps ? 'Chief Operations Officer (COO)' : 'Managing Director & Founder'),
@@ -353,15 +359,20 @@ router.get('/profile', pocketbaseAuth, async (req, res) => {
     }
 
     const isOps = userEmail.includes('operations');
+    const fName = (profile.full_name && profile.full_name !== 'Jai Bhavani Operations') ? profile.full_name : (isOps ? 'Vinod kumar Rathod' : 'Munna Rathod');
+    const parts = fName.split(' ');
+    const firstN = parts[0] || (isOps ? 'Vinod kumar' : 'Munna');
+    const lastN = parts.slice(1).join(' ') || 'Rathod';
+
     return res.json({
       success: true,
       profile: {
         id: profile.id || userId,
         user_id: profile.user_id || userId,
         email: profile.user_email || userEmail,
-        first_name: profile.first_name || (isOps ? 'Vinod kumar' : 'Munna'),
-        last_name: profile.last_name || 'Rathod',
-        full_name: profile.full_name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || (isOps ? 'Vinod kumar Rathod' : 'Munna Rathod'),
+        first_name: firstN,
+        last_name: lastN,
+        full_name: fName,
         phone_number: profile.phone_number || '+91 99086 52525',
         company_name: profile.company_name || 'Jai Bhavani Cargo',
         job_title: profile.job_title || (isOps ? 'Chief Operations Officer (COO)' : 'Managing Director & Founder'),
