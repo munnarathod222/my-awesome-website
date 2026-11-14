@@ -6,6 +6,7 @@ console.log('--- sync_dist_fallbacks.js: Protecting and syncing modern unified p
 const primaryIndexHtml = path.resolve(__dirname, 'dist/index.html');
 const primaryBundle = path.resolve(__dirname, 'dist/assets/index-DLxf9dwO.js');
 const primaryIndexHashed = path.resolve(__dirname, 'dist/assets/index-B9k2Lm7P.js');
+const primaryTripLogsHashed = path.resolve(__dirname, 'dist/assets/TripLogsPage-B9k2Lm7P.js');
 const primaryProfilePage = path.resolve(__dirname, 'dist/assets/ProfilePage-f6cQzKX5.js');
 const primaryTripLogsPage = path.resolve(__dirname, 'dist/assets/TripLogsPage-B1zVaUO1.js');
 const primaryMaintenancePage = path.resolve(__dirname, 'dist/assets/MaintenancePage-FpBhnDc2.js');
@@ -55,6 +56,9 @@ for (const target of targets) {
     fs.mkdirSync(path.join(target, 'assets'), { recursive: true });
     fs.writeFileSync(path.join(target, 'index.html'), htmlContent, 'utf8');
     fs.writeFileSync(path.join(target, 'assets', 'index-DLxf9dwO.js'), bundleBuffer);
+    if (fs.existsSync(primaryTripLogsHashed)) {
+      fs.copyFileSync(primaryTripLogsHashed, path.join(target, 'assets', 'TripLogsPage-B9k2Lm7P.js'));
+    }
     if (fs.existsSync(primaryIndexHashed)) {
       fs.copyFileSync(primaryIndexHashed, path.join(target, 'assets', 'index-B9k2Lm7P.js'));
     }
