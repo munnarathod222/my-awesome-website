@@ -136,20 +136,93 @@ function LorryReceiptsPodHubPage() {
     }
     return trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === "true";
   };
-    const getActualPodFile = (trip) => {
-    if (!trip || !trip.pod_file) return null;
-    if (Array.isArray(trip.pod_file)) {
-      const valid = trip.pod_file.filter(f => typeof f === "string" && f.trim() !== "" && f !== "[]" && f !== "[" && f !== "]" && f !== "null");
-      return valid.length > 0 ? valid[0] : null;
-    }
-    if (typeof trip.pod_file === "string") {
-      const trimmed = trip.pod_file.trim();
-      if (!trimmed || trimmed === "[]" || trimmed === "[" || trimmed === "]" || trimmed === "null" || trimmed === "undefined") {
-        return null;
+    const getPodFiles = (trip) => {
+    if (!trip || !trip.pod_file) return [];
+    let raw = trip.pod_file;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed || trimmed === "[]" || trimmed === "null" || trimmed === "undefined") return [];
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed.filter(f => typeof f === "string" && f.trim() !== "" && f !== "null" && f !== "[]");
+          }
+        } catch (e) {}
       }
-      return trimmed;
+      return [trimmed];
     }
-    return null;
+    if (Array.isArray(raw)) {
+      return raw.filter(f => typeof f === "string" && f.trim() !== "" && f !== "[]" && f !== "[" && f !== "]" && f !== "null");
+    }
+    return [];
+  };
+  const getActualPodFile = (trip) => {
+    const files = getPodFiles(trip);
+    return files.length > 0 ? files[0] : null;
+  };
+  const compressDocumentImage = async (file, maxDimension = 1920, quality = 0.8) => {
+    if (!file || !file.type || !file.type.startsWith("image/")) {
+      return file;
+    }
+    if (file.size <= 250 * 1024) {
+      return file;
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve(file);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob && blob.size < file.size) {
+                const cleanBaseName = (file.name || "document").replace(/\.[^.]+$/, "");
+                const compressedFile = new File([blob], cleanBaseName + ".jpg", {
+                  type: "image/jpeg",
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
   const getPodStatus = (trip) => {
     const cl = getClientForTrip(trip);
@@ -264,23 +337,105 @@ function LorryReceiptsPodHubPage() {
   useEffect(() => {
     loadData();
   }, []);
-  const handleUploadPod = async (e, tripId) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleUploadPod = async (e, tripId, replaceAll = false) => {
+    const rawFiles = Array.from(e.target.files || []);
+    if (!rawFiles.length) return;
     setUploadingTripId(tripId);
     try {
+      const trip = trips.find(t => t.id === tripId) || (viewingPodDoc && viewingPodDoc.trip?.id === tripId ? viewingPodDoc.trip : null);
+      let origTotal = 0;
+      let compTotal = 0;
+      const optimizedFiles = [];
+      for (const f of rawFiles) {
+        origTotal += f.size;
+        const comp = await compressDocumentImage(f);
+        compTotal += comp.size;
+        optimizedFiles.push(comp);
+      }
       const formData = new FormData();
-      formData.append("pod_file", file);
+      if (!replaceAll && trip) {
+        const existingFiles = getPodFiles(trip);
+        existingFiles.forEach(f => formData.append("pod_file", f));
+      }
+      optimizedFiles.forEach(f => formData.append("pod_file", f));
       formData.append("pod_status", "Uploaded");
-      await pb.collection("trip_logs").update(tripId, formData);
-      toast.success("POD document uploaded successfully!");
+
+      const updatedTrip = await pb.collection("trip_logs").update(tripId, formData);
+      const savedBytes = origTotal - compTotal;
+      const savedPercent = origTotal > 0 && savedBytes > 0 ? Math.round((savedBytes / origTotal) * 100) : 0;
+      if (savedPercent > 10) {
+        toast.success("Attached " + optimizedFiles.length + " POD page(s)! Compressed " + savedPercent + "% (" + formatFileSize(origTotal) + " \u2192 " + formatFileSize(compTotal) + ")");
+      } else {
+        toast.success(optimizedFiles.length > 1 ? (optimizedFiles.length + " POD pages uploaded!") : "POD document uploaded successfully!");
+      }
+
+      const updatedFiles = getPodFiles(updatedTrip);
+      if (viewingPodDoc && (viewingPodDoc.trip?.id === tripId || viewingPodDoc.tripId === (updatedTrip.trip_id || updatedTrip.id))) {
+        setViewingPodDoc({
+          trip: updatedTrip,
+          files: updatedFiles,
+          activeIndex: updatedFiles.length > 0 ? updatedFiles.length - 1 : 0,
+          tripId: updatedTrip.trip_id || updatedTrip.id,
+          truck: updatedTrip.truck_number,
+          client: viewingPodDoc.client,
+          url: updatedFiles.length > 0 ? pb.files.getUrl(updatedTrip, updatedFiles[updatedFiles.length - 1]) : null
+        });
+      }
       loadData();
     } catch (err) {
       console.error("POD upload failed:", err);
       toast.error("Failed to upload POD document.");
     } finally {
       setUploadingTripId(null);
+      if (e.target) e.target.value = "";
     }
+  };
+  const handleDeletePodPage = async (trip, fileName) => {
+    if (!trip || !fileName) return;
+    if (!window.confirm("Are you sure you want to remove this POD page?")) return;
+    setUploadingTripId(trip.id);
+    try {
+      const formData = new FormData();
+      formData.append("pod_file.-", fileName);
+      const remainingFiles = getPodFiles(trip).filter(f => f !== fileName);
+      if (remainingFiles.length === 0 && (!trip.pod_link || trip.pod_link.trim() === "")) {
+        formData.append("pod_status", "Pending");
+      }
+      const updatedTrip = await pb.collection("trip_logs").update(trip.id, formData);
+      toast.success("Page removed successfully.");
+      const updatedFiles = getPodFiles(updatedTrip);
+      if (updatedFiles.length === 0) {
+        setViewingPodDoc(null);
+      } else if (viewingPodDoc) {
+        const nextIdx = Math.max(0, Math.min(viewingPodDoc.activeIndex || 0, updatedFiles.length - 1));
+        setViewingPodDoc({
+          ...viewingPodDoc,
+          trip: updatedTrip,
+          files: updatedFiles,
+          activeIndex: nextIdx,
+          url: pb.files.getUrl(updatedTrip, updatedFiles[nextIdx])
+        });
+      }
+      loadData();
+    } catch (err) {
+      console.error("Failed to remove POD page:", err);
+      toast.error("Failed to delete POD page.");
+    } finally {
+      setUploadingTripId(null);
+    }
+  };
+  const openPodViewer = (trip) => {
+    const files = getPodFiles(trip);
+    const clientName = getClientName(trip);
+    setViewingPodDoc({
+      trip,
+      files,
+      activeIndex: 0,
+      tripId: trip.trip_id || trip.id,
+      truck: trip.truck_number,
+      client: clientName,
+      url: files.length > 0 ? pb.files.getUrl(trip, files[0]) : null
+    });
   };
   const cleanCity = (str) => {
     if (!str) return "";
@@ -927,16 +1082,12 @@ function LorryReceiptsPodHubPage() {
       ), actualFile ? /* @__PURE__ */ React.createElement(
         "button",
         {
-          onClick: () => setViewingPodDoc({
-            url: pb.files.getUrl(trip, actualFile),
-            tripId: trip.trip_id || trip.id,
-            truck: trip.truck_number,
-            client: clientName
-          }),
-          className: "p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition",
-          title: "View Signed POD"
+          onClick: () => openPodViewer(trip),
+          className: "p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition flex items-center gap-1",
+          title: "View Signed POD (" + getPodFiles(trip).length + " pages)"
         },
-        /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" })
+        /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" }),
+        getPodFiles(trip).length > 1 ? /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold" }, getPodFiles(trip).length) : null
       ) : isReq ? /* @__PURE__ */ React.createElement(
         "label",
         {
@@ -949,8 +1100,9 @@ function LorryReceiptsPodHubPage() {
           type: "file",
           id: "upload-lr-" + trip.id,
           className: "hidden",
+          multiple: true,
           accept: "image/*,application/pdf",
-          onChange: (e) => handleUploadPod(e, trip.id)
+          onChange: (e) => handleUploadPod(e, trip.id, false)
         })
       ) : null)));
     }))))
@@ -961,23 +1113,19 @@ function LorryReceiptsPodHubPage() {
       const podSt = getPodStatus(trip);
       const clObj = getClientForTrip(trip);
       const clientName = getClientName(trip);
-      const actualPodFile = getActualPodFile(trip);
-      const hasFile = !!actualPodFile;
+      const podFiles = getPodFiles(trip);
+      const actualPodFile = podFiles.length > 0 ? podFiles[0] : null;
+      const hasFile = podFiles.length > 0;
       const hasLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
       const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
       return /* @__PURE__ */ React.createElement("tr", { key: trip.id, className: "hover:bg-slate-800/40 transition" }, /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pl-5" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-white font-mono" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 mt-1 inline-block" }, lrNum)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-100" }, clientName), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5" }, isReq ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "Mandated POD") : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] text-slate-500 bg-slate-800 border border-slate-700" }, "Optional"))), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono font-bold text-slate-200" }, trip.truck_number || "TG12U2637"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400" }, trip.driver_name || "Assigned Driver")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300" }, formatRoute(trip)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300 font-mono" }, formatTripDate(trip.date)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, hasFile ? /* @__PURE__ */ React.createElement(
         "button",
         {
-          onClick: () => setViewingPodDoc({
-            url: pb.files.getUrl(trip, actualPodFile),
-            tripId: trip.trip_id || trip.id,
-            truck: trip.truck_number,
-            client: clientName
-          }),
+          onClick: () => openPodViewer(trip),
           className: "flex items-center gap-1.5 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold cursor-pointer transition"
         },
         /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" }),
-        /* @__PURE__ */ React.createElement("span", null, "View Signed File")
+        /* @__PURE__ */ React.createElement("span", null, podFiles.length > 1 ? ("View (" + podFiles.length + ") Files") : "View Signed File")
       ) : hasLink ? /* @__PURE__ */ React.createElement(
         "a",
         {
@@ -1000,29 +1148,31 @@ function LorryReceiptsPodHubPage() {
           type: "file",
           id: "pod-upload-cell-" + trip.id,
           className: "hidden",
+          multiple: true,
           accept: "image/*,application/pdf",
-          onChange: (e) => handleUploadPod(e, trip.id)
+          onChange: (e) => handleUploadPod(e, trip.id, false)
         })
       )), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : podSt === "Not Required" ? "bg-slate-800 text-slate-400 border-slate-700" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "\u231B Uploaded (Review)" : podSt === "Not Required" ? "Not Required" : "\u26A0 Pending POD")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
-        "label",
-        {
-          htmlFor: "pod-upload-" + trip.id,
-          className: "px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer " + (uploadingTripId === trip.id ? "bg-slate-700 text-slate-400" : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"),
-          title: "Upload Signed POD Photo"
-        },
-        /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
-        /* @__PURE__ */ React.createElement("span", null, uploadingTripId === trip.id ? "Uploading..." : hasFile ? "Replace" : "Upload POD"),
-        /* @__PURE__ */ React.createElement(
-          "input",
+          "label",
           {
-            type: "file",
-            id: "pod-upload-" + trip.id,
-            className: "hidden",
-            accept: "image/*,application/pdf",
-            onChange: (e) => handleUploadPod(e, trip.id)
-          }
-        )
-      ), (hasFile || hasLink) && /* @__PURE__ */ React.createElement(
+            htmlFor: "pod-upload-" + trip.id,
+            className: "px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer " + (uploadingTripId === trip.id ? "bg-slate-700 text-slate-400" : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"),
+            title: "Upload or Add POD Pages"
+          },
+          /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
+          /* @__PURE__ */ React.createElement("span", null, uploadingTripId === trip.id ? "Uploading..." : hasFile ? "+ Add / Replace" : "Upload POD"),
+          /* @__PURE__ */ React.createElement(
+            "input",
+            {
+              type: "file",
+              id: "pod-upload-" + trip.id,
+              className: "hidden",
+              multiple: true,
+              accept: "image/*,application/pdf",
+              onChange: (e) => handleUploadPod(e, trip.id, false)
+            }
+          )
+        ), (hasFile || hasLink) && /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => handleTogglePodVerify(trip),
@@ -1424,47 +1574,158 @@ function LorryReceiptsPodHubPage() {
       className: "px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/20 transition cursor-pointer disabled:opacity-50"
     },
     savingLrEdit ? "Saving..." : "Save & Update LR"
-  )))), viewingPodDoc && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 text-emerald-400" }), /* @__PURE__ */ React.createElement("span", null, "Proof of Delivery Document")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Trip: ", viewingPodDoc.tripId, " \u2022 Truck: ", viewingPodDoc.truck, " \u2022 Client: ", viewingPodDoc.client)), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setViewingPodDoc(null),
-      className: "p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
-  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[300px]" }, (!viewingPodDoc.url || viewingPodDoc.url.endsWith("/")) ? /* @__PURE__ */ React.createElement("div", { className: "text-center p-8 text-slate-400" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-amber-400 text-sm" }, "No Document Uploaded"), /* @__PURE__ */ React.createElement("p", { className: "text-xs mt-1" }, "This shipment has not had a signed POD file uploaded yet.")) : viewingPodDoc.url.toLowerCase().endsWith(".pdf") ? /* @__PURE__ */ React.createElement(
-    "iframe",
-    {
-      src: viewingPodDoc.url,
-      className: "w-full h-[550px] rounded-xl border border-slate-800",
-      title: "POD PDF Document"
-    }
-  ) : /* @__PURE__ */ React.createElement(
-    "img",
-    {
-      src: viewingPodDoc.url,
-      alt: "Signed POD",
-      className: "max-h-[550px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
-    }
-  )), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-end gap-2" }, /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: viewingPodDoc.url,
-      target: "_blank",
-      rel: "noopener noreferrer",
-      download: true,
-      className: "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement(DownloadIcon, { className: "w-3.5 h-3.5" }),
-    /* @__PURE__ */ React.createElement("span", null, "Download File")
-  ), /* @__PURE__ */ React.createElement(
-    Button,
-    {
-      variant: "outline",
-      onClick: () => setViewingPodDoc(null),
-      className: "rounded-xl border-slate-700 text-slate-300"
-    },
-    "Close Preview"
-  )))), isCreatingLr && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-5 h-5 text-amber-400" }), /* @__PURE__ */ React.createElement("span", null, "Issue New Lorry Receipt / Consignment Note")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Generate official transporter consignment note (LR / Bilty) with automated tracking")), /* @__PURE__ */ React.createElement(
+  )))), viewingPodDoc && (() => {
+  const docFiles = (viewingPodDoc.files && viewingPodDoc.files.length > 0)
+    ? viewingPodDoc.files
+    : (viewingPodDoc.url ? [viewingPodDoc.url] : []);
+  const activeIdx = Math.max(0, Math.min(viewingPodDoc.activeIndex || 0, Math.max(0, docFiles.length - 1)));
+  const currentFile = docFiles[activeIdx] || null;
+  const isCurrentUrl = currentFile && (currentFile.startsWith("http://") || currentFile.startsWith("https://") || currentFile.startsWith("blob:"));
+  const currentFileUrl = isCurrentUrl ? currentFile : (currentFile && viewingPodDoc.trip ? pb.files.getUrl(viewingPodDoc.trip, currentFile) : viewingPodDoc.url);
+  const isPdf = currentFileUrl && currentFileUrl.toLowerCase().split("?")[0].endsWith(".pdf");
+
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200" },
+    /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" },
+      /* Header */
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" },
+        /* @__PURE__ */ React.createElement("div", null,
+          /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" },
+            /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 text-emerald-400" }),
+            /* @__PURE__ */ React.createElement("span", null, "Proof of Delivery Document"),
+            docFiles.length > 1 ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "Page " + (activeIdx + 1) + " of " + docFiles.length) : null
+          ),
+          /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" },
+            "Trip: ", viewingPodDoc.tripId, " \u2022 Truck: ", viewingPodDoc.truck, " \u2022 Client: ", viewingPodDoc.client
+          )
+        ),
+        /* @__PURE__ */ React.createElement("button", {
+          onClick: () => setViewingPodDoc(null),
+          className: "p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
+        }, /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" }))
+      ),
+
+      /* Preview Content Area */
+      /* @__PURE__ */ React.createElement("div", { className: "relative p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[320px]" },
+        (!currentFileUrl || currentFileUrl.endsWith("/")) ? (
+          /* @__PURE__ */ React.createElement("div", { className: "text-center p-8 text-slate-400" },
+            /* @__PURE__ */ React.createElement("p", { className: "font-bold text-amber-400 text-sm" }, "No Document Uploaded"),
+            /* @__PURE__ */ React.createElement("p", { className: "text-xs mt-1 mb-4" }, "This shipment has not had a signed POD file uploaded yet."),
+            viewingPodDoc.trip ? /* @__PURE__ */ React.createElement("label", {
+              className: "px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs cursor-pointer inline-flex items-center gap-1.5 transition shadow"
+            },
+              /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-4 h-4" }),
+              /* @__PURE__ */ React.createElement("span", null, uploadingTripId === viewingPodDoc.trip.id ? "Compressing & Uploading..." : "Upload POD Pages"),
+              /* @__PURE__ */ React.createElement("input", {
+                type: "file",
+                multiple: true,
+                accept: "image/*,application/pdf",
+                className: "hidden",
+                onChange: (e) => handleUploadPod(e, viewingPodDoc.trip.id, false)
+              })
+            ) : null
+          )
+        ) : isPdf ? (
+          /* @__PURE__ */ React.createElement("iframe", {
+            src: currentFileUrl,
+            className: "w-full h-[520px] rounded-xl border border-slate-800",
+            title: "POD PDF Document"
+          })
+        ) : (
+          /* @__PURE__ */ React.createElement("img", {
+            src: currentFileUrl,
+            alt: "Signed POD",
+            className: "max-h-[520px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
+          })
+        ),
+
+        /* Previous / Next Overlay Navigation Buttons */
+        docFiles.length > 1 ? /* @__PURE__ */ React.createElement(React.Fragment, null,
+          /* @__PURE__ */ React.createElement("button", {
+            onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: Math.max(0, activeIdx - 1) }),
+            disabled: activeIdx === 0,
+            className: "absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer transition text-xs font-bold",
+            title: "Previous Page"
+          }, "\u25C0"),
+          /* @__PURE__ */ React.createElement("button", {
+            onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: Math.min(docFiles.length - 1, activeIdx + 1) }),
+            disabled: activeIdx === docFiles.length - 1,
+            className: "absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer transition text-xs font-bold",
+            title: "Next Page"
+          }, "\u25B6")
+        ) : null
+      ),
+
+      /* Multi-page Thumbnail Bar (if docFiles.length > 1) */
+      docFiles.length > 1 ? /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-slate-950 border-t border-slate-800 flex items-center gap-2 overflow-x-auto" },
+        docFiles.map((file, idx) => {
+          const thumbIsActive = idx === activeIdx;
+          const thumbIsPdf = file && file.toLowerCase().endsWith(".pdf");
+          return /* @__PURE__ */ React.createElement("button", {
+            key: idx,
+            onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: idx }),
+            className: "px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer border " + (
+              thumbIsActive
+                ? "bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400/40"
+                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+            ),
+            title: "View Page " + (idx + 1)
+          },
+            /* @__PURE__ */ React.createElement("span", null, "Page " + (idx + 1)),
+            thumbIsPdf ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-rose-400 uppercase font-mono" }, "PDF") : null
+          );
+        })
+      ) : null,
+
+      /* Footer Actions */
+      /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-2 flex-wrap" },
+        /* Left: Delete & Attach More */
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+          (viewingPodDoc.trip && currentFile && !isCurrentUrl) ? /* @__PURE__ */ React.createElement("button", {
+            onClick: () => handleDeletePodPage(viewingPodDoc.trip, currentFile),
+            className: "px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold rounded-xl text-xs flex items-center gap-1 transition cursor-pointer",
+            title: "Delete current page"
+          },
+            /* @__PURE__ */ React.createElement("span", null, "\uD83D\uDDD1"),
+            /* @__PURE__ */ React.createElement("span", null, "Delete Page")
+          ) : null,
+          viewingPodDoc.trip ? /* @__PURE__ */ React.createElement("label", {
+            className: "px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer",
+            title: "Attach more pages (auto-compressed)"
+          },
+            /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
+            /* @__PURE__ */ React.createElement("span", null, uploadingTripId === viewingPodDoc.trip.id ? "Compressing & Attaching..." : "+ Attach More"),
+            /* @__PURE__ */ React.createElement("input", {
+              type: "file",
+              multiple: true,
+              accept: "image/*,application/pdf",
+              className: "hidden",
+              onChange: (e) => handleUploadPod(e, viewingPodDoc.trip.id, false)
+            })
+          ) : null
+        ),
+
+        /* Right: Download & Close */
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+          currentFileUrl ? /* @__PURE__ */ React.createElement("a", {
+            href: currentFileUrl,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            download: true,
+            className: "px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+          },
+            /* @__PURE__ */ React.createElement(DownloadIcon, { className: "w-3.5 h-3.5" }),
+            /* @__PURE__ */ React.createElement("span", null, docFiles.length > 1 ? ("Download Page " + (activeIdx + 1)) : "Download File")
+          ) : null,
+          /* @__PURE__ */ React.createElement(Button, {
+            variant: "outline",
+            onClick: () => setViewingPodDoc(null),
+            className: "rounded-xl border-slate-700 text-slate-300"
+          }, "Close Preview")
+        )
+      )
+    )
+  );
+})(), isCreatingLr && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-5 h-5 text-amber-400" }), /* @__PURE__ */ React.createElement("span", null, "Issue New Lorry Receipt / Consignment Note")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Generate official transporter consignment note (LR / Bilty) with automated tracking")), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setIsCreatingLr(false),

@@ -155,20 +155,110 @@ function LorryReceiptsPodHubPage() {
     return trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === 'true';
   };
 
-  const getActualPodFile = (trip) => {
-    if (!trip || !trip.pod_file) return null;
-    if (Array.isArray(trip.pod_file)) {
-      const valid = trip.pod_file.filter(f => typeof f === "string" && f.trim() !== "" && f !== "[]" && f !== "[" && f !== "]" && f !== "null");
-      return valid.length > 0 ? valid[0] : null;
-    }
-    if (typeof trip.pod_file === "string") {
-      const trimmed = trip.pod_file.trim();
-      if (!trimmed || trimmed === "[]" || trimmed === "[" || trimmed === "]" || trimmed === "null" || trimmed === "undefined") {
-        return null;
+  const getPodFiles = (trip) => {
+    if (!trip || !trip.pod_file) return [];
+    let raw = trip.pod_file;
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed || trimmed === "[]" || trimmed === "null" || trimmed === "undefined") return [];
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed.filter(f => typeof f === "string" && f.trim() !== "" && f !== "null" && f !== "[]");
+          }
+        } catch (e) {}
       }
-      return trimmed;
+      return [trimmed];
     }
-    return null;
+    if (Array.isArray(raw)) {
+      return raw.filter(f => typeof f === "string" && f.trim() !== "" && f !== "[]" && f !== "[" && f !== "]" && f !== "null");
+    }
+    return [];
+  };
+
+  const getActualPodFile = (trip) => {
+    const files = getPodFiles(trip);
+    return files.length > 0 ? files[0] : null;
+  };
+
+  const compressDocumentImage = async (file, maxDimension = 1920, quality = 0.8) => {
+    if (!file || !file.type || !file.type.startsWith("image/")) {
+      return file;
+    }
+    if (file.size <= 250 * 1024) {
+      return file;
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve(file);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob && blob.size < file.size) {
+                const cleanBaseName = (file.name || "document").replace(/\.[^.]+$/, "");
+                const compressedFile = new File([blob], cleanBaseName + ".jpg", {
+                  type: "image/jpeg",
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  const openPodViewer = (trip) => {
+    const files = getPodFiles(trip);
+    const clientName = getClientName(trip);
+    setViewingPodDoc({
+      trip,
+      files,
+      activeIndex: 0,
+      tripId: trip.trip_id || trip.id,
+      truck: trip.truck_number,
+      client: clientName,
+      url: files.length > 0 ? pb.files.getUrl(trip, files[0]) : null
+    });
   };
   const getPodStatus = (trip) => {
     const cl = getClientForTrip(trip);
@@ -299,21 +389,91 @@ function LorryReceiptsPodHubPage() {
     loadData();
   }, []);
 
-  // Upload POD File
-  const handleUploadPod = async (e, tripId) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Upload POD File with automatic image compression and multi-file preservation
+  const handleUploadPod = async (e, tripId, replaceAll = false) => {
+    const rawFiles = Array.from(e.target.files || []);
+    if (!rawFiles.length) return;
     setUploadingTripId(tripId);
     try {
+      const trip = trips.find(t => t.id === tripId) || (viewingPodDoc && viewingPodDoc.trip?.id === tripId ? viewingPodDoc.trip : null);
+      let origTotal = 0;
+      let compTotal = 0;
+      const optimizedFiles = [];
+      for (const f of rawFiles) {
+        origTotal += f.size;
+        const comp = await compressDocumentImage(f);
+        compTotal += comp.size;
+        optimizedFiles.push(comp);
+      }
       const formData = new FormData();
-      formData.append("pod_file", file);
+      if (!replaceAll && trip) {
+        const existingFiles = getPodFiles(trip);
+        existingFiles.forEach(f => formData.append("pod_file", f));
+      }
+      optimizedFiles.forEach(f => formData.append("pod_file", f));
       formData.append("pod_status", "Uploaded");
-      await pb.collection("trip_logs").update(tripId, formData);
-      toast.success("POD document uploaded successfully!");
+
+      const updatedTrip = await pb.collection("trip_logs").update(tripId, formData);
+      const savedBytes = origTotal - compTotal;
+      const savedPercent = origTotal > 0 && savedBytes > 0 ? Math.round((savedBytes / origTotal) * 100) : 0;
+      if (savedPercent > 10) {
+        toast.success("Attached " + optimizedFiles.length + " POD page(s)! Compressed " + savedPercent + "% (" + formatFileSize(origTotal) + " → " + formatFileSize(compTotal) + ")");
+      } else {
+        toast.success(optimizedFiles.length > 1 ? (optimizedFiles.length + " POD pages uploaded!") : "POD document uploaded successfully!");
+      }
+
+      const updatedFiles = getPodFiles(updatedTrip);
+      if (viewingPodDoc && (viewingPodDoc.trip?.id === tripId || viewingPodDoc.tripId === (updatedTrip.trip_id || updatedTrip.id))) {
+        setViewingPodDoc({
+          trip: updatedTrip,
+          files: updatedFiles,
+          activeIndex: updatedFiles.length > 0 ? updatedFiles.length - 1 : 0,
+          tripId: updatedTrip.trip_id || updatedTrip.id,
+          truck: updatedTrip.truck_number,
+          client: viewingPodDoc.client,
+          url: updatedFiles.length > 0 ? pb.files.getUrl(updatedTrip, updatedFiles[updatedFiles.length - 1]) : null
+        });
+      }
       loadData();
     } catch (err) {
       console.error("POD upload failed:", err);
       toast.error("Failed to upload POD document.");
+    } finally {
+      setUploadingTripId(null);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  const handleDeletePodPage = async (trip, fileName) => {
+    if (!trip || !fileName) return;
+    if (!window.confirm("Are you sure you want to remove this POD page?")) return;
+    setUploadingTripId(trip.id);
+    try {
+      const formData = new FormData();
+      formData.append("pod_file.-", fileName);
+      const remainingFiles = getPodFiles(trip).filter(f => f !== fileName);
+      if (remainingFiles.length === 0 && (!trip.pod_link || trip.pod_link.trim() === "")) {
+        formData.append("pod_status", "Pending");
+      }
+      const updatedTrip = await pb.collection("trip_logs").update(trip.id, formData);
+      toast.success("Page removed successfully.");
+      const updatedFiles = getPodFiles(updatedTrip);
+      if (updatedFiles.length === 0) {
+        setViewingPodDoc(null);
+      } else if (viewingPodDoc) {
+        const nextIdx = Math.max(0, Math.min(viewingPodDoc.activeIndex || 0, updatedFiles.length - 1));
+        setViewingPodDoc({
+          ...viewingPodDoc,
+          trip: updatedTrip,
+          files: updatedFiles,
+          activeIndex: nextIdx,
+          url: pb.files.getUrl(updatedTrip, updatedFiles[nextIdx])
+        });
+      }
+      loadData();
+    } catch (err) {
+      console.error("Failed to remove POD page:", err);
+      toast.error("Failed to delete POD page.");
     } finally {
       setUploadingTripId(null);
     }
@@ -1283,8 +1443,9 @@ function LorryReceiptsPodHubPage() {
                                   type="file"
                                   id={"upload-lr-" + trip.id}
                                   className="hidden"
+                                  multiple
                                   accept="image/*,application/pdf"
-                                  onChange={(e) => handleUploadPod(e, trip.id)}
+                                  onChange={(e) => handleUploadPod(e, trip.id, false)}
                                 />
                               </label>
                             ) : null;
@@ -1402,8 +1563,9 @@ function LorryReceiptsPodHubPage() {
                                 type="file"
                                 id={"pod-upload-cell-" + trip.id}
                                 className="hidden"
+                                multiple
                                 accept="image/*,application/pdf"
-                                onChange={(e) => handleUploadPod(e, trip.id)}
+                                onChange={(e) => handleUploadPod(e, trip.id, false)}
                               />
                             </label>
                           )}
@@ -1443,8 +1605,9 @@ function LorryReceiptsPodHubPage() {
                                 type="file"
                                 id={"pod-upload-" + trip.id}
                                 className="hidden"
+                                multiple
                                 accept="image/*,application/pdf"
-                                onChange={(e) => handleUploadPod(e, trip.id)}
+                                onChange={(e) => handleUploadPod(e, trip.id, false)}
                               />
                             </label>
 
