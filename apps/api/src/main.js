@@ -1239,6 +1239,63 @@ const initDatabaseIndexes = async (dbFilePath) => {
         execSync(`sqlite3 "${dbFilePath}" "${q}"`, { stdio: 'pipe' });
       } catch (_) {}
     }
+
+    // Ensure PocketBase trip_logs collection in memory has 'Arrived at Delivery Location' and detention fields
+    try {
+      const col = await pb.collections.getOne('trip_logs').catch(() => null);
+      if (col && Array.isArray(col.fields)) {
+        let changed = false;
+        const statusField = col.fields.find(f => f.name === 'trip_status');
+        if (statusField && Array.isArray(statusField.values)) {
+          const desired = [
+            'Upcoming', 'Vehicle Assigned', 'Arrived at Dock', 'Loading in Progress',
+            'Dispatched', 'In Transit', 'Arrived at Delivery Location', 'Reached Delivery Docket',
+            'Unloading in Progress', 'Delivered', 'Completed', 'Delayed / Breakdown', 'Cancelled'
+          ];
+          for (const d of desired) {
+            if (!statusField.values.includes(d)) {
+              statusField.values.push(d);
+              changed = true;
+            }
+          }
+        }
+        const detentionFields = [
+          { name: 'delivery_dock_arrival_time', type: 'text', id: 'txt_del_dock_arr', help: 'Timestamp when vehicle arrived at delivery dock' },
+          { name: 'free_detention_hours', type: 'number', id: 'num_free_det_hrs', help: 'Agreed free unloading grace hours' },
+          { name: 'detention_rate_per_hour', type: 'number', id: 'num_det_rate_hr', help: 'Hourly detention demurrage rate in INR' },
+          { name: 'detention_hours', type: 'number', id: 'num_det_hrs_tot', help: 'Calculated billable detention hours' },
+          { name: 'detention_amount', type: 'number', id: 'num_det_amt_tot', help: 'Calculated billable detention charge in INR' },
+          { name: 'detention_status', type: 'text', id: 'txt_det_status_flag', help: 'Status of dock detention' },
+          { name: 'tracking_token', type: 'text', id: 'txt_tr_token_sec', help: 'Cryptographic secure token for tracking' }
+        ];
+        for (const df of detentionFields) {
+          if (!col.fields.some(f => f.name === df.name)) {
+            col.fields.push({
+              autogeneratePattern: '',
+              help: df.help,
+              hidden: false,
+              id: df.id,
+              max: null,
+              min: null,
+              name: df.name,
+              pattern: '',
+              presentable: false,
+              required: false,
+              system: false,
+              type: df.type
+            });
+            changed = true;
+          }
+        }
+        if (changed) {
+          await pb.collections.update('trip_logs', { fields: col.fields });
+          logger.info("✅ PocketBase trip_logs collection verified and updated with Arrived at Delivery Location and detention fields!");
+        }
+      }
+    } catch (pbColErr) {
+      logger.warn(`Notice syncing trip_logs collection via PocketBase SDK: ${pbColErr.message}`);
+    }
+
     logger.info('⚡ Performance database indexes & driver auth schemas initialized successfully!');
   } catch (err) {
     logger.warn(`Index initialization notice: ${err.message}`);

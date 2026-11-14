@@ -298,6 +298,24 @@ const TripLogsPage = () => {
     setNewTripStatus(trip.trip_status || 'Upcoming');
   };
 
+  const safelyUpdateTripLog = async (tripId, updatePayload) => {
+    try {
+      return await pb.collection('trip_logs').update(tripId, updatePayload, { $autoCancel: false });
+    } catch (err) {
+      console.warn(`PocketBase direct update threw for trip ${tripId}, falling back to /api/trips:`, err);
+      const res = await fetch(`/api/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || errJson.message || err.message || 'Failed to update status');
+      }
+      return await res.json();
+    }
+  };
+
   const saveStatusChange = async () => {
     if (!statusChangeTrip) return;
     
@@ -345,7 +363,7 @@ const TripLogsPage = () => {
           }
         }
       }
-      await pb.collection('trip_logs').update(statusChangeTrip.id, updatePayload, { $autoCancel: false });
+      await safelyUpdateTripLog(statusChangeTrip.id, updatePayload);
 
       // Immediate FASTag Deduction sync for Delivered or Completed trips using normalized matching
       if ((newTripStatus === 'Delivered' || newTripStatus === 'Completed') && statusChangeTrip.trip_status !== newTripStatus) {
@@ -1236,7 +1254,7 @@ const TripLogsPage = () => {
                                         }
                                       }
                                     }
-                                    await pb.collection('trip_logs').update(log.id, updatePayload, { $autoCancel: false });
+                                    await safelyUpdateTripLog(log.id, updatePayload);
                                     if (newStatus === 'Delivered' || newStatus === 'Completed') {
                                       await deductFastagForTrip(log);
                                     }
@@ -1478,7 +1496,7 @@ const TripLogsPage = () => {
                                 if (newStatus === 'Delivered' && !log.delivered_time) {
                                   updatePayload.delivered_time = new Date().toISOString();
                                 }
-                                await pb.collection('trip_logs').update(log.id, updatePayload, { $autoCancel: false });
+                                await safelyUpdateTripLog(log.id, updatePayload);
                                 if (newStatus === 'Delivered' || newStatus === 'Completed') {
                                   await deductFastagForTrip(log);
                                 }

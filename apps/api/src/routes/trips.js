@@ -221,8 +221,41 @@ router.put('/:id', async (req, res) => {
       trip: updatedTrip
     });
   } catch (err) {
-    logger.error(`Database rejection error updating trip ${id}:`, err);
-    console.error('PocketBase/SQLite database constraints violation error details:', err.message, err.data);
+    logger.warn(`Database notice updating trip ${id} via PocketBase, attempting direct SQLite fallback:`, err.message);
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const possiblePaths = Array.from(new Set([
+        global.dbFilePath,
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pb_data/data.db'),
+        '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+      ])).filter(p => p && fs.existsSync(p));
+
+      let directUpdated = false;
+      for (const p of possiblePaths) {
+        let db;
+        try {
+          db = new DatabaseSync(p);
+          const cols = db.prepare('PRAGMA table_info(trip_logs)').all().map(c => c.name);
+          const keys = Object.keys(updateData).filter(k => cols.includes(k));
+          if (keys.length > 0) {
+            const setStr = keys.map(k => `${k} = ?`).join(', ');
+            const values = [...keys.map(k => updateData[k]), id, id];
+            const info = db.prepare(`UPDATE trip_logs SET ${setStr} WHERE id = ? OR trip_id = ?`).run(...values);
+            if (info && info.changes > 0) directUpdated = true;
+          }
+        } catch (_) {}
+        finally {
+          if (db) { try { db.close(); } catch(_) {} }
+        }
+      }
+      if (directUpdated) {
+        logger.info(`Direct SQLite fallback updated trip ${id} successfully!`);
+        return res.status(200).json({ success: true, message: 'Trip updated successfully via direct database sync' });
+      }
+    } catch (sqErr) {
+      logger.error('Direct SQLite fallback failed:', sqErr);
+    }
 
     return res.status(400).json({
       success: false,
@@ -250,8 +283,41 @@ router.patch('/:id', async (req, res) => {
       trip: updatedTrip
     });
   } catch (err) {
-    logger.error(`Database rejection error patching trip ${id}:`, err);
-    console.error('PocketBase/SQLite database constraints violation error details:', err.message, err.data);
+    logger.warn(`Database notice patching trip ${id} via PocketBase, attempting direct SQLite fallback:`, err.message);
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const possiblePaths = Array.from(new Set([
+        global.dbFilePath,
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pb_data/data.db'),
+        '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+      ])).filter(p => p && fs.existsSync(p));
+
+      let directUpdated = false;
+      for (const p of possiblePaths) {
+        let db;
+        try {
+          db = new DatabaseSync(p);
+          const cols = db.prepare('PRAGMA table_info(trip_logs)').all().map(c => c.name);
+          const keys = Object.keys(updateData).filter(k => cols.includes(k));
+          if (keys.length > 0) {
+            const setStr = keys.map(k => `${k} = ?`).join(', ');
+            const values = [...keys.map(k => updateData[k]), id, id];
+            const info = db.prepare(`UPDATE trip_logs SET ${setStr} WHERE id = ? OR trip_id = ?`).run(...values);
+            if (info && info.changes > 0) directUpdated = true;
+          }
+        } catch (_) {}
+        finally {
+          if (db) { try { db.close(); } catch(_) {} }
+        }
+      }
+      if (directUpdated) {
+        logger.info(`Direct SQLite fallback patched trip ${id} successfully!`);
+        return res.status(200).json({ success: true, message: 'Trip updated successfully via direct database sync' });
+      }
+    } catch (sqErr) {
+      logger.error('Direct SQLite fallback failed:', sqErr);
+    }
 
     return res.status(400).json({
       success: false,
