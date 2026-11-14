@@ -5,9 +5,11 @@ console.log('--- sync_dist_fallbacks.js: Protecting and syncing modern unified p
 
 const primaryIndexHtml = path.resolve(__dirname, 'dist/index.html');
 const primaryBundle = path.resolve(__dirname, 'dist/assets/index-DLxf9dwO.js');
+const primaryIndexHashed = path.resolve(__dirname, 'dist/assets/index-B9k2Lm7P.js');
 const primaryProfilePage = path.resolve(__dirname, 'dist/assets/ProfilePage-f6cQzKX5.js');
 const primaryTripLogsPage = path.resolve(__dirname, 'dist/assets/TripLogsPage-B1zVaUO1.js');
 const primaryMaintenancePage = path.resolve(__dirname, 'dist/assets/MaintenancePage-FpBhnDc2.js');
+const primaryMaintenancePageHashed = path.resolve(__dirname, 'dist/assets/MaintenancePage-B9k2Lm7P.js');
 const primaryTruckManagerPage = path.resolve(__dirname, 'dist/assets/TruckManagerPage-B6Tv7tbO.js');
 const primaryTyreManagementPage = path.resolve(__dirname, 'dist/assets/TyreManagementPage-Boonzp_q.js');
 const primaryPodManagementPage = path.resolve(__dirname, 'dist/assets/PODManagementPage-RbmOVLGd.js');
@@ -41,45 +43,50 @@ if (podManagementPageBuffer) console.log(`Modern PODManagementPage-RbmOVLGd.js s
 if (lorryReceiptsPageBuffer) console.log(`Modern LorryReceiptsPage-DLxf9dwO.js size: ${lorryReceiptsPageBuffer.length} bytes`);
 if (clientPortalPageBuffer) console.log(`Modern ClientPortalPage-DuEOcerk.js size: ${clientPortalPageBuffer.length} bytes`);
 
-const targetDirs = [
+const targets = [
   path.resolve(__dirname, 'dist'),
   path.resolve(__dirname, 'dist/apps/web'),
   path.resolve(__dirname, 'apps/api/dist'),
   path.resolve(__dirname, 'apps/web/dist')
 ];
 
-for (const t of targetDirs) {
-  if (!fs.existsSync(t)) fs.mkdirSync(t, { recursive: true });
-  fs.writeFileSync(path.join(t, 'index.html'), htmlContent, 'utf8');
-
-  const assetsDir = path.join(t, 'assets');
-  if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
-  fs.writeFileSync(path.join(assetsDir, 'index-DLxf9dwO.js'), bundleBuffer);
-  if (profilePageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'ProfilePage-f6cQzKX5.js'), profilePageBuffer);
+for (const target of targets) {
+  if (fs.existsSync(target)) {
+    fs.mkdirSync(path.join(target, 'assets'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'index.html'), htmlContent, 'utf8');
+    fs.writeFileSync(path.join(target, 'assets', 'index-DLxf9dwO.js'), bundleBuffer);
+    if (fs.existsSync(primaryIndexHashed)) {
+      fs.copyFileSync(primaryIndexHashed, path.join(target, 'assets', 'index-B9k2Lm7P.js'));
+    }
+    if (profilePageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'ProfilePage-f6cQzKX5.js'), profilePageBuffer);
+    }
+    if (tripLogsPageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'TripLogsPage-B1zVaUO1.js'), tripLogsPageBuffer);
+    }
+    if (maintenancePageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'MaintenancePage-FpBhnDc2.js'), maintenancePageBuffer);
+    }
+    if (fs.existsSync(primaryMaintenancePageHashed)) {
+      fs.copyFileSync(primaryMaintenancePageHashed, path.join(target, 'assets', 'MaintenancePage-B9k2Lm7P.js'));
+    }
+    if (truckManagerPageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'TruckManagerPage-B6Tv7tbO.js'), truckManagerPageBuffer);
+    }
+    if (tyreManagementPageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'TyreManagementPage-Boonzp_q.js'), tyreManagementPageBuffer);
+    }
+    if (podManagementPageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'PODManagementPage-RbmOVLGd.js'), podManagementPageBuffer);
+    }
+    if (lorryReceiptsPageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'LorryReceiptsPage-DLxf9dwO.js'), lorryReceiptsPageBuffer);
+    }
+    if (clientPortalPageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'ClientPortalPage-DuEOcerk.js'), clientPortalPageBuffer);
+    }
+    console.log(`✓ Synced modern index.html, index-DLxf9dwO.js, index-B9k2Lm7P.js, MaintenancePage-B9k2Lm7P.js, ProfilePage, TripLogsPage, MaintenancePage, TruckManagerPage, TyreManagementPage, PODManagementPage, and ClientPortalPage to: ${target}`);
   }
-  if (tripLogsPageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'TripLogsPage-B1zVaUO1.js'), tripLogsPageBuffer);
-  }
-  if (maintenancePageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'MaintenancePage-FpBhnDc2.js'), maintenancePageBuffer);
-  }
-  if (truckManagerPageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'TruckManagerPage-B6Tv7tbO.js'), truckManagerPageBuffer);
-  }
-  if (tyreManagementPageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'TyreManagementPage-Boonzp_q.js'), tyreManagementPageBuffer);
-  }
-  if (podManagementPageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'PODManagementPage-RbmOVLGd.js'), podManagementPageBuffer);
-  }
-  if (lorryReceiptsPageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'LorryReceiptsPage-DLxf9dwO.js'), lorryReceiptsPageBuffer);
-  }
-  if (clientPortalPageBuffer) {
-    fs.writeFileSync(path.join(assetsDir, 'ClientPortalPage-DuEOcerk.js'), clientPortalPageBuffer);
-  }
-  console.log(`✓ Synced modern index.html, index-DLxf9dwO.js, ProfilePage, TripLogsPage, MaintenancePage, TruckManagerPage, TyreManagementPage, PODManagementPage, and ClientPortalPage to: ${t}`);
 }
 
 console.log('✅ Modern website assets successfully protected and synced across all targets.');
