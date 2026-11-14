@@ -434,21 +434,21 @@ export default function PublicShipmentTrackingPage() {
       </Helmet>
 
       {/* Top Header & Search Bar */}
-      <div className="bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 border-b border-slate-800/80 pt-6 sm:pt-8 pb-8 sm:pb-10 px-3 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="space-y-1 w-full md:w-auto">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[11px] font-mono font-bold px-2.5 py-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5 inline-block" />
+      <div className="bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 border-b border-slate-800/80 pt-3 sm:pt-6 pb-2.5 sm:pb-6 px-3 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-2.5 sm:space-y-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5 sm:gap-4">
+            <div className="space-y-0.5 sm:space-y-1 w-full md:w-auto">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5">
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse mr-1 inline-block" />
                   {urlKey ? 'AUTHORIZED SECURE CONSIGNMENT VIEW' : 'REAL-TIME FLEET TELEMATICS'}
                 </Badge>
-                <span className="text-[11px] sm:text-xs text-slate-400">Jai Bhavani Cargo Live Portal</span>
+                <span className="text-[10px] sm:text-xs text-slate-400">Jai Bhavani Cargo Live Portal</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2.5 font-heading">
-                <Truck className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400 shrink-0" /> Live Shipment Tracking
+              <h1 className="text-lg sm:text-3xl font-black tracking-tight text-white flex items-center gap-2 font-heading">
+                <Truck className="w-5 h-5 sm:w-7 sm:h-7 text-emerald-400 shrink-0" /> Live Shipment Tracking
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+              <p className="text-[11px] sm:text-sm text-slate-400 max-w-2xl line-clamp-1 sm:line-clamp-none">
                 {urlKey ? 'Secure verified consignment tracking with milestone progress and proof of delivery.' : 'Milestone timeline • Fleet pilot telematics • Direct vehicle GPS & verified POD'}
               </p>
             </div>
@@ -459,14 +459,14 @@ export default function PublicShipmentTrackingPage() {
                 onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
                 className="w-full md:w-auto flex-1 max-w-lg"
               >
-                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                <div className="flex flex-row gap-1.5 sm:gap-2 w-full items-center">
                   <div className="relative flex items-center flex-1">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                    <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-3 pointer-events-none" />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={isStaff ? 'Trip ID, LR#, Truck...' : 'Enter Trip ID (e.g. TRIP-364)...'}
-                      className="pl-10 pr-3 h-11 rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner w-full"
+                      className="pl-8 sm:pl-10 pr-2.5 sm:pr-3 h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner w-full"
                     />
                   </div>
 
@@ -475,15 +475,15 @@ export default function PublicShipmentTrackingPage() {
                     <Input
                       value={lrInput}
                       onChange={(e) => setLrInput(e.target.value)}
-                      placeholder="LR / Consignment #..."
-                      className="h-11 rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner sm:w-44"
+                      placeholder="LR #..."
+                      className="h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner w-28 sm:w-44 shrink-0"
                     />
                   )}
 
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 shadow shrink-0"
+                    className="h-9 sm:h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 sm:px-4 shadow shrink-0"
                   >
                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Track'}
                   </Button>
@@ -494,8 +494,8 @@ export default function PublicShipmentTrackingPage() {
 
           {/* Active Shipments Pill Strip: ONLY shown to staff or scoped to client company (never reveals other clients) */}
           {isAuthed && recentTrips.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none -mx-1 px-1">
-              <span className="text-slate-500 whitespace-nowrap font-semibold text-[11px]">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 text-xs scrollbar-none -mx-1 px-1">
+              <span className="text-slate-500 whitespace-nowrap font-semibold text-[10px] sm:text-[11px]">
                 {isClient ? 'Your Active Shipments:' : 'Active Shipments:'}
               </span>
               {recentTrips.map(item => {
@@ -510,7 +510,7 @@ export default function PublicShipmentTrackingPage() {
                       setLrInput(item.lr_number || '');
                       handleSearch(targetRef, item.lr_number || ''); 
                     }}
-                    className={`px-3 py-1.5 rounded-xl border whitespace-nowrap font-mono text-xs transition-all flex items-center gap-1.5 ${
+                    className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border whitespace-nowrap font-mono text-[11px] sm:text-xs transition-all flex items-center gap-1.5 ${
                       isSelected 
                         ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold shadow-sm' 
                         : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
@@ -529,7 +529,7 @@ export default function PublicShipmentTrackingPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-2 sm:pt-6 space-y-3 sm:space-y-6">
         {/* Error Notification */}
         {errorMsg && (
           <motion.div 
@@ -602,13 +602,13 @@ export default function PublicShipmentTrackingPage() {
         {/* Live Trip Loaded Details */}
         {trip && (
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
+            transition={{ duration: 0.2 }}
+            className="space-y-3 sm:space-y-6"
           >
             {/* --- CARD 1: PRIMARY SHIPMENT OVERVIEW --- */}
-            <Card className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4 sm:p-6 shadow-xl relative overflow-hidden backdrop-blur space-y-5">
+            <Card className="rounded-2xl sm:rounded-3xl border border-slate-800 bg-slate-900/90 p-3.5 sm:p-6 shadow-xl relative overflow-hidden backdrop-blur space-y-3.5 sm:space-y-5">
               <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
               
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 border-b border-slate-800/80 pb-5">

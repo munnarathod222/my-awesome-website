@@ -1137,9 +1137,9 @@ return e.jsxs(e.Fragment,{children:[
         })
       }),
       e.jsx("div", {
-        className: "bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 border-b border-slate-800/80 pt-6 sm:pt-8 pb-8 sm:pb-10 px-3 sm:px-6 lg:px-8",
+        className: "bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 border-b border-slate-800/80 pt-3 sm:pt-6 pb-2 sm:pb-6 px-3 sm:px-6 lg:px-8",
         children: e.jsxs("div", {
-          className: "max-w-7xl mx-auto space-y-4 sm:space-y-6",
+          className: "max-w-7xl mx-auto space-y-2.5 sm:space-y-4",
           children: [
             e.jsxs("div", {
               className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4",
@@ -1166,14 +1166,14 @@ return e.jsxs(e.Fragment,{children:[
                       ]
                     }),
                     e.jsxs("h1", {
-                      className: "text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2.5 font-heading",
+                      className: "text-lg sm:text-3xl font-black tracking-tight text-white flex items-center gap-2 font-heading",
                       children: [
                         e.jsx(Ve, { className: "w-6 h-6 sm:w-7 sm:h-7 text-emerald-400 shrink-0" }),
                         " Live Shipment Tracking"
                       ]
                     }),
                     e.jsx("p", {
-                      className: "text-xs sm:text-sm text-slate-400 max-w-2xl",
+                      className: "text-[11px] sm:text-sm text-slate-400 max-w-2xl line-clamp-1 sm:line-clamp-none",
                       children: urlKey ? "Secure verified consignment tracking with milestone progress and proof of delivery." : "Milestone timeline • Fleet pilot telematics • Direct vehicle GPS & verified POD"
                     })
                   ]
@@ -1186,7 +1186,7 @@ return e.jsxs(e.Fragment,{children:[
                   },
                   className: "w-full md:w-auto flex-1 max-w-lg",
                   children: e.jsxs("div", {
-                    className: "flex flex-col sm:flex-row gap-2 w-full",
+                    className: "flex flex-row gap-1.5 sm:gap-2 w-full items-center",
                     children: [
                       e.jsxs("div", {
                         className: "relative flex items-center flex-1",
@@ -1198,7 +1198,7 @@ return e.jsxs(e.Fragment,{children:[
                             value: n,
                             onChange: T => i(T.target.value),
                             placeholder: isStaff ? "Trip ID, LR#, Truck..." : "Enter Trip ID (e.g. TRIP-364)...",
-                            className: "pl-10 pr-3 h-11 rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner w-full"
+                            className: "pl-8 sm:pl-10 pr-2.5 sm:pr-3 h-9 sm:h-11 rounded-xl sm:rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner w-full"
                           })
                         ]
                       }),
@@ -1212,7 +1212,7 @@ return e.jsxs(e.Fragment,{children:[
                       e.jsx(q, {
                         type: "submit",
                         disabled: o,
-                        className: "h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 shadow shrink-0",
+                        className: "h-9 sm:h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 sm:px-4 shadow shrink-0",
                         children: o ? e.jsx(kt, { className: "w-3.5 h-3.5 animate-spin" }) : "Track"
                       })
                     ]
@@ -1261,7 +1261,7 @@ return e.jsxs(e.Fragment,{children:[
         })
       }),
       e.jsxs("div", {
-        className: "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6",
+        className: "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-2 sm:pt-6 space-y-3 sm:space-y-6",
         children: [
           S && e.jsxs(Et.div, {
             initial: { opacity: 0, y: -10 },
@@ -1370,7 +1370,7 @@ return e.jsxs(e.Fragment,{children:[
             children: [
               // --- CARD 1: PRIMARY SHIPMENT OVERVIEW ---
               e.jsxs(Ne, {
-                className: "rounded-3xl border border-slate-800 bg-slate-900/90 p-4 sm:p-6 shadow-xl relative overflow-hidden backdrop-blur space-y-5",
+                className: "rounded-2xl sm:rounded-3xl border border-slate-800 bg-slate-900/90 p-3 sm:p-6 shadow-xl relative overflow-hidden backdrop-blur space-y-3 sm:space-y-5",
                 children: [
                   e.jsx("div", {
                     className: "absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"
