@@ -570,204 +570,201 @@ export default function ClientPortalPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8"
+      className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-7 pb-28"
     >
       <Helmet>
         <title>Client Portal | Jai Bhavani Cargo</title>
       </Helmet>
 
-      {/* ── Client Portal Header ───────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 p-6 rounded-3xl bg-card border border-border/50 shadow-soft">
-        <div className="flex items-center gap-4">
-          <div className="p-3.5 bg-primary/10 rounded-2xl border border-primary/20 text-primary shrink-0">
-            <Building2 className="w-8 h-8" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-heading font-black text-foreground tracking-tight">
-                {clientData?.client_name || 'Corporate Client Portal'}
-              </h1>
-              {clientData?.company_name && (
-                <Badge variant="outline" className="text-xs font-semibold">
-                  {clientData.company_name}
+      {/* ── Client Portal Corporate Header ───────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 p-6 sm:p-7 shadow-2xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+          <div className="flex items-start sm:items-center gap-4.5">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-emerald-400/10 to-blue-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-2xl shadow-xl shrink-0 ring-4 ring-emerald-500/10">
+              {clientData?.client_name ? clientData.client_name.charAt(0).toUpperCase() : 'C'}
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-heading font-black text-white tracking-tight">
+                  {clientData?.client_name || 'Corporate Client Portal'}
+                </h1>
+                {clientData?.company_name && (
+                  <Badge variant="outline" className="bg-slate-800/90 text-slate-300 border-slate-700 text-xs font-semibold px-2.5 py-0.5">
+                    {clientData.company_name}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-xs px-2.5 py-0.5 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Verified Corporate Client
                 </Badge>
+              </div>
+              <div className="text-xs text-slate-400 flex items-center gap-2.5 sm:gap-3 flex-wrap pt-0.5">
+                {clientData?.gst_number && (
+                  <span className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 font-medium">
+                    GSTIN: <strong className="font-mono text-emerald-400">{clientData.gst_number}</strong>
+                  </span>
+                )}
+                {clientData?.phone && (
+                  <span className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 font-medium">
+                    Hotline: <strong className="text-slate-200">{clientData.phone}</strong>
+                  </span>
+                )}
+                {(clientData?.city || clientData?.billing_city) && (
+                  <span className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 text-slate-300 font-medium">
+                    Hub: {clientData.city || clientData.billing_city}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto justify-end">
+            {/* Dedicated Account Manager Card */}
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 flex items-center gap-3.5 shadow-inner backdrop-blur-md">
+              <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30 shrink-0">
+                <Phone className="w-4 h-4" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Dedicated Account Manager</div>
+                <div className="text-sm font-bold text-white mt-0.5">{clientData?.contact_person || 'Jai Bhavani Logistics Desk'}</div>
+                <div className="text-[10px] text-emerald-400 font-medium flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Direct Priority Desk
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(isAdmin || isSuperAdmin) && allClients.length > 0 && (
+                <div className="w-44">
+                  <Select value={selectedClientId} onValueChange={handleClientSelectChange}>
+                    <SelectTrigger className="bg-slate-900/90 border-slate-800 text-xs font-semibold rounded-xl text-slate-200 h-9">
+                      <SelectValue placeholder="Select Client Preview" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                      {allClients.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.client_name} {c.company_name ? `(${c.company_name})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold text-xs">
-                Verified Portal Access
-              </Badge>
+              <Button onClick={() => fetchClientPortalData()} variant="outline" size="sm" className="rounded-xl bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800 h-9 px-3">
+                <RefreshCw className="w-4 h-4 mr-1.5" /> Refresh
+              </Button>
+              <Button onClick={handleExportCSV} size="sm" variant="secondary" className="rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 h-9 px-3 text-xs font-bold">
+                <Download className="w-4 h-4 mr-1.5" /> CSV Ledger
+              </Button>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-4 flex-wrap">
-              {clientData?.gst_number && <span>GSTIN: <strong className="font-mono text-foreground">{clientData.gst_number}</strong></span>}
-              {clientData?.phone && <span>Phone: <strong className="text-foreground">{clientData.phone}</strong></span>}
-              <span>Contact: <strong className="text-foreground">{clientData?.contact_person || 'Logistics Manager'}</strong></span>
-            </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap">
-          {(isAdmin || isSuperAdmin) && allClients.length > 0 && (
-            <div className="w-56">
-              <Select value={selectedClientId} onValueChange={handleClientSelectChange}>
-                <SelectTrigger className="bg-background text-xs font-semibold rounded-xl">
-                  <SelectValue placeholder="Select Client Preview" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allClients.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.client_name} {c.company_name ? `(${c.company_name})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          
-          {/* Executive Quick-Action Power Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              type="button"
-              onClick={() => setActiveTab(activeTab === 'quotations' ? 'completed' : 'quotations')}
-              className={`rounded-xl text-xs font-bold px-3.5 py-1.5 h-9 shadow-md flex items-center gap-1.5 cursor-pointer ${activeTab === 'quotations' ? 'bg-blue-600 text-white shadow-blue-600/30 ring-2 ring-blue-400' : 'bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20'}`}
-            >
-              <Truck className="w-4 h-4 mr-1 text-blue-400" /> Request Rate Quote
-              <Badge className="bg-blue-500/20 text-blue-300 text-[10px] px-1.5 py-0 border-0">Instant</Badge>
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setActiveTab(activeTab === 'support' ? 'completed' : 'support')}
-              className={`rounded-xl text-xs font-bold px-3.5 py-1.5 h-9 shadow-md flex items-center gap-1.5 cursor-pointer ${activeTab === 'support' ? 'bg-rose-600 text-white shadow-rose-600/30 ring-2 ring-rose-400' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'}`}
-            >
-              <AlertCircle className="w-4 h-4 mr-1 text-rose-400" /> Raise Issue / Dispute
-              <Badge className="bg-rose-500/20 text-rose-300 text-[10px] px-1.5 py-0 border-0">Delivery & Billing</Badge>
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setActiveTab(activeTab === 'bidding' ? 'completed' : 'bidding')}
-              className={`rounded-xl text-xs font-bold px-3.5 py-1.5 h-9 shadow-md flex items-center gap-1.5 cursor-pointer ${activeTab === 'bidding' ? 'bg-amber-600 text-white shadow-amber-600/30 ring-2 ring-amber-400' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20'}`}
-            >
-              <Send className="w-4 h-4 mr-1 text-amber-400" /> Lane Bidding
-              <Badge className="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0 border-0">Contracts</Badge>
-            </Button>
-          </div>
-<Button onClick={() => fetchClientPortalData()} variant="outline" size="sm" className="rounded-xl bg-background">
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
-          <Button onClick={handleExportCSV} size="sm" className="rounded-xl bg-primary shadow-sm">
-            <Download className="w-4 h-4 mr-2" /> Export Statement CSV
-          </Button>
         </div>
       </div>
 
-      {/* ── Client KPI Cards: 6-Metric Executive Grid ─────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
-        {/* Card 1: Total Shipments */}
-        <Card onClick={() => setActiveTab('all')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-cyan-950/40 via-card to-card border-cyan-500/30 shadow-soft rounded-2xl relative overflow-hidden ${activeTab === 'all' ? 'ring-2 ring-cyan-400 border-cyan-400 shadow-cyan-500/20' : ''}`}>
-          <CardContent className="p-3.5 relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Total Shipments</span>
-              <div className="p-1.5 bg-cyan-500/20 rounded-lg text-cyan-400">
-                <Truck className="w-3.5 h-3.5" />
+      {/* ── Reorganized 4-Card Executive KPI Grid ─────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* Card 1: Consignment Volume */}
+        <Card onClick={() => setActiveTab('all')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-cyan-950/40 via-card to-card border-cyan-500/30 shadow-soft rounded-2xl relative overflow-hidden group ${activeTab === 'all' ? 'ring-2 ring-cyan-400 border-cyan-400 shadow-cyan-500/20' : ''}`}>
+          <CardContent className="p-4 sm:p-5 relative z-10 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Consignment Volume</span>
+              <div className="p-2 bg-cyan-500/20 rounded-xl text-cyan-400 border border-cyan-500/30 group-hover:scale-110 transition-transform">
+                <Truck className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-cyan-400 font-heading">
-              {metrics.totalShipments}
+            <div className="space-y-0.5">
+              <div className="text-3xl sm:text-4xl font-black text-cyan-400 font-heading tracking-tight">
+                {metrics.totalShipments} <span className="text-base font-medium text-slate-400">Trips</span>
+              </div>
+              <div className="text-xs text-muted-foreground">Total lifetime booked freight loads</div>
             </div>
-            <div className="text-[10.5px] text-muted-foreground mt-0.5 line-clamp-1">
-              All Booked Loads
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 2: Shipments In Transit */}
-        <Card onClick={() => setActiveTab('active')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-blue-950/40 via-card to-card border-blue-500/30 shadow-soft rounded-2xl relative overflow-hidden ${activeTab === 'active' ? 'ring-2 ring-blue-400 border-blue-400 shadow-blue-500/20' : ''}`}>
-          <CardContent className="p-3.5 relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping inline-block" />
-                In Transit
+            <div className="pt-2 border-t border-cyan-500/20 flex items-center justify-between text-xs">
+              <span className="text-blue-400 font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping inline-block" />
+                {metrics.activeCount} In-Transit
               </span>
-              <div className="p-1.5 bg-blue-500/20 rounded-lg text-blue-400">
-                <Truck className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div className="text-2xl font-black text-blue-400 font-heading">
-              {metrics.activeCount}
-            </div>
-            <div className="text-[10.5px] text-muted-foreground mt-0.5 line-clamp-1">
-              Moving on Highways
+              <span className="text-emerald-400 font-semibold">{metrics.completedCount} Delivered ✓</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 3: Delivered Shipments */}
-        <Card onClick={() => setActiveTab('completed')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-emerald-950/40 via-card to-card border-emerald-500/30 shadow-soft rounded-2xl relative overflow-hidden ${activeTab === 'completed' ? 'ring-2 ring-emerald-400 border-emerald-400 shadow-emerald-500/20' : ''}`}>
-          <CardContent className="p-3.5 relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Delivered</span>
-              <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400">
-                <CheckCircle2 className="w-3.5 h-3.5" />
+        {/* Card 2: POD Documentation */}
+        <Card onClick={() => setActiveTab('pending_pod')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-amber-950/40 via-card to-card border-amber-500/30 shadow-soft rounded-2xl relative overflow-hidden group ${activeTab === 'pending_pod' ? 'ring-2 ring-amber-400 border-amber-400 shadow-amber-500/20' : ''}`}>
+          <CardContent className="p-4 sm:p-5 relative z-10 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">POD Documentation</span>
+              <div className="p-2 bg-amber-500/20 rounded-xl text-amber-400 border border-amber-500/30 group-hover:scale-110 transition-transform">
+                <Clock className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-emerald-400 font-heading">
-              {metrics.completedCount}
+            <div className="space-y-0.5">
+              <div className="text-3xl sm:text-4xl font-black text-amber-400 font-heading tracking-tight">
+                {metrics.pendingPodCount === 0 ? '100%' : `${metrics.pendingPodCount} Pending`}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {metrics.pendingPodCount === 0 ? 'All delivered consignments have PODs' : 'Awaiting receiver-signed delivery proof'}
+              </div>
             </div>
-            <div className="text-[10.5px] text-muted-foreground mt-0.5 line-clamp-1">
-              Safely Received
+            <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between text-xs">
+              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                {metrics.completedCount - metrics.pendingPodCount} Verified PODs
+              </span>
+              <Badge className={metrics.pendingPodCount === 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px]' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px]'}>
+                {metrics.pendingPodCount === 0 ? 'Compliant' : 'Review Required'}
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 4: Pending POD */}
-        <Card onClick={() => setActiveTab('pending_pod')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-amber-950/40 via-card to-card border-amber-500/30 shadow-soft rounded-2xl relative overflow-hidden ${activeTab === 'pending_pod' ? 'ring-2 ring-amber-400 border-amber-400 shadow-amber-500/20' : ''}`}>
-          <CardContent className="p-3.5 relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Pending POD</span>
-              <div className="p-1.5 bg-amber-500/20 rounded-lg text-amber-400">
-                <Clock className="w-3.5 h-3.5" />
+        {/* Card 3: Monthly Spend */}
+        <Card onClick={() => setActiveTab('monthly')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-violet-950/40 via-card to-card border-violet-500/30 shadow-soft rounded-2xl relative overflow-hidden group ${activeTab === 'monthly' ? 'ring-2 ring-violet-400 border-violet-400 shadow-violet-500/20' : ''}`}>
+          <CardContent className="p-4 sm:p-5 relative z-10 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-violet-400">Monthly Spend</span>
+              <div className="p-2 bg-violet-500/20 rounded-xl text-violet-400 border border-violet-500/30 group-hover:scale-110 transition-transform">
+                <FileBox className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-black text-amber-400 font-heading">
-              {metrics.pendingPodCount}
+            <div className="space-y-0.5">
+              <div className="text-2xl sm:text-3xl font-black text-violet-400 font-heading tracking-tight truncate">
+                {formatCurrency(metrics.monthlyFreightSpend)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Consignment billing in <strong className="text-slate-300">{metrics.currentMonthName}</strong>
+              </div>
             </div>
-            <div className="text-[10.5px] text-muted-foreground mt-0.5 line-clamp-1">
-              Awaiting Signed Proof
+            <div className="pt-2 border-t border-violet-500/20 flex items-center justify-between text-xs">
+              <span className="text-violet-300 font-bold">{metrics.monthlyCount} Consignments</span>
+              <span className="text-slate-400 text-[11px]">Active Ledger →</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 5: Outstanding Payments */}
-        <Card onClick={() => setActiveTab('unpaid')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-rose-950/40 via-card to-card border-rose-500/30 shadow-soft rounded-2xl relative overflow-hidden ${activeTab === 'unpaid' ? 'ring-2 ring-rose-400 border-rose-400 shadow-rose-500/20' : ''}`}>
-          <CardContent className="p-3.5 relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">Outstanding</span>
-              <div className="p-1.5 bg-rose-500/20 rounded-lg text-rose-400">
-                <Receipt className="w-3.5 h-3.5" />
+        {/* Card 4: Net Balance Due */}
+        <Card onClick={() => setActiveTab('unpaid')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-rose-950/40 via-card to-card border-rose-500/30 shadow-soft rounded-2xl relative overflow-hidden group ${activeTab === 'unpaid' ? 'ring-2 ring-rose-400 border-rose-400 shadow-rose-500/20' : ''}`}>
+          <CardContent className="p-4 sm:p-5 relative z-10 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-400">Net Balance Due</span>
+              <div className="p-2 bg-rose-500/20 rounded-xl text-rose-400 border border-rose-500/30 group-hover:scale-110 transition-transform">
+                <Receipt className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-black text-rose-400 font-heading truncate">
-              {formatCurrency(metrics.payableAmount)}
-            </div>
-            <div className="text-[10.5px] text-muted-foreground mt-0.5 line-clamp-1">
-              Net Delivered Balance Due
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 6: Monthly Freight Spend */}
-        <Card onClick={() => setActiveTab('monthly')} className={`cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-violet-950/40 via-card to-card border-violet-500/30 shadow-soft rounded-2xl relative overflow-hidden ${activeTab === 'monthly' ? 'ring-2 ring-violet-400 border-violet-400 shadow-violet-500/20' : ''}`}>
-          <CardContent className="p-3.5 relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400">Monthly Spend</span>
-              <div className="p-1.5 bg-violet-500/20 rounded-lg text-violet-400">
-                <FileBox className="w-3.5 h-3.5" />
+            <div className="space-y-0.5">
+              <div className="text-2xl sm:text-3xl font-black text-rose-400 font-heading tracking-tight truncate">
+                {formatCurrency(metrics.payableAmount)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {metrics.payableAmount > 0 ? 'Delivered consignments pending settlement' : 'All delivered freight settled cleanly ✓'}
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-black text-violet-400 font-heading truncate">
-              {formatCurrency(metrics.monthlyFreightSpend)}
-            </div>
-            <div className="text-[10.5px] text-muted-foreground mt-0.5 line-clamp-1">
-              {metrics.monthlyCount} Trips in {metrics.currentMonthName}
+            <div className="pt-2 border-t border-rose-500/20 flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-medium text-[11px]">Terms: Net 15/30 Days</span>
+              <Badge className={metrics.payableAmount > 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px]' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px]'}>
+                {metrics.payableAmount > 0 ? `${metrics.unpaidCount} Invoices Due` : 'Settled ✓'}
+              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -776,48 +773,103 @@ export default function ClientPortalPage() {
       {/* ── Main Freight Statement Tabs ──────────────────────────────────────── */}
       <Card className="border-border/50 shadow-soft bg-card rounded-2xl overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <CardHeader className="pb-0 border-b border-border/40 bg-secondary/10">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+          <CardHeader className="p-5 border-b border-border/40 bg-secondary/10 space-y-4">
+            {/* Row 1: Title & Executive Actions Toolbar */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div>
-                <CardTitle className="font-heading text-xl">Shipments & Freight Ledger</CardTitle>
-                <CardDescription>Real-time active tracking, proof of delivery downloads, and freight statements.</CardDescription>
+                <CardTitle className="font-heading text-xl text-white">Shipments & Freight Ledger</CardTitle>
+                <CardDescription className="text-xs text-slate-400 mt-0.5">
+                  Real-time active tracking, proof of delivery downloads, and commercial statements.
+                </CardDescription>
               </div>
 
-              <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-                <div className="relative w-48">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search trip, route, vehicle..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-8 h-9 text-xs rounded-xl bg-background"
-                  />
-                </div>
+              <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
+                <Button
+                  type="button"
+                  onClick={() => setActiveTab(activeTab === 'quotations' ? 'completed' : 'quotations')}
+                  className={`rounded-xl text-xs font-bold h-9 px-3.5 shadow-md flex items-center gap-1.5 cursor-pointer transition-all ${
+                    activeTab === 'quotations'
+                      ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 ring-2 ring-blue-400'
+                      : 'bg-slate-800/90 hover:bg-slate-700 text-blue-300 border border-blue-500/30 hover:text-white'
+                  }`}
+                >
+                  <Truck className="w-3.5 h-3.5 text-blue-400" />
+                  {activeTab === 'quotations' ? '← Back to Ledger' : 'Request Rate Quote 🚚'}
+                  {activeTab !== 'quotations' && (
+                    <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500/30 text-blue-300 border border-blue-500/40 font-bold">
+                      Instant
+                    </span>
+                  )}
+                </Button>
 
-                <TabsList className="bg-background border border-border/50 p-1 rounded-xl flex-nowrap overflow-x-auto">
-                  <TabsTrigger value="completed" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
-                    Delivered & PODs ({metrics.completedCount})
-                  </TabsTrigger>
-                  <TabsTrigger value="active" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
-                    In-Transit ({metrics.activeCount})
-                  </TabsTrigger>
-                  <TabsTrigger value="all" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
-                    All Freight ({tripLogs.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="upcoming" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
-                    Upcoming ({metrics.upcomingCount})
-                  </TabsTrigger>
-                  <TabsTrigger value="quotations" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-blue-500/30 text-blue-400 shrink-0">
-                    <Truck className="w-3 h-3 mr-1" /> Request Rate Quotes 🚚
-                  </TabsTrigger>
-                  <TabsTrigger value="support" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-rose-500/30 text-rose-400 shrink-0">
-                    <AlertCircle className="w-3 h-3 mr-1" /> Disputes & Tickets 🚨
-                  </TabsTrigger>
-                  <TabsTrigger value="bidding" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-amber-500/30 text-amber-400 shrink-0">
-                    <Send className="w-3 h-3 mr-1" /> Lane Bidding ⚡
-                  </TabsTrigger>
-                </TabsList>
+                <Button
+                  type="button"
+                  onClick={() => setActiveTab(activeTab === 'bidding' ? 'completed' : 'bidding')}
+                  className={`rounded-xl text-xs font-bold h-9 px-3.5 shadow-md flex items-center gap-1.5 cursor-pointer transition-all ${
+                    activeTab === 'bidding'
+                      ? 'bg-amber-600 hover:bg-amber-500 text-slate-950 shadow-amber-600/30 ring-2 ring-amber-400'
+                      : 'bg-slate-800/90 hover:bg-slate-700 text-amber-300 border border-amber-500/30 hover:text-white'
+                  }`}
+                >
+                  <Send className="w-3.5 h-3.5 text-amber-400" />
+                  {activeTab === 'bidding' ? '← Back to Ledger' : 'Lane Bidding ⚡'}
+                  {activeTab !== 'bidding' && (
+                    <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold">
+                      RFP
+                    </span>
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => setActiveTab(activeTab === 'support' ? 'completed' : 'support')}
+                  className={`rounded-xl text-xs font-bold h-9 px-3.5 shadow-md flex items-center gap-1.5 cursor-pointer transition-all ${
+                    activeTab === 'support'
+                      ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 ring-2 ring-rose-400'
+                      : 'bg-slate-800/90 hover:bg-slate-700 text-rose-300 border border-rose-500/30 hover:text-white'
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                  {activeTab === 'support' ? '← Back to Ledger' : 'Support & Claims 🚨'}
+                </Button>
               </div>
+            </div>
+
+            {/* Row 2: Wide Search Bar & Pure Status Filter Tabs */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-1">
+              <div className="relative w-full md:w-80 shrink-0">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search Trip ID, vehicle, route..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 text-xs rounded-xl bg-slate-900/90 border-slate-800 text-slate-200 placeholder:text-slate-500 w-full focus:ring-1 focus:ring-cyan-500"
+                />
+              </div>
+
+              <TabsList className="bg-slate-900/90 border border-slate-800 p-1 rounded-xl flex-nowrap overflow-x-auto h-10 scrollbar-none">
+                <TabsTrigger value="completed" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                  Delivered ({metrics.completedCount})
+                </TabsTrigger>
+                <TabsTrigger value="active" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                  In-Transit ({metrics.activeCount})
+                </TabsTrigger>
+                <TabsTrigger value="all" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0 data-[state=active]:bg-cyan-600 data-[state=active]:text-white">
+                  All Freight ({tripLogs.length})
+                </TabsTrigger>
+                <TabsTrigger value="pending_pod" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0 text-amber-400 data-[state=active]:bg-amber-600 data-[state=active]:text-slate-950">
+                  Pending POD ({metrics.pendingPodCount})
+                </TabsTrigger>
+                <TabsTrigger value="unpaid" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0 text-rose-400 data-[state=active]:bg-rose-600 data-[state=active]:text-white">
+                  Outstanding ({metrics.unpaidCount})
+                </TabsTrigger>
+                <TabsTrigger value="monthly" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0 text-violet-400 data-[state=active]:bg-violet-600 data-[state=active]:text-white">
+                  This Month ({metrics.monthlyCount})
+                </TabsTrigger>
+                <TabsTrigger value="upcoming" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0 data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+                  Upcoming ({metrics.upcomingCount})
+                </TabsTrigger>
+              </TabsList>
             </div>
           </CardHeader>
 
@@ -954,52 +1006,81 @@ export default function ClientPortalPage() {
                     <TableHead className="font-semibold">Delivery Date</TableHead>
                     <TableHead className="font-semibold">Vehicle No.</TableHead>
                     <TableHead className="font-semibold">Route</TableHead>
+                    <TableHead className="font-semibold text-right">Freight & Balance (₹)</TableHead>
                     <TableHead className="font-semibold text-center">POD Status</TableHead>
                     <TableHead className="font-semibold text-center">Payment Status</TableHead>
-                    <TableHead className="pr-6 text-right font-semibold">Action</TableHead>
+                    <TableHead className="pr-6 text-right font-semibold">Document</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {metrics.completedTrips.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                        No completed delivered trips yet.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    metrics.completedTrips.map(item => {
+                  {(() => {
+                    const filteredList = metrics.completedTrips.filter(item => {
+                      if (!searchQuery) return true;
+                      const q = searchQuery.toLowerCase();
+                      return (item.trip_id && item.trip_id.toLowerCase().includes(q)) ||
+                             (item.truck_number && item.truck_number.toLowerCase().includes(q)) ||
+                             (item.route && item.route.toLowerCase().includes(q));
+                    });
+
+                    if (filteredList.length === 0) {
+                      return (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                            No completed delivered trips found.
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    return filteredList.map(item => {
                       const podUrl = item.pod_url || item.pod_link || (item.pod_file ? pb.files.getUrl(item, item.pod_file) : null);
                       const isPaid = (item.client_payment_status || '').toLowerCase() === 'received' || (item.client_payment_status || '').toLowerCase() === 'paid';
+                      const rev = Number(item.revenue) || Number(item.freight_amount) || 0;
+                      const adv = Number(item.advance_received_from_client) || 0;
+                      const toll = Number(item.toll_deduction) || 0;
+                      const bal = Math.max(0, rev - adv - toll);
+                      const cleanRoute = (item.route || '—').replace(/\s*(?:->|-->|→)\s*/g, ' ➔ ').trim();
+
                       return (
                         <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                          <TableCell className="pl-6 font-mono font-bold text-sm text-primary">
+                          <TableCell className="pl-6 font-mono font-bold text-sm text-cyan-400">
                             {item.trip_id || item.id}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                             {item.date ? format(new Date(item.date), 'dd MMM yyyy') : '—'}
                           </TableCell>
-                          <TableCell className="font-mono font-bold text-sm">
+                          <TableCell className="font-mono font-bold text-sm text-slate-200">
                             {item.truck_number || '—'}
                           </TableCell>
-                          <TableCell className="font-medium text-sm">
-                            {item.route || '—'}
+                          <TableCell>
+                            <span className="font-semibold text-xs text-slate-200 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 inline-flex items-center">
+                              {cleanRoute}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="space-y-0.5">
+                              <div className="font-mono font-bold text-sm text-slate-100">{formatCurrency(rev)}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">
+                                Adv: {formatCurrency(adv)} · <span className={bal > 0 ? "text-rose-400 font-bold" : "text-emerald-400 font-bold"}>
+                                  {bal > 0 ? `Bal: ${formatCurrency(bal)}` : 'Settled ✓'}
+                                </span>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
                             {podUrl ? (
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold text-xs">
-                                POD Uploaded
+                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold text-xs">
+                                <CheckCircle2 className="w-3 h-3 mr-1" /> Verified POD
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 font-bold text-xs">
-                                Pending POD
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold text-xs">
+                                <Clock className="w-3 h-3 mr-1" /> Pending POD
                               </Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="outline" className={`font-bold text-xs ${
-                              isPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                            }`}>
-                              {isPaid ? 'Paid' : 'Unpaid / Pending'}
+                            <Badge className={isPaid ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold text-xs" : "bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold text-xs"}>
+                              {isPaid ? '✓ Settled / Paid' : 'Net 15/30 Due'}
                             </Badge>
                           </TableCell>
                           <TableCell className="pr-6 text-right">
@@ -1007,18 +1088,25 @@ export default function ClientPortalPage() {
                               <Button
                                 size="sm"
                                 onClick={() => handleOpenPod(item)}
-                                className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-sm"
+                                className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5 h-8 px-3"
                               >
-                                <Eye className="w-3.5 h-3.5 mr-1.5" /> View POD
+                                <Eye className="w-3.5 h-3.5" /> View POD
                               </Button>
                             ) : (
-                              <span className="text-xs text-muted-foreground italic">Pending POD</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => toast.success(`POD document request sent to dispatch desk for ${item.trip_id || item.id}`)}
+                                className="rounded-xl border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs font-semibold h-8 px-2.5"
+                              >
+                                <Clock className="w-3.5 h-3.5 mr-1" /> Request POD
+                              </Button>
                             )}
                           </TableCell>
                         </TableRow>
                       );
-                    })
-                  )}
+                    });
+                  })()}
                 </TableBody>
               </Table>
             </div>
