@@ -1,3 +1,18 @@
+const getActualPodFile = (trip) => {
+  if (!trip || !trip.pod_file) return null;
+  if (Array.isArray(trip.pod_file)) {
+    const valid = trip.pod_file.filter(f => typeof f === "string" && f.trim() !== "" && f !== "[]" && f !== "[" && f !== "]" && f !== "null");
+    return valid.length > 0 ? valid[0] : null;
+  }
+  if (typeof trip.pod_file === "string") {
+    const trimmed = trip.pod_file.trim();
+    if (!trimmed || trimmed === "[]" || trimmed === "[" || trimmed === "]" || trimmed === "null" || trimmed === "undefined") {
+      return null;
+    }
+    return trimmed;
+  }
+  return null;
+};
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { FileText, Upload, CheckCircle2, AlertCircle, RefreshCw, Eye, Search, Link2, ExternalLink } from 'lucide-react';
@@ -181,7 +196,7 @@ export default function PODManagementPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredTrips.map(trip => {
-                    const hasPOD = trip.pod_status === 'Uploaded' || trip.pod_file || trip.pod_link;
+                    const actualFile = getActualPodFile(trip); const hasPOD = (trip.pod_status === 'Uploaded' && (actualFile || trip.pod_link)) || !!actualFile || !!trip.pod_link;
                     return (
                       <TableRow key={trip.id} className="border-b border-border/40 hover:bg-muted/5 transition-colors">
                         <TableCell className="font-semibold py-4 text-foreground">
@@ -213,9 +228,9 @@ export default function PODManagementPage() {
                         </TableCell>
                         <TableCell className="py-4 text-right">
                           <div className="flex items-center justify-end gap-3">
-                            {trip.pod_file && (
+                            {getActualPodFile(trip) && (
                               <Button asChild size="sm" variant="ghost" className="rounded-xl">
-                                <a href={pb.files.getUrl(trip, trip.pod_file)} target="_blank" rel="noopener noreferrer">
+                                <a href={pb.files.getUrl(trip, getActualPodFile(trip) || trip.pod_file)} target="_blank" rel="noopener noreferrer">
                                   <Eye className="w-4 h-4 mr-1.5" /> View POD File
                                 </a>
                               </Button>
@@ -254,12 +269,12 @@ export default function PODManagementPage() {
                               <Button 
                                 asChild 
                                 size="sm" 
-                                variant={trip.pod_file ? 'outline' : 'default'} 
+                                variant={getActualPodFile(trip) ? 'outline' : 'default'} 
                                 className="rounded-xl cursor-pointer"
                               >
                                 <label htmlFor={`file-upload-${trip.id}`}>
                                   <Upload className="w-4 h-4 mr-1.5" /> 
-                                  {uploadingId === trip.id ? 'Uploading...' : trip.pod_file ? 'Re-upload File' : 'Upload File'}
+                                  {uploadingId === trip.id ? 'Uploading...' : getActualPodFile(trip) ? 'Re-upload File' : 'Upload File'}
                                 </label>
                               </Button>
                             </div>
@@ -274,7 +289,7 @@ export default function PODManagementPage() {
 
             {/* Mobile Card List View (Hidden on desktop) */}
             <div className="block md:hidden divide-y divide-border/40">              {filteredTrips.map(trip => {
-                  const hasPOD = trip.pod_status === 'Uploaded' || trip.pod_file || trip.pod_link;
+                  const actualFile = getActualPodFile(trip); const hasPOD = (trip.pod_status === 'Uploaded' && (actualFile || trip.pod_link)) || !!actualFile || !!trip.pod_link;
                   return (
                     <div key={trip.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
                       <div className="flex justify-between items-start">
@@ -311,9 +326,9 @@ export default function PODManagementPage() {
                       </div>
 
                       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/20 flex-wrap">
-                        {trip.pod_file && (
+                        {getActualPodFile(trip) && (
                           <Button asChild size="sm" variant="ghost" className="h-8 text-xs font-semibold rounded-lg">
-                            <a href={pb.files.getUrl(trip, trip.pod_file)} target="_blank" rel="noopener noreferrer">
+                            <a href={pb.files.getUrl(trip, getActualPodFile(trip) || trip.pod_file)} target="_blank" rel="noopener noreferrer">
                               <Eye className="w-3.5 h-3.5 mr-1" /> File
                             </a>
                           </Button>
@@ -352,12 +367,12 @@ export default function PODManagementPage() {
                           <Button 
                             asChild 
                             size="sm" 
-                            variant={trip.pod_file ? 'outline' : 'default'} 
+                            variant={getActualPodFile(trip) ? 'outline' : 'default'} 
                             className="h-8 text-xs font-semibold rounded-lg cursor-pointer"
                           >
                             <label htmlFor={`file-upload-mobile-${trip.id}`}>
                               <Upload className="w-3.5 h-3.5 mr-1" /> 
-                              {uploadingId === trip.id ? 'Uploading...' : trip.pod_file ? 'Re-upload' : 'Upload'}
+                              {uploadingId === trip.id ? 'Uploading...' : getActualPodFile(trip) ? 'Re-upload' : 'Upload'}
                             </label>
                           </Button>
                         </div>

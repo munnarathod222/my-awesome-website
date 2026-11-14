@@ -136,6 +136,21 @@ function LorryReceiptsPodHubPage() {
     }
     return trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === "true";
   };
+    const getActualPodFile = (trip) => {
+    if (!trip || !trip.pod_file) return null;
+    if (Array.isArray(trip.pod_file)) {
+      const valid = trip.pod_file.filter(f => typeof f === "string" && f.trim() !== "" && f !== "[]" && f !== "[" && f !== "]" && f !== "null");
+      return valid.length > 0 ? valid[0] : null;
+    }
+    if (typeof trip.pod_file === "string") {
+      const trimmed = trip.pod_file.trim();
+      if (!trimmed || trimmed === "[]" || trimmed === "[" || trimmed === "]" || trimmed === "null" || trimmed === "undefined") {
+        return null;
+      }
+      return trimmed;
+    }
+    return null;
+  };
   const getPodStatus = (trip) => {
     const cl = getClientForTrip(trip);
     if (cl && !clientRequiresPod(cl)) {
@@ -144,8 +159,12 @@ function LorryReceiptsPodHubPage() {
     if (!isTripPodRequired(trip)) {
       return "Not Required";
     }
-    if (trip.pod_status === "Verified") return "Verified";
-    if (trip.pod_file || trip.pod_link || trip.pod_status === "Uploaded") return "Uploaded";
+    const actualFile = getActualPodFile(trip);
+    const hasActualFile = !!actualFile;
+    const hasActualLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
+
+    if (trip.pod_status === "Verified" && (hasActualFile || hasActualLink)) return "Verified";
+    if (hasActualFile || hasActualLink) return "Uploaded";
     return "Pending";
   };
   const formatTripDate = (dateStr) => {
@@ -904,20 +923,38 @@ function LorryReceiptsPodHubPage() {
           title: "Share on WhatsApp"
         },
         /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-3.5 h-3.5" })
-      ), trip.pod_file ? /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          onClick: () => setViewingPodDoc({
-            url: pb.files.getUrl(trip, trip.pod_file),
-            tripId: trip.trip_id || trip.id,
-            truck: trip.truck_number,
-            client: clientName
-          }),
-          className: "p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition",
-          title: "View Signed POD"
-        },
-        /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" })
-      ) : isReq ? /* @__PURE__ */ React.createElement(
+      ), (() => {
+        const actualFile = getActualPodFile(trip);
+        return actualFile ? /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => setViewingPodDoc({
+              url: pb.files.getUrl(trip, actualFile),
+              tripId: trip.trip_id || trip.id,
+              truck: trip.truck_number,
+              client: clientName
+            }),
+            className: "p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition",
+            title: "View Signed POD"
+          },
+          /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" })
+        ) : isReq ? /* @__PURE__ */ React.createElement(
+          "label",
+          {
+            htmlFor: "upload-lr-" + trip.id,
+            className: "p-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 rounded-lg cursor-pointer transition flex items-center gap-1",
+            title: "Upload POD File"
+          },
+          /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
+          /* @__PURE__ */ React.createElement("input", {
+            type: "file",
+            id: "upload-lr-" + trip.id,
+            className: "hidden",
+            accept: "image/*,application/pdf",
+            onChange: (e) => handleUploadPod(e, trip.id)
+          })
+        ) : null;
+      })() : isReq ? /* @__PURE__ */ React.createElement(
         "label",
         {
           htmlFor: "upload-lr-" + trip.id,
@@ -944,14 +981,15 @@ function LorryReceiptsPodHubPage() {
       const podSt = getPodStatus(trip);
       const clObj = getClientForTrip(trip);
       const clientName = getClientName(trip);
-      const hasFile = !!trip.pod_file;
-      const hasLink = !!trip.pod_link;
+      const actualPodFile = getActualPodFile(trip);
+      const hasFile = !!actualPodFile;
+      const hasLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
       const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
       return /* @__PURE__ */ React.createElement("tr", { key: trip.id, className: "hover:bg-slate-800/40 transition" }, /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pl-5" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-white font-mono" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 mt-1 inline-block" }, lrNum)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-100" }, clientName), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5" }, isReq ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "Mandated POD") : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] text-slate-500 bg-slate-800 border border-slate-700" }, "Optional"))), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono font-bold text-slate-200" }, trip.truck_number || "TG12U2637"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400" }, trip.driver_name || "Assigned Driver")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300" }, formatRoute(trip)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300 font-mono" }, formatTripDate(trip.date)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, hasFile ? /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => setViewingPodDoc({
-            url: pb.files.getUrl(trip, trip.pod_file),
+            url: pb.files.getUrl(trip, actualPodFile),
             tripId: trip.trip_id || trip.id,
             truck: trip.truck_number,
             client: clientName
@@ -969,7 +1007,23 @@ function LorryReceiptsPodHubPage() {
           className: "text-blue-400 underline text-xs font-mono"
         },
         "External POD Link \u2197"
-      ) : /* @__PURE__ */ React.createElement("span", { className: "text-slate-500 italic text-[11px]" }, "No file uploaded")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : podSt === "Not Required" ? "bg-slate-800 text-slate-400 border-slate-700" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "\u231B Uploaded (Review)" : podSt === "Not Required" ? "Not Required" : "\u26A0 Pending POD")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
+      ) : /* @__PURE__ */ React.createElement(
+        "label",
+        {
+          htmlFor: "pod-upload-cell-" + trip.id,
+          className: "inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold cursor-pointer transition",
+          title: "Upload Signed POD Photo"
+        },
+        /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
+        /* @__PURE__ */ React.createElement("span", null, uploadingTripId === trip.id ? "Uploading..." : "Upload POD"),
+        /* @__PURE__ */ React.createElement("input", {
+          type: "file",
+          id: "pod-upload-cell-" + trip.id,
+          className: "hidden",
+          accept: "image/*,application/pdf",
+          onChange: (e) => handleUploadPod(e, trip.id)
+        })
+      )), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : podSt === "Not Required" ? "bg-slate-800 text-slate-400 border-slate-700" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "\u231B Uploaded (Review)" : podSt === "Not Required" ? "Not Required" : "\u26A0 Pending POD")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
         "label",
         {
           htmlFor: "pod-upload-" + trip.id,
@@ -977,7 +1031,7 @@ function LorryReceiptsPodHubPage() {
           title: "Upload Signed POD Photo"
         },
         /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
-        /* @__PURE__ */ React.createElement("span", null, uploadingTripId === trip.id ? "Uploading..." : hasFile ? "Replace" : "Upload"),
+        /* @__PURE__ */ React.createElement("span", null, uploadingTripId === trip.id ? "Uploading..." : hasFile ? "Replace" : "Upload POD"),
         /* @__PURE__ */ React.createElement(
           "input",
           {
@@ -1397,7 +1451,7 @@ function LorryReceiptsPodHubPage() {
       className: "p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
     },
     /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
-  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[300px]" }, viewingPodDoc.url.toLowerCase().endsWith(".pdf") ? /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[300px]" }, (!viewingPodDoc.url || viewingPodDoc.url.endsWith("/")) ? /* @__PURE__ */ React.createElement("div", { className: "text-center p-8 text-slate-400" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-amber-400 text-sm" }, "No Document Uploaded"), /* @__PURE__ */ React.createElement("p", { className: "text-xs mt-1" }, "This shipment has not had a signed POD file uploaded yet.")) : viewingPodDoc.url.toLowerCase().endsWith(".pdf") ? /* @__PURE__ */ React.createElement(
     "iframe",
     {
       src: viewingPodDoc.url,

@@ -155,6 +155,21 @@ function LorryReceiptsPodHubPage() {
     return trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === 'true';
   };
 
+  const getActualPodFile = (trip) => {
+    if (!trip || !trip.pod_file) return null;
+    if (Array.isArray(trip.pod_file)) {
+      const valid = trip.pod_file.filter(f => typeof f === "string" && f.trim() !== "" && f !== "[]" && f !== "[" && f !== "]" && f !== "null");
+      return valid.length > 0 ? valid[0] : null;
+    }
+    if (typeof trip.pod_file === "string") {
+      const trimmed = trip.pod_file.trim();
+      if (!trimmed || trimmed === "[]" || trimmed === "[" || trimmed === "]" || trimmed === "null" || trimmed === "undefined") {
+        return null;
+      }
+      return trimmed;
+    }
+    return null;
+  };
   const getPodStatus = (trip) => {
     const cl = getClientForTrip(trip);
     // If client does not require POD, status is always "Not Required"
@@ -164,8 +179,12 @@ function LorryReceiptsPodHubPage() {
     if (!isTripPodRequired(trip)) {
       return "Not Required";
     }
-    if (trip.pod_status === "Verified") return "Verified";
-    if (trip.pod_file || trip.pod_link || trip.pod_status === "Uploaded") return "Uploaded";
+    const actualFile = getActualPodFile(trip);
+    const hasActualFile = !!actualFile;
+    const hasActualLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
+
+    if (trip.pod_status === "Verified" && (hasActualFile || hasActualLink)) return "Verified";
+    if (hasActualFile || hasActualLink) return "Uploaded";
     return "Pending";
   };
 
@@ -1238,20 +1257,22 @@ function LorryReceiptsPodHubPage() {
                               <ShareIcon className="w-3.5 h-3.5" />
                             </button>
 
-                            {trip.pod_file ? (
-                              <button
-                                onClick={() => setViewingPodDoc({
-                                  url: pb.files.getUrl(trip, trip.pod_file),
-                                  tripId: trip.trip_id || trip.id,
-                                  truck: trip.truck_number,
-                                  client: clientName
-                                })}
-                                className="p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition"
-                                title="View Signed POD"
-                              >
-                                <EyeIcon className="w-3.5 h-3.5" />
-                              </button>
-                            ) : isReq ? (
+                            {(() => {
+                              const actualFile = getActualPodFile(trip);
+                              return actualFile ? (
+                                <button
+                                  onClick={() => setViewingPodDoc({
+                                    url: pb.files.getUrl(trip, actualFile),
+                                    tripId: trip.trip_id || trip.id,
+                                    truck: trip.truck_number,
+                                    client: clientName
+                                  })}
+                                  className="p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition"
+                                  title="View Signed POD"
+                                >
+                                  <EyeIcon className="w-3.5 h-3.5" />
+                                </button>
+                              ) : isReq ? (
                               <label
                                 htmlFor={"upload-lr-" + trip.id}
                                 className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg cursor-pointer transition"
@@ -1266,7 +1287,8 @@ function LorryReceiptsPodHubPage() {
                                   onChange={(e) => handleUploadPod(e, trip.id)}
                                 />
                               </label>
-                            ) : null}
+                            ) : null;
+                            })()}
                           </div>
                         </td>
                       </tr>
@@ -1297,8 +1319,9 @@ function LorryReceiptsPodHubPage() {
                     const podSt = getPodStatus(trip);
                     const clObj = getClientForTrip(trip);
                     const clientName = getClientName(trip);
-                    const hasFile = !!trip.pod_file;
-                    const hasLink = !!trip.pod_link;
+                    const actualPodFile = getActualPodFile(trip);
+                    const hasFile = !!actualPodFile;
+                    const hasLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
                     const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
 
                     return (
@@ -1348,7 +1371,7 @@ function LorryReceiptsPodHubPage() {
                           {hasFile ? (
                             <button
                               onClick={() => setViewingPodDoc({
-                                url: pb.files.getUrl(trip, trip.pod_file),
+                                url: pb.files.getUrl(trip, actualPodFile),
                                 tripId: trip.trip_id || trip.id,
                                 truck: trip.truck_number,
                                 client: clientName
@@ -1368,7 +1391,21 @@ function LorryReceiptsPodHubPage() {
                               External POD Link ↗
                             </a>
                           ) : (
-                            <span className="text-slate-500 italic text-[11px]">No file uploaded</span>
+                            <label
+                              htmlFor={"pod-upload-cell-" + trip.id}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold cursor-pointer transition"
+                              title="Upload Signed POD Photo"
+                            >
+                              <UploadIcon className="w-3.5 h-3.5" />
+                              <span>{uploadingTripId === trip.id ? "Uploading..." : "Upload POD"}</span>
+                              <input
+                                type="file"
+                                id={"pod-upload-cell-" + trip.id}
+                                className="hidden"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => handleUploadPod(e, trip.id)}
+                              />
+                            </label>
                           )}
                         </td>
 
@@ -1401,7 +1438,7 @@ function LorryReceiptsPodHubPage() {
                               title="Upload Signed POD Photo"
                             >
                               <UploadIcon className="w-3.5 h-3.5" />
-                              <span>{uploadingTripId === trip.id ? "Uploading..." : hasFile ? "Replace" : "Upload"}</span>
+                              <span>{uploadingTripId === trip.id ? "Uploading..." : hasFile ? "Replace" : "Upload POD"}</span>
                               <input
                                 type="file"
                                 id={"pod-upload-" + trip.id}
