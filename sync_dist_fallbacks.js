@@ -12,6 +12,7 @@ const primaryTruckManagerPage = path.resolve(__dirname, 'dist/assets/TruckManage
 const primaryTyreManagementPage = path.resolve(__dirname, 'dist/assets/TyreManagementPage-Boonzp_q.js');
 const primaryPodManagementPage = path.resolve(__dirname, 'dist/assets/PODManagementPage-RbmOVLGd.js');
 const primaryLorryReceiptsPage = path.resolve(__dirname, 'dist/assets/LorryReceiptsPage-DLxf9dwO.js');
+const primaryClientPortalPage = path.resolve(__dirname, 'dist/assets/ClientPortalPage-DuEOcerk.js');
 
 if (!fs.existsSync(primaryIndexHtml) || !fs.existsSync(primaryBundle)) {
   console.error('Critical: Primary modern assets missing!');
@@ -27,6 +28,7 @@ const truckManagerPageBuffer = fs.existsSync(primaryTruckManagerPage) ? fs.readF
 const tyreManagementPageBuffer = fs.existsSync(primaryTyreManagementPage) ? fs.readFileSync(primaryTyreManagementPage) : null;
 const podManagementPageBuffer = fs.existsSync(primaryPodManagementPage) ? fs.readFileSync(primaryPodManagementPage) : null;
 const lorryReceiptsPageBuffer = fs.existsSync(primaryLorryReceiptsPage) ? fs.readFileSync(primaryLorryReceiptsPage) : null;
+const clientPortalPageBuffer = fs.existsSync(primaryClientPortalPage) ? fs.readFileSync(primaryClientPortalPage) : null;
 
 console.log(`Modern index.html size: ${htmlContent.length} bytes`);
 console.log(`Modern index-DLxf9dwO.js bundle size: ${bundleBuffer.length} bytes`);
@@ -37,6 +39,7 @@ if (truckManagerPageBuffer) console.log(`Modern TruckManagerPage-B6Tv7tbO.js siz
 if (tyreManagementPageBuffer) console.log(`Modern TyreManagementPage-Boonzp_q.js size: ${tyreManagementPageBuffer.length} bytes`);
 if (podManagementPageBuffer) console.log(`Modern PODManagementPage-RbmOVLGd.js size: ${podManagementPageBuffer.length} bytes`);
 if (lorryReceiptsPageBuffer) console.log(`Modern LorryReceiptsPage-DLxf9dwO.js size: ${lorryReceiptsPageBuffer.length} bytes`);
+if (clientPortalPageBuffer) console.log(`Modern ClientPortalPage-DuEOcerk.js size: ${clientPortalPageBuffer.length} bytes`);
 
 const targetDirs = [
   path.resolve(__dirname, 'dist'),
@@ -73,7 +76,10 @@ for (const t of targetDirs) {
   if (lorryReceiptsPageBuffer) {
     fs.writeFileSync(path.join(assetsDir, 'LorryReceiptsPage-DLxf9dwO.js'), lorryReceiptsPageBuffer);
   }
-  console.log(`✓ Synced modern index.html, index-DLxf9dwO.js, ProfilePage, TripLogsPage, MaintenancePage, TruckManagerPage, TyreManagementPage, and PODManagementPage to: ${t}`);
+  if (clientPortalPageBuffer) {
+    fs.writeFileSync(path.join(assetsDir, 'ClientPortalPage-DuEOcerk.js'), clientPortalPageBuffer);
+  }
+  console.log(`✓ Synced modern index.html, index-DLxf9dwO.js, ProfilePage, TripLogsPage, MaintenancePage, TruckManagerPage, TyreManagementPage, PODManagementPage, and ClientPortalPage to: ${t}`);
 }
 
 console.log('✅ Modern website assets successfully protected and synced across all targets.');

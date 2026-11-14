@@ -400,29 +400,51 @@ export default function PublicShipmentTrackingPage() {
   const routeDestination = trip?.expand?.route_id?.end_location || (trip?.route ? (trip.route.includes('->') ? trip.route.split('->')[1] : trip.route.includes('→') ? trip.route.split('→')[1] : trip.route.split('-')[1] || '').trim() : '') || trip?.destination || 'Destination Hub';
   const distanceKm = trip?.kms || trip?.expand?.route_id?.distance_km || null;
 
-  // 🛡️ Strict POD File Validation: returns valid URL only if actual document exists
-  const podUrl = useMemo(() => {
-    if (trip?.pod_file) {
-      if (Array.isArray(trip.pod_file) && trip.pod_file.length > 0 && String(trip.pod_file[0]).trim()) {
-        return pb.files.getURL(trip, trip.pod_file[0]);
-      }
-      if (typeof trip.pod_file === 'string' && trip.pod_file.trim()) {
-        return pb.files.getURL(trip, trip.pod_file);
+  // 🛡️ Strict Multi-POD File Resolution: extracts all verified document pages
+  const allPodFiles = useMemo(() => {
+    if (!trip) return [];
+    const files = [];
+    if (trip.pod_file) {
+      if (Array.isArray(trip.pod_file)) {
+        trip.pod_file.forEach(file => {
+          if (file && typeof file === 'string' && file.trim() && file !== '[]' && file !== 'null') {
+            files.push(pb.files.getURL(trip, file.trim()));
+          }
+        });
+      } else if (typeof trip.pod_file === 'string' && trip.pod_file.trim()) {
+        const trimmed = trip.pod_file.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              parsed.forEach(file => {
+                if (file && typeof file === 'string' && file.trim() && file !== 'null') {
+                  files.push(pb.files.getURL(trip, file.trim()));
+                }
+              });
+            }
+          } catch (e) {}
+        } else if (trimmed !== '[]' && trimmed !== 'null') {
+          files.push(pb.files.getURL(trip, trimmed));
+        }
       }
     }
-    if (trip?.pod_link && typeof trip.pod_link === 'string' && trip.pod_link.trim().startsWith('http')) {
-      return trip.pod_link.trim();
+    if (files.length === 0 && trip.pod_link && typeof trip.pod_link === 'string' && trip.pod_link.trim().startsWith('http')) {
+      files.push(trip.pod_link.trim());
     }
-    if (proof?.file) {
-      if (Array.isArray(proof.file) && proof.file.length > 0 && String(proof.file[0]).trim()) {
-        return pb.files.getURL(proof, proof.file[0]);
-      }
-      if (typeof proof.file === 'string' && proof.file.trim()) {
-        return pb.files.getURL(proof, proof.file);
+    if (files.length === 0 && proof?.file) {
+      if (Array.isArray(proof.file)) {
+        proof.file.forEach(file => {
+          if (file && typeof file === 'string' && file.trim()) files.push(pb.files.getURL(proof, file.trim()));
+        });
+      } else if (typeof proof.file === 'string' && proof.file.trim()) {
+        files.push(pb.files.getURL(proof, proof.file.trim()));
       }
     }
-    return null;
+    return files;
   }, [trip, proof]);
+
+  const podUrl = allPodFiles.length > 0 ? allPodFiles[0] : null;
 
   const isDelivered = ['delivered', 'completed'].includes((trip?.trip_status || '').toLowerCase());
   const showSearchForm = isStaff || isClient || !urlKey;
@@ -962,16 +984,14 @@ export default function PublicShipmentTrackingPage() {
                       {podUrl ? 'Official verified signed copy available for download' : 'Awaiting physical slip upload upon delivery'}
                     </p>
                   </div>
-                  {/* 🛡️ Strict conditional POD display: ONLY renders View POD button if real file exists */}
+                  {/* 🛡️ Multi-POD View Button */}
                   {podUrl ? (
                     <Button
-                      asChild
                       size="sm"
-                      className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1 shadow shrink-0"
+                      onClick={() => { setActivePodPage(0); setViewingPodModal(true); }}
+                      className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 shadow shrink-0 cursor-pointer"
                     >
-                      <a href={podUrl} target="_blank" rel="noopener noreferrer">
-                        <Download className="w-3.5 h-3.5" /> View POD
-                      </a>
+                      <Download className="w-3.5 h-3.5" /> {allPodFiles.length > 1 ? `View POD (${allPodFiles.length})` : 'View POD'}
                     </Button>
                   ) : (
                     <Badge variant="outline" className="text-xs font-mono text-slate-500 border-slate-700 bg-slate-800/40 px-2 py-0.5 shrink-0">

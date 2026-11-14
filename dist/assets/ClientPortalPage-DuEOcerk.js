@@ -1077,7 +1077,27 @@ function at(){const{currentUser:i}=Ve(),[portalTab,setPortalTab]=c.useState("com
     monthlyFreightSpend,
     podsCount:s.length-pendingPodTrips.length
   };
-},[h,x]),ae=c.useMemo(()=>h.filter(t=>{const o=z.toLowerCase();return o?t.trip_id&&t.trip_id.toLowerCase().includes(o)||t.truck_number&&t.truck_number.toLowerCase().includes(o)||t.route&&t.route.toLowerCase().includes(o)||t.driver_name&&t.driver_name.toLowerCase().includes(o):!0}),[h,z]),$e=t=>{const o=t.pod_url||t.pod_link||(t.pod_file?N.files.getUrl(t,t.pod_file):null);ke({...t,podUrl:o}),ee(!0)},Ie=()=>{if(h.length===0){w.error("No freight logs available to export");return}const t=["Trip ID","Date","Vehicle No","Route","Driver","Trip Status","Total Freight (INR)","Advance Paid (INR)","Payment Status"],o=h.map(d=>[d.trip_id||d.id,d.date?C(new Date(d.date),"yyyy-MM-dd"):d.start_date?C(new Date(d.start_date),"yyyy-MM-dd"):"",d.truck_number||"",`"${d.route||""}"`,`"${d.driver_name||""}"`,d.trip_status||"",d.revenue||d.freight_amount||0,d.advance_received_from_client||0,d.client_payment_status||"Pending"]),s="data:text/csv;charset=utf-8,"+[t.join(","),...o.map(d=>d.join(","))].join(`
+},[h,x]),ae=c.useMemo(()=>h.filter(t=>{const o=z.toLowerCase();return o?t.trip_id&&t.trip_id.toLowerCase().includes(o)||t.truck_number&&t.truck_number.toLowerCase().includes(o)||t.route&&t.route.toLowerCase().includes(o)||t.driver_name&&t.driver_name.toLowerCase().includes(o):!0}),[h,z]),$e=t=>{
+  const urls=[];
+  if(t.pod_file){
+    if(Array.isArray(t.pod_file)){
+      t.pod_file.forEach(f=>{if(f&&typeof f==="string"&&f.trim()&&f!=="[]"&&f!=="null")urls.push(N.files.getUrl(t,f.trim()))});
+    }else if(typeof t.pod_file==="string"&&t.pod_file.trim()){
+      const tr=t.pod_file.trim();
+      if(tr.startsWith("[")&&tr.endsWith("]")){
+        try{const p=JSON.parse(tr);if(Array.isArray(p)){p.forEach(f=>{if(f&&typeof f==="string"&&f.trim())urls.push(N.files.getUrl(t,f.trim()))})}}catch(e){}
+      }else if(tr!=="[]"&&tr!=="null"){
+        urls.push(N.files.getUrl(t,tr));
+      }
+    }
+  }
+  if(urls.length===0&&(t.pod_url||t.pod_link)){
+    const lk=t.pod_url||t.pod_link;
+    if(typeof lk==="string"&&lk.trim())urls.push(lk.trim());
+  }
+  ke({...t,podFiles:urls,activePodIndex:0,podUrl:urls.length>0?urls[0]:null});
+  ee(!0);
+},Ie=()=>{if(h.length===0){w.error("No freight logs available to export");return}const t=["Trip ID","Date","Vehicle No","Route","Driver","Trip Status","Total Freight (INR)","Advance Paid (INR)","Payment Status"],o=h.map(d=>[d.trip_id||d.id,d.date?C(new Date(d.date),"yyyy-MM-dd"):d.start_date?C(new Date(d.start_date),"yyyy-MM-dd"):"",d.truck_number||"",`"${d.route||""}"`,`"${d.driver_name||""}"`,d.trip_status||"",d.revenue||d.freight_amount||0,d.advance_received_from_client||0,d.client_payment_status||"Pending"]),s="data:text/csv;charset=utf-8,"+[t.join(","),...o.map(d=>d.join(","))].join(`
 `),_=encodeURI(s),f=document.createElement("a");f.setAttribute("href",_),f.setAttribute("download",`Freight_Statement_${x?.client_name||"Client"}_${C(new Date,"yyyyMMdd")}.csv`),document.body.appendChild(f),f.click(),document.body.removeChild(f),w.success("Freight log exported successfully")};return Ce?e.jsx("div",{className:"h-full w-full flex items-center justify-center p-12",children:e.jsx(qe,{text:"Loading client portal statement & shipments..."})}):e.jsxs(We.div,{initial:{opacity:0,y:10},animate:{opacity:1,y:0},transition:{duration:.35},className:"p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8",children:[e.jsx(Be,{children:e.jsx("title",{children:"Client Portal | Jai Bhavani Cargo"})}),e.jsxs("div",{className:"relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 p-6 shadow-2xl",children:[e.jsx("div",{className:"absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"}),e.jsx("div",{className:"absolute bottom-0 left-1/3 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"}),e.jsxs("div",{className:"relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6",children:[e.jsxs("div",{className:"flex items-center gap-4",children:[e.jsx("div",{className:"w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-emerald-400/10 to-blue-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-2xl shadow-xl shrink-0",children:x?.client_name?x.client_name.charAt(0).toUpperCase():"C"}),e.jsxs("div",{className:"space-y-1",children:[e.jsxs("div",{className:"flex items-center gap-2.5 flex-wrap",children:[e.jsx("h1",{className:"text-2xl sm:text-3xl font-heading font-black text-white tracking-tight",children:x?.client_name||"Corporate Client Portal"}),x?.company_name&&e.jsx(p,{variant:"outline",className:"bg-slate-800/80 text-slate-300 border-slate-700 text-xs font-semibold",children:x.company_name}),e.jsxs(p,{className:"bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-xs px-2.5 py-0.5 flex items-center gap-1",children:[e.jsx(Ee,{className:"w-3.5 h-3.5 text-emerald-400"})," Verified Portal Client"]})]}),e.jsxs("p",{className:"text-xs sm:text-sm text-slate-400 flex items-center gap-4 flex-wrap pt-0.5",children:[x?.gst_number&&e.jsxs("span",{children:["GSTIN: ",e.jsx("strong",{className:"font-mono text-emerald-400",children:x.gst_number})]}),x?.phone&&e.jsxs("span",{children:["Hotline: ",e.jsx("strong",{className:"text-slate-200",children:x.phone})]}),e.jsxs("span",{children:["Account Manager: ",e.jsx("strong",{className:"text-slate-200",children:x?.contact_person||"Jai Bhavani Logistics Desk"})]})]})]})]}),e.jsxs("div",{className:"flex items-center gap-3 w-full lg:w-auto justify-end flex-wrap",children:[($||I)&&G.length>0&&e.jsx("div",{className:"w-56",children:e.jsxs(ce,{value:J,onValueChange:Ae,children:[e.jsx(me,{className:"bg-slate-900/90 border-slate-800 text-xs font-semibold rounded-xl text-slate-200",children:e.jsx(xe,{placeholder:"Select Client Preview"})}),e.jsx(ue,{className:"bg-slate-900 border-slate-800 text-slate-100",children:G.map(t=>e.jsxs(D,{value:t.id,children:[t.client_name," ",t.company_name?`(${t.company_name})`:""]},t.id))})]})}),e.jsxs(j,{onClick:()=>W(),variant:"outline",size:"sm",className:"rounded-xl bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800 h-9",children:[e.jsx(Re,{className:"w-4 h-4 mr-1.5"})," Refresh"]}),e.jsxs(j,{onClick:Ie,size:"sm",variant:"secondary",className:"rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 h-9",children:[e.jsx(le,{className:"w-4 h-4 mr-1.5"})," CSV Ledger"]}),e.jsxs(j,{onClick:()=>setPortalTab(portalTab==="support"?"completed":"support"),size:"sm",className:"rounded-xl font-bold text-xs h-9 px-3.5 shadow-md flex items-center gap-1.5 cursor-pointer transition-all "+(portalTab==="support"?"bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 ring-2 ring-rose-400/40":"bg-slate-800/90 hover:bg-slate-700 text-rose-300 border border-rose-500/30 hover:text-white"),children:[e.jsx(oe,{className:"w-3.5 h-3.5 text-rose-400"}),portalTab==="support"?"← Back to Shipments":"Support & Complaints",portalTab!=="support"&&e.jsx("span",{className:"ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-300 border border-rose-500/40 font-black",children:"Helpdesk"})]})]})]})]}),e.jsxs("div",{className:"grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5",children:[
   /* Card 1: Total Shipments */
   e.jsx(y,{onClick:()=>setPortalTab("all"),className:"cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-cyan-950/40 via-card to-card border-cyan-500/30 shadow-soft rounded-2xl relative overflow-hidden "+(portalTab==="all"?"ring-2 ring-cyan-400 border-cyan-400 shadow-cyan-500/20":""),children:e.jsxs(M,{className:"p-3.5 relative z-10",children:[
@@ -1357,4 +1377,121 @@ function at(){const{currentUser:i}=Ve(),[portalTab,setPortalTab]=c.useState("com
   }),
 
   e.jsx(A,{value:"quotations",className:"p-0 m-0",children:e.jsx(ClientPortalQuotationTab,{client:x,currentUser:i})}),
-  e.jsxs(A,{value:"bidding",className:"p-5 m-0 space-y-4",children:[e.jsxs("div",{className:"flex justify-between items-center pb-2 border-b border-border/50",children:[e.jsxs("div",{children:[e.jsxs("h3",{className:"text-base font-bold text-foreground flex items-center gap-2",children:[e.jsx(O,{className:"w-4 h-4 text-amber-400"})," Active Route Lanes Bidding Exchange"]}),e.jsx("p",{className:"text-xs text-muted-foreground mt-0.5",children:"Submit custom freight bids directly for dedicated transport lanes."})]}),e.jsxs(p,{className:"bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs font-mono",children:[se.length," Active Bidding Lanes"]})]}),e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-4",children:se.map(t=>e.jsxs(y,{className:"bg-card border-border/60 rounded-2xl p-4 space-y-3 hover:border-amber-400/50 transition-all",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsx(p,{variant:"outline",className:"text-[10px] text-amber-400 border-amber-400/30 font-mono",children:t.id}),e.jsx(p,{className:"bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px] font-mono",children:t.contract_duration})]}),e.jsx("h4",{className:"text-base font-extrabold text-foreground mt-1",children:t.route})]}),e.jsxs("span",{className:"text-xs text-muted-foreground font-mono",children:[t.distance_km," KM"]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-2 text-xs bg-muted/30 p-2.5 rounded-xl font-mono",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground",children:"BENCHMARK RATE:"}),e.jsxs("div",{className:"font-bold text-foreground",children:["₹",t.benchmark_rate.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400",children:"AI RECOMMENDED:"}),e.jsxs("div",{className:"font-bold text-amber-400",children:["₹",t.ai_rate.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"flex items-center justify-between text-xs pt-1",children:[e.jsxs("span",{className:"text-muted-foreground text-[11px] flex items-center gap-1",children:[e.jsx(ne,{className:"w-3.5 h-3.5 text-primary"})," ",t.required_truck]}),e.jsxs(j,{size:"sm",onClick:()=>{Le(t),q(t.benchmark_rate.toString()),te(t.contract_duration||"Monthly (1 Month)"),F(!0)},className:"h-8 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:[e.jsx(O,{className:"w-3 h-3 mr-1"})," Bid For Contract"]})]})]},t.id))})]}),e.jsx(A,{value:"support",className:"p-4 sm:p-6 space-y-6",children:e.jsx(ClientPortalSupportTab,{client:x,trips:h,currentUser:i,preselectedTrip:issueTrip,onClearPreselectedTrip:()=>setIssueTrip(null)})})]})}),portalTab!=="support"&&e.jsxs("button",{type:"button",onClick:()=>setPortalTab("support"),className:"fixed bottom-5 right-5 z-40 h-10 px-4 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-2xl shadow-rose-600/40 flex items-center gap-2 border border-rose-400/40 transition-transform hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md",children:[e.jsx(oe,{className:"w-4 h-4"}),"Need Support? Chat with Operations",e.jsx("span",{className:"w-2 h-2 rounded-full bg-emerald-400 animate-ping"})]}),e.jsx(he,{open:Se,onOpenChange:F,children:e.jsxs(pe,{className:"sm:max-w-md bg-card border-border shadow-2xl rounded-2xl p-6",children:[e.jsxs(be,{children:[e.jsxs(ge,{className:"text-lg font-bold flex items-center gap-2 text-amber-400",children:[e.jsx(O,{className:"w-5 h-5 text-amber-400"})," Submit Freight Contract Bid for ",v?.route]}),e.jsx(fe,{className:"text-xs text-muted-foreground",children:"Submit your target price and preferred contract tenure for this dedicated transport lane."})]}),e.jsxs("div",{className:"space-y-4 py-2",children:[e.jsxs("div",{className:"bg-muted/40 p-3 rounded-xl border border-border text-xs space-y-1 font-mono",children:[e.jsxs("div",{children:["Target Benchmark: ",e.jsxs("strong",{className:"text-foreground",children:["₹",v?.benchmark_rate?.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:["AI Market Estimate: ",e.jsxs("strong",{className:"text-amber-400",children:["₹",v?.ai_rate?.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Contract Tenure / Duration"}),e.jsxs(ce,{value:B,onValueChange:te,children:[e.jsx(me,{className:"bg-background border-border text-xs rounded-xl font-bold",children:e.jsx(xe,{placeholder:"Select Contract Duration"})}),e.jsxs(ue,{className:"bg-slate-900 border-slate-800 text-slate-100",children:[e.jsx(D,{value:"Weekly (7 Days)",children:"Weekly Contract (7 Days)"}),e.jsx(D,{value:"Monthly (1 Month)",children:"Monthly Contract (1 Month)"}),e.jsx(D,{value:"3 Months (Quarterly)",children:"3 Months Contract (Quarterly)"}),e.jsx(D,{value:"6 Months (Half-Yearly)",children:"6 Months Contract (Half-Yearly)"}),e.jsx(D,{value:"1 Year (Annual)",children:"1 Year Contract (Annual Dedicated)"})]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Your Bid Amount per Trip / Month (₹)"}),e.jsx(K,{type:"number",value:S,onChange:t=>q(t.target.value),className:"bg-background border-border text-sm font-bold font-mono text-emerald-400 rounded-xl"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Cargo Weight (Tons)"}),e.jsx(K,{type:"number",value:Me,onChange:t=>Te(t.target.value),className:"bg-background border-border text-xs rounded-xl text-foreground"})]})]}),e.jsxs(Xe,{children:[e.jsx(j,{variant:"outline",onClick:()=>F(!1),className:"rounded-xl text-xs",children:"Cancel"}),e.jsx(j,{onClick:Pe,className:"bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:"Submit Bid to Admin"})]})]})}),g&&e.jsx(he,{open:De,onOpenChange:ee,children:e.jsxs(pe,{className:"sm:max-w-[650px] bg-card border-border shadow-2xl rounded-2xl",children:[e.jsxs(be,{children:[e.jsxs(ge,{className:"text-xl font-heading font-bold flex items-center gap-2",children:[e.jsx(ie,{className:"w-5 h-5 text-violet-400"}),"Proof of Delivery (POD) - ",g.trip_id||g.id]}),e.jsxs(fe,{children:["Vehicle: ",e.jsx("strong",{className:"text-foreground",children:g.truck_number})," | Route: ",e.jsx("strong",{className:"text-foreground",children:g.route})]})]}),e.jsxs("div",{className:"space-y-4 py-3",children:[e.jsx("div",{className:"aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-border flex items-center justify-center relative",children:g.podUrl?e.jsx("img",{src:g.podUrl,alt:"Proof of Delivery",className:"w-full h-full object-contain"}):e.jsx("p",{className:"text-xs text-muted-foreground",children:"No image preview available"})}),e.jsxs("div",{className:"flex gap-3 pt-2",children:[e.jsxs(j,{variant:"outline",className:"flex-1 rounded-xl",onClick:()=>window.open(g.podUrl,"_blank"),children:[e.jsx(de,{className:"w-4 h-4 mr-2"})," Open Full Document"]}),e.jsxs(j,{className:"flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white",onClick:()=>{const t=document.createElement("a");t.href=g.podUrl,t.download=`POD_${g.trip_id||g.id}.jpg`,document.body.appendChild(t),t.click(),document.body.removeChild(t),w.success("POD downloaded")},children:[e.jsx(le,{className:"w-4 h-4 mr-2"})," Download POD"]})]})]})]})})]})}export{at as default};
+  e.jsxs(A,{value:"bidding",className:"p-5 m-0 space-y-4",children:[e.jsxs("div",{className:"flex justify-between items-center pb-2 border-b border-border/50",children:[e.jsxs("div",{children:[e.jsxs("h3",{className:"text-base font-bold text-foreground flex items-center gap-2",children:[e.jsx(O,{className:"w-4 h-4 text-amber-400"})," Active Route Lanes Bidding Exchange"]}),e.jsx("p",{className:"text-xs text-muted-foreground mt-0.5",children:"Submit custom freight bids directly for dedicated transport lanes."})]}),e.jsxs(p,{className:"bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs font-mono",children:[se.length," Active Bidding Lanes"]})]}),e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-4",children:se.map(t=>e.jsxs(y,{className:"bg-card border-border/60 rounded-2xl p-4 space-y-3 hover:border-amber-400/50 transition-all",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsx(p,{variant:"outline",className:"text-[10px] text-amber-400 border-amber-400/30 font-mono",children:t.id}),e.jsx(p,{className:"bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px] font-mono",children:t.contract_duration})]}),e.jsx("h4",{className:"text-base font-extrabold text-foreground mt-1",children:t.route})]}),e.jsxs("span",{className:"text-xs text-muted-foreground font-mono",children:[t.distance_km," KM"]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-2 text-xs bg-muted/30 p-2.5 rounded-xl font-mono",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground",children:"BENCHMARK RATE:"}),e.jsxs("div",{className:"font-bold text-foreground",children:["₹",t.benchmark_rate.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400",children:"AI RECOMMENDED:"}),e.jsxs("div",{className:"font-bold text-amber-400",children:["₹",t.ai_rate.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"flex items-center justify-between text-xs pt-1",children:[e.jsxs("span",{className:"text-muted-foreground text-[11px] flex items-center gap-1",children:[e.jsx(ne,{className:"w-3.5 h-3.5 text-primary"})," ",t.required_truck]}),e.jsxs(j,{size:"sm",onClick:()=>{Le(t),q(t.benchmark_rate.toString()),te(t.contract_duration||"Monthly (1 Month)"),F(!0)},className:"h-8 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:[e.jsx(O,{className:"w-3 h-3 mr-1"})," Bid For Contract"]})]})]},t.id))})]}),e.jsx(A,{value:"support",className:"p-4 sm:p-6 space-y-6",children:e.jsx(ClientPortalSupportTab,{client:x,trips:h,currentUser:i,preselectedTrip:issueTrip,onClearPreselectedTrip:()=>setIssueTrip(null)})})]})}),portalTab!=="support"&&e.jsxs("button",{type:"button",onClick:()=>setPortalTab("support"),className:"fixed bottom-5 right-5 z-40 h-10 px-4 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-2xl shadow-rose-600/40 flex items-center gap-2 border border-rose-400/40 transition-transform hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md",children:[e.jsx(oe,{className:"w-4 h-4"}),"Need Support? Chat with Operations",e.jsx("span",{className:"w-2 h-2 rounded-full bg-emerald-400 animate-ping"})]}),e.jsx(he,{open:Se,onOpenChange:F,children:e.jsxs(pe,{className:"sm:max-w-md bg-card border-border shadow-2xl rounded-2xl p-6",children:[e.jsxs(be,{children:[e.jsxs(ge,{className:"text-lg font-bold flex items-center gap-2 text-amber-400",children:[e.jsx(O,{className:"w-5 h-5 text-amber-400"})," Submit Freight Contract Bid for ",v?.route]}),e.jsx(fe,{className:"text-xs text-muted-foreground",children:"Submit your target price and preferred contract tenure for this dedicated transport lane."})]}),e.jsxs("div",{className:"space-y-4 py-2",children:[e.jsxs("div",{className:"bg-muted/40 p-3 rounded-xl border border-border text-xs space-y-1 font-mono",children:[e.jsxs("div",{children:["Target Benchmark: ",e.jsxs("strong",{className:"text-foreground",children:["₹",v?.benchmark_rate?.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:["AI Market Estimate: ",e.jsxs("strong",{className:"text-amber-400",children:["₹",v?.ai_rate?.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Contract Tenure / Duration"}),e.jsxs(ce,{value:B,onValueChange:te,children:[e.jsx(me,{className:"bg-background border-border text-xs rounded-xl font-bold",children:e.jsx(xe,{placeholder:"Select Contract Duration"})}),e.jsxs(ue,{className:"bg-slate-900 border-slate-800 text-slate-100",children:[e.jsx(D,{value:"Weekly (7 Days)",children:"Weekly Contract (7 Days)"}),e.jsx(D,{value:"Monthly (1 Month)",children:"Monthly Contract (1 Month)"}),e.jsx(D,{value:"3 Months (Quarterly)",children:"3 Months Contract (Quarterly)"}),e.jsx(D,{value:"6 Months (Half-Yearly)",children:"6 Months Contract (Half-Yearly)"}),e.jsx(D,{value:"1 Year (Annual)",children:"1 Year Contract (Annual Dedicated)"})]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Your Bid Amount per Trip / Month (₹)"}),e.jsx(K,{type:"number",value:S,onChange:t=>q(t.target.value),className:"bg-background border-border text-sm font-bold font-mono text-emerald-400 rounded-xl"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Cargo Weight (Tons)"}),e.jsx(K,{type:"number",value:Me,onChange:t=>Te(t.target.value),className:"bg-background border-border text-xs rounded-xl text-foreground"})]})]}),e.jsxs(Xe,{children:[e.jsx(j,{variant:"outline",onClick:()=>F(!1),className:"rounded-xl text-xs",children:"Cancel"}),e.jsx(j,{onClick:Pe,className:"bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:"Submit Bid to Admin"})]})]})}),g&&(() => {
+  const docFiles = (g.podFiles && g.podFiles.length > 0) ? g.podFiles : (g.podUrl ? [g.podUrl] : []);
+  const curIdx = Math.max(0, Math.min(g.activePodIndex || 0, Math.max(0, docFiles.length - 1)));
+  const curFileUrl = docFiles[curIdx] || g.podUrl || "";
+  const isPdf = curFileUrl && curFileUrl.toLowerCase().split("?")[0].endsWith(".pdf");
+
+  return e.jsx(he, {
+    open: De,
+    onOpenChange: ee,
+    children: e.jsxs(pe, {
+      className: "sm:max-w-[700px] bg-card border-border shadow-2xl rounded-2xl",
+      children: [
+        e.jsxs(be, {
+          children: [
+            e.jsxs(ge, {
+              className: "text-xl font-heading font-bold flex items-center gap-2",
+              children: [
+                e.jsx(ie, { className: "w-5 h-5 text-violet-400" }),
+                "Proof of Delivery (POD) - ", g.trip_id || g.id,
+                docFiles.length > 1 ? e.jsx("span", {
+                  className: "ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30",
+                  children: "Page " + (curIdx + 1) + " of " + docFiles.length
+                }) : null
+              ]
+            }),
+            e.jsxs(fe, {
+              children: [
+                "Vehicle: ", e.jsx("strong", { className: "text-foreground", children: g.truck_number }),
+                " | Route: ", e.jsx("strong", { className: "text-foreground", children: g.route })
+              ]
+            })
+          ]
+        }),
+        e.jsxs("div", {
+          className: "space-y-4 py-3",
+          children: [
+            e.jsxs("div", {
+              className: "aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-border flex items-center justify-center relative min-h-[320px]",
+              children: [
+                curFileUrl ? (isPdf ? e.jsx("iframe", {
+                  src: curFileUrl,
+                  className: "w-full h-full rounded-xl border border-slate-800",
+                  title: "POD Document"
+                }) : e.jsx("img", {
+                  src: curFileUrl,
+                  alt: "POD Page " + (curIdx + 1),
+                  className: "w-full h-full object-contain"
+                })) : e.jsx("p", { className: "text-xs text-muted-foreground", children: "No image preview available" }),
+                docFiles.length > 1 ? e.jsxs(e.Fragment, {
+                  children: [
+                    e.jsx("button", {
+                      onClick: () => ke({ ...g, activePodIndex: Math.max(0, curIdx - 1) }),
+                      disabled: curIdx === 0,
+                      className: "absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/90 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer font-bold",
+                      children: "◀"
+                    }),
+                    e.jsx("button", {
+                      onClick: () => ke({ ...g, activePodIndex: Math.min(docFiles.length - 1, curIdx + 1) }),
+                      disabled: curIdx === docFiles.length - 1,
+                      className: "absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/90 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer font-bold",
+                      children: "▶"
+                    })
+                  ]
+                }) : null
+              ]
+            }),
+            docFiles.length > 1 ? e.jsx("div", {
+              className: "flex items-center gap-2 overflow-x-auto py-1",
+              children: docFiles.map((url, idx) => e.jsxs("button", {
+                key: idx,
+                onClick: () => ke({ ...g, activePodIndex: idx }),
+                className: "px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition cursor-pointer " + (
+                  idx === curIdx
+                    ? "bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400/40"
+                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                ),
+                children: [
+                  "Page " + (idx + 1),
+                  url.toLowerCase().split("?")[0].endsWith(".pdf") ? " (PDF)" : ""
+                ]
+              }, idx))
+            }) : null,
+            e.jsxs("div", {
+              className: "flex gap-3 pt-2",
+              children: [
+                e.jsxs(j, {
+                  variant: "outline",
+                  className: "flex-1 rounded-xl",
+                  onClick: () => window.open(curFileUrl, "_blank"),
+                  children: [
+                    e.jsx(de, { className: "w-4 h-4 mr-2" }),
+                    docFiles.length > 1 ? ("Open Page " + (curIdx + 1)) : "Open Full Document"
+                  ]
+                }),
+                e.jsxs(j, {
+                  className: "flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white",
+                  onClick: () => {
+                    const t = document.createElement("a");
+                    t.href = curFileUrl;
+                    t.download = "POD_" + (g.trip_id || g.id) + "_Page_" + (curIdx + 1) + (isPdf ? ".pdf" : ".jpg");
+                    document.body.appendChild(t);
+                    t.click();
+                    document.body.removeChild(t);
+                    w.success("POD page " + (curIdx + 1) + " downloaded");
+                  },
+                  children: [
+                    e.jsx(le, { className: "w-4 h-4 mr-2" }),
+                    docFiles.length > 1 ? ("Download Page " + (curIdx + 1)) : "Download POD"
+                  ]
+                })
+              ]
+            })
+          ]
+        })
+      ]
+    })
+  });
+})()]})}export{at as default};

@@ -781,7 +781,7 @@ return e.jsxs(e.Fragment,{children:[
     [g, y] = h.useState([]),
     [S, P] = h.useState(null),
     [w, k] = h.useState(!1),
-    [isTokenAuthorized, setIsTokenAuthorized] = h.useState(!1),
+    [isTokenAuthorized, setIsTokenAuthorized] = h.useState(!1), [viewingPodModal, setViewingPodModal] = h.useState(!1), [activePodPage, setActivePodPage] = h.useState(0),
     b = async () => {
       if (!isAuthed) {
         y([]);
@@ -1101,29 +1101,50 @@ return e.jsxs(e.Fragment,{children:[
 
   const fe = c?.kms || c?.expand?.route_id?.distance_km || null;
 
-  // 🛡️ Strict POD File Validation: returns valid URL only if actual document exists
-  const F = (() => {
-    if (c?.pod_file) {
-      if (Array.isArray(c.pod_file) && c.pod_file.length > 0 && String(c.pod_file[0]).trim()) {
-        return $.files.getURL(c, c.pod_file[0]);
-      }
-      if (typeof c.pod_file === "string" && c.pod_file.trim()) {
-        return $.files.getURL(c, c.pod_file);
+  // 🛡️ Strict Multi-POD File Resolution: extracts all verified document pages
+  const allPodFiles = (() => {
+    if (!c) return [];
+    const files = [];
+    if (c.pod_file) {
+      if (Array.isArray(c.pod_file)) {
+        c.pod_file.forEach(file => {
+          if (file && typeof file === "string" && file.trim() && file !== "[]" && file !== "null") {
+            files.push($.files.getURL(c, file.trim()));
+          }
+        });
+      } else if (typeof c.pod_file === "string" && c.pod_file.trim()) {
+        const trimmed = c.pod_file.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              parsed.forEach(file => {
+                if (file && typeof file === "string" && file.trim() && file !== "null") {
+                  files.push($.files.getURL(c, file.trim()));
+                }
+              });
+            }
+          } catch (e) {}
+        } else if (trimmed !== "[]" && trimmed !== "null") {
+          files.push($.files.getURL(c, trimmed));
+        }
       }
     }
-    if (c?.pod_link && typeof c.pod_link === "string" && c.pod_link.trim().startsWith("http")) {
-      return c.pod_link.trim();
+    if (files.length === 0 && c.pod_link && typeof c.pod_link === "string" && c.pod_link.trim().startsWith("http")) {
+      files.push(c.pod_link.trim());
     }
-    if (f?.file) {
-      if (Array.isArray(f.file) && f.file.length > 0 && String(f.file[0]).trim()) {
-        return $.files.getURL(f, f.file[0]);
-      }
-      if (typeof f.file === "string" && f.file.trim()) {
-        return $.files.getURL(f, f.file);
+    if (files.length === 0 && f?.file) {
+      if (Array.isArray(f.file)) {
+        f.file.forEach(file => {
+          if (file && typeof file === "string" && file.trim()) files.push($.files.getURL(f, file.trim()));
+        });
+      } else if (typeof f.file === "string" && f.file.trim()) {
+        files.push($.files.getURL(f, f.file.trim()));
       }
     }
-    return null;
+    return files;
   })();
+  const F = allPodFiles.length > 0 ? allPodFiles[0] : null;
 
   const isDelivered = ["delivered", "completed"].includes((c?.trip_status || "").toLowerCase());
   const showSearchForm = isStaff || isClient || !urlKey;
@@ -1776,24 +1797,19 @@ return e.jsxs(e.Fragment,{children:[
                               e.jsx("h4", { className: "font-bold text-sm text-white", children: "Signed POD Document" }),
                               e.jsx("p", {
                                 className: "text-xs text-slate-400",
-                                children: F ? "Official verified signed copy available for download" : "Awaiting physical slip upload upon delivery"
+                                children: F ? (allPodFiles.length > 1 ? (allPodFiles.length + " verified signed pages attached") : "Official verified signed copy available for download") : "Awaiting physical slip upload upon delivery"
                               })
                             ]
                           }),
-                          // 🛡️ Strict conditional POD display: ONLY renders View POD button if real file exists
-                          F ? e.jsx(q, {
-                            asChild: !0,
+                          // 🛡️ Multi-POD View Button
+                          F ? e.jsxs(q, {
                             size: "sm",
-                            className: "rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1 shadow shrink-0",
-                            children: e.jsxs("a", {
-                              href: F,
-                              target: "_blank",
-                              rel: "noopener noreferrer",
-                              children: [
-                                e.jsx(qs, { className: "w-3.5 h-3.5" }),
-                                " View POD"
-                              ]
-                            })
+                            onClick: () => { setActivePodPage(0); setViewingPodModal(!0); },
+                            className: "rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 shadow shrink-0 cursor-pointer",
+                            children: [
+                              e.jsx(qs, { className: "w-3.5 h-3.5" }),
+                              allPodFiles.length > 1 ? ("View POD (" + allPodFiles.length + ")") : "View POD"
+                            ]
                           }) : e.jsx(Le, {
                             variant: "outline",
                             className: "text-xs font-mono text-slate-500 border-slate-700 bg-slate-800/40 px-2 py-0.5 shrink-0",
@@ -1830,7 +1846,132 @@ return e.jsxs(e.Fragment,{children:[
                     ]
                   })
                 ]
-              })
+              }),
+              viewingPodModal && allPodFiles.length > 0 && (() => {
+                const curDocUrl = allPodFiles[Math.min(activePodPage, allPodFiles.length - 1)];
+                const isPdfDoc = curDocUrl.toLowerCase().split("?")[0].endsWith(".pdf");
+                return e.jsx("div", {
+                  className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200",
+                  onClick: () => setViewingPodModal(!1),
+                  children: e.jsxs("div", {
+                    className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden",
+                    onClick: (ev) => ev.stopPropagation(),
+                    children: [
+                      e.jsxs("div", {
+                        className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between",
+                        children: [
+                          e.jsxs("div", {
+                            children: [
+                              e.jsxs("h3", {
+                                className: "font-bold text-white text-sm sm:text-base flex items-center gap-2",
+                                children: [
+                                  e.jsx(Qe, { className: "w-4 h-4 text-emerald-400" }),
+                                  "Proof of Delivery (POD) - ", L,
+                                  allPodFiles.length > 1 ? e.jsx("span", {
+                                    className: "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30",
+                                    children: "Page " + (activePodPage + 1) + " of " + allPodFiles.length
+                                  }) : null
+                                ]
+                              }),
+                              e.jsxs("p", {
+                                className: "text-xs text-slate-400 mt-0.5",
+                                children: [
+                                  "Truck: ", U, " • Client: ", B, Q ? (" • LR: " + Q) : ""
+                                ]
+                              })
+                            ]
+                          }),
+                          e.jsx("button", {
+                            onClick: () => setViewingPodModal(!1),
+                            className: "p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer font-bold",
+                            children: "✕"
+                          })
+                        ]
+                      }),
+                      e.jsxs("div", {
+                        className: "relative p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/90 min-h-[350px]",
+                        children: [
+                          isPdfDoc ? e.jsx("iframe", {
+                            src: curDocUrl,
+                            className: "w-full h-[550px] rounded-xl border border-slate-800",
+                            title: "POD Document"
+                          }) : e.jsx("img", {
+                            src: curDocUrl,
+                            alt: "POD Page " + (activePodPage + 1),
+                            className: "max-h-[550px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
+                          }),
+                          allPodFiles.length > 1 ? e.jsxs(e.Fragment, {
+                            children: [
+                              e.jsx("button", {
+                                onClick: () => setActivePodPage(Math.max(0, activePodPage - 1)),
+                                disabled: activePodPage === 0,
+                                className: "absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer transition text-xs font-bold",
+                                children: "◀"
+                              }),
+                              e.jsx("button", {
+                                onClick: () => setActivePodPage(Math.min(allPodFiles.length - 1, activePodPage + 1)),
+                                disabled: activePodPage === allPodFiles.length - 1,
+                                className: "absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer transition text-xs font-bold",
+                                children: "▶"
+                              })
+                            ]
+                          }) : null
+                        ]
+                      }),
+                      allPodFiles.length > 1 ? e.jsx("div", {
+                        className: "px-4 py-2 bg-slate-950 border-t border-slate-800 flex items-center gap-2 overflow-x-auto",
+                        children: allPodFiles.map((url, idx) => e.jsxs("button", {
+                          key: idx,
+                          onClick: () => setActivePodPage(idx),
+                          className: "px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer border " + (
+                            idx === activePodPage
+                              ? "bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400/40"
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                          ),
+                          children: [
+                            "Page " + (idx + 1),
+                            url.toLowerCase().split("?")[0].endsWith(".pdf") ? e.jsx("span", {
+                              className: "text-[9px] text-rose-400 uppercase font-mono",
+                              children: "PDF"
+                            }) : null
+                          ]
+                        }, idx))
+                      }) : null,
+                      e.jsxs("div", {
+                        className: "p-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3",
+                        children: [
+                          e.jsx("span", {
+                            className: "text-xs text-slate-400 font-mono",
+                            children: allPodFiles.length > 1 ? ("Showing page " + (activePodPage + 1) + " of " + allPodFiles.length) : "1 verified POD document"
+                          }),
+                          e.jsxs("div", {
+                            className: "flex items-center gap-2",
+                            children: [
+                              e.jsxs("a", {
+                                href: curDocUrl,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                download: "POD_" + L + "_Page_" + (activePodPage + 1),
+                                className: "px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer shadow",
+                                children: [
+                                  e.jsx(qs, { className: "w-3.5 h-3.5" }),
+                                  allPodFiles.length > 1 ? ("Download Page " + (activePodPage + 1)) : "Download Document"
+                                ]
+                              }),
+                              e.jsx(q, {
+                                variant: "outline",
+                                onClick: () => setViewingPodModal(!1),
+                                className: "rounded-xl border-slate-700 text-slate-300",
+                                children: "Close"
+                              })
+                            ]
+                          })
+                        ]
+                      })
+                    ]
+                  })
+                });
+              })()
             ]
           })
         ]
