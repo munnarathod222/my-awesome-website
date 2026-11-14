@@ -1776,7 +1776,16 @@
         "protected": false,
         "required": false,
         "system": false,
-        "thumbs": null,
+        "thumbs": [
+          "50x50",
+          "100x100",
+          "150x150",
+          "200x200",
+          "300x300",
+          "400x300",
+          "800x600",
+          "800x800"
+        ],
         "type": "file"
       },
       {
@@ -1854,9 +1863,14 @@
         "required": false,
         "system": false,
         "thumbs": [
+          "50x50",
           "100x100",
+          "150x150",
+          "200x200",
+          "300x300",
           "400x300",
-          "800x600"
+          "800x600",
+          "800x800"
         ],
         "type": "file"
       }
@@ -12019,9 +12033,14 @@
         "required": false,
         "system": false,
         "thumbs": [
+          "50x50",
           "100x100",
+          "150x150",
           "200x200",
-          "800x600"
+          "300x300",
+          "400x300",
+          "800x600",
+          "800x800"
         ],
         "type": "file"
       },

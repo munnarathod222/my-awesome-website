@@ -1151,16 +1151,17 @@ const initDatabaseIndexes = async (dbFilePath) => {
         logger.warn(`Notice updating _collections schema: ${colErr.message}`);
       }
 
-      // Ensure PocketBase tyres and trucks collections schema has thumbs configured for tyre_image and battery_image
+      // Ensure PocketBase tyres and trucks collections schema has thumbs configured for tyre_image, body_images, and battery_image
+      const REQUIRED_THUMBS = ['50x50', '100x100', '150x150', '200x200', '300x300', '400x300', '800x600', '800x800'];
       try {
         const tyreRow = db.prepare("SELECT fields FROM _collections WHERE name='tyres'").get();
         if (tyreRow && tyreRow.fields) {
           const fields = JSON.parse(tyreRow.fields);
           const imgField = fields.find(f => f.name === 'tyre_image');
-          if (imgField && (!imgField.thumbs || imgField.thumbs.length === 0)) {
-            imgField.thumbs = ['100x100', '200x200', '800x600'];
+          if (imgField) {
+            imgField.thumbs = REQUIRED_THUMBS;
             db.prepare("UPDATE _collections SET fields = ? WHERE name='tyres'").run(JSON.stringify(fields));
-            logger.info("✅ PocketBase _collections schema updated with thumbs for tyres.tyre_image!");
+            logger.info("✅ PocketBase _collections schema updated with comprehensive thumbs for tyres.tyre_image!");
           }
         }
       } catch (tyreColErr) {
@@ -1171,15 +1172,24 @@ const initDatabaseIndexes = async (dbFilePath) => {
         const truckRow = db.prepare("SELECT fields FROM _collections WHERE name='trucks'").get();
         if (truckRow && truckRow.fields) {
           const fields = JSON.parse(truckRow.fields);
-          const imgField = fields.find(f => f.name === 'battery_image');
-          if (imgField && (!imgField.thumbs || imgField.thumbs.length === 0)) {
-            imgField.thumbs = ['100x100', '400x300', '800x600'];
+          let updated = false;
+          const bodyField = fields.find(f => f.name === 'body_images');
+          if (bodyField) {
+            bodyField.thumbs = REQUIRED_THUMBS;
+            updated = true;
+          }
+          const batField = fields.find(f => f.name === 'battery_image');
+          if (batField) {
+            batField.thumbs = REQUIRED_THUMBS;
+            updated = true;
+          }
+          if (updated) {
             db.prepare("UPDATE _collections SET fields = ? WHERE name='trucks'").run(JSON.stringify(fields));
-            logger.info("✅ PocketBase _collections schema updated with thumbs for trucks.battery_image!");
+            logger.info("✅ PocketBase _collections schema updated with comprehensive thumbs for trucks.body_images & battery_image!");
           }
         }
       } catch (truckColErr) {
-        logger.warn(`Notice updating trucks battery_image thumbs schema: ${truckColErr.message}`);
+        logger.warn(`Notice updating trucks thumbs schema: ${truckColErr.message}`);
       }
 
       // Ensure PocketBase clients collection schema allows Broker in client_type
@@ -5383,7 +5393,13 @@ const handleDirectFileServe = async (req, res, next) => {
   next();
 };
 
-app.get('/api/files/:collection/:recordId/:filename', handleDirectFileServe);
+app.get('/api/files/:collection/:recordId/:filename', (req, res, next) => {
+  if (req.query && (req.query.thumb || req.query.thumbnail)) {
+    req.url = `/hcgi/platform/api/files/${encodeURIComponent(req.params.collection)}/${encodeURIComponent(req.params.recordId)}/${encodeURIComponent(req.params.filename)}` + (req.url.includes('?') ? '?' + req.url.split('?')[1] : '');
+    return app._router.handle(req, res, next);
+  }
+  handleDirectFileServe(req, res, next);
+});
 app.get('/hcgi/platform/api/files/:collection/:recordId/:filename', handleDirectFileServe);
 
 // Secure Dynamic Storage File Sync & Upload API
@@ -5429,18 +5445,55 @@ app.use('/hcgi/platform', (req, res, next) => {
   // Intercept PocketBase file requests: /api/files/:collection/:recordId/:filename
   const parts = parsedUrl.pathname.split('/');
   if (parts[1] === 'api' && parts[2] === 'files' && parts.length >= 6) {
-    const collectionId = parts[3];
+    const collectionNameOrId = parts[3];
     const recordId = parts[4];
     const filename = parts[5];
     
-    // Construct local path: pb_data/storage/:collectionId/:recordId/:filename
-    const localFilePath = path.join(global.dbFilePath ? path.dirname(global.dbFilePath) : './pb_data', 'storage', collectionId, recordId, filename);
-    
-    if (!fs.existsSync(localFilePath)) {
-      logger.info(`🔍 Lazy-downloading missing file on-demand: ${collectionId}/${recordId}/${filename}`);
-      const remotePath = `storage/${collectionId}/${recordId}/${filename}`;
-      // Await downloading file from Supabase before proxying so PocketBase can serve it from disk
-      await downloadFileFromSupabase(remotePath, localFilePath);
+    // Resolve collectionName <-> collectionId from SQLite if possible
+    let colId = collectionNameOrId;
+    let colName = collectionNameOrId;
+    try {
+      const { DatabaseSync } = require('node:sqlite');
+      const dbPath = global.dbFilePath || path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+      if (fs.existsSync(dbPath)) {
+        const sdb = new DatabaseSync(dbPath);
+        const row = sdb.prepare("SELECT id, name FROM _collections WHERE name = ? OR id = ?").get(collectionNameOrId, collectionNameOrId);
+        sdb.close();
+        if (row) {
+          colId = row.id;
+          colName = row.name;
+        }
+      }
+    } catch (_) {}
+
+    const storageBase = global.storageDir || (global.dbFilePath ? path.join(path.dirname(global.dbFilePath), 'storage') : path.resolve(__dirname, '../../pocketbase/pb_data/storage'));
+    const pathId = path.join(storageBase, colId, recordId, filename);
+    const pathName = path.join(storageBase, colName, recordId, filename);
+
+    if (!fs.existsSync(pathId) && !fs.existsSync(pathName)) {
+      logger.info(`🔍 Lazy-downloading missing file on-demand for thumbnail: ${colName}/${recordId}/${filename}`);
+      let ok = await downloadFileFromSupabase(`storage/${colId}/${recordId}/${filename}`, pathId);
+      if (!ok && colName !== colId) {
+        ok = await downloadFileFromSupabase(`storage/${colName}/${recordId}/${filename}`, pathId);
+      }
+      if (ok && fs.existsSync(pathId)) {
+        try {
+          if (pathName !== pathId) {
+            fs.mkdirSync(path.dirname(pathName), { recursive: true });
+            fs.copyFileSync(pathId, pathName);
+          }
+        } catch (_) {}
+      }
+    } else if (fs.existsSync(pathId) && !fs.existsSync(pathName)) {
+      try {
+        fs.mkdirSync(path.dirname(pathName), { recursive: true });
+        fs.copyFileSync(pathId, pathName);
+      } catch (_) {}
+    } else if (fs.existsSync(pathName) && !fs.existsSync(pathId)) {
+      try {
+        fs.mkdirSync(path.dirname(pathId), { recursive: true });
+        fs.copyFileSync(pathName, pathId);
+      } catch (_) {}
     }
   }
   // ──────────────────────────────────────────────────────────────────

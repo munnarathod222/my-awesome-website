@@ -788,7 +788,7 @@ export default function TruckManagerPage() {
           {trucks.map(truck => {
             const bodyImgs = parseImageList(truck.body_images);
             const hasImages = bodyImgs.length > 0;
-            const primaryImage = hasImages ? pb.files.getUrl(truck, bodyImgs[0], { thumb: '200x120' }) : null;
+            const primaryImage = hasImages ? pb.files.getUrl(truck, bodyImgs[0], { thumb: '200x200' }) : null;
             const assignedDriver = drivers.find(d => d.assigned_truck === truck.id);
 
             return (
@@ -800,7 +800,7 @@ export default function TruckManagerPage() {
                     onClick={() => hasImages && setGalleryConfig({ isOpen: true, truck, activeIndex: 0 })}
                   >
                     {hasImages ? (
-                      <img src={primaryImage} alt={truck.truck_number} className="w-full h-full object-cover" />
+                      <img src={primaryImage} loading="lazy" decoding="async" alt={truck.truck_number} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-primary/5 text-primary/40">
                         <Truck className="w-4 h-4" />
@@ -1164,7 +1164,7 @@ export default function TruckManagerPage() {
                   {galleryImgs.length > 1 && (
                     <div className="p-3 px-6 bg-slate-900/90 border-t border-slate-800 flex items-center justify-center gap-2.5 overflow-x-auto">
                       {galleryImgs.map((imgName, idx) => {
-                        const thumbUrl = pb.files.getUrl(galleryConfig.truck, imgName, { thumb: '120x90' });
+                        const thumbUrl = pb.files.getUrl(galleryConfig.truck, imgName, { thumb: '100x100' });
                         const isSelected = activeIndex === idx;
                         return (
                           <button 
@@ -1179,6 +1179,8 @@ export default function TruckManagerPage() {
                           >
                             <img 
                               src={thumbUrl} 
+                              loading="lazy" 
+                              decoding="async" 
                               alt={`Thumb ${idx + 1}`} 
                               className="w-full h-full object-cover"
                             />

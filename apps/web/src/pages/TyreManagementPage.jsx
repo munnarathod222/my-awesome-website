@@ -654,7 +654,7 @@ const parseImageList = (raw) => {
                             document_number: truck.battery_serial_number || 'N/A' 
                           });
                         }}>
-                          <img src={pb.files.getUrl(truck, img)} alt={`Battery Snapshot ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <img src={pb.files.getUrl(truck, img, { thumb: '400x300' })} loading="lazy" decoding="async" alt={`Battery Snapshot ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                             <Eye className="w-5 h-5 text-white" />
                           </div>
@@ -824,7 +824,7 @@ const parseImageList = (raw) => {
                   <div className="grid grid-cols-2 gap-2">
                     {existingBatteryFiles.map((file, idx) => (
                       <div key={`existing-${idx}`} className="relative aspect-video rounded-xl overflow-hidden border border-border bg-card">
-                        <img src={pb.files.getUrl(truck, file)} alt="Battery Snapshot" className="w-full h-full object-cover" />
+                        <img src={pb.files.getUrl(truck, file, { thumb: '150x150' })} loading="lazy" decoding="async" alt="Battery Snapshot" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           className="absolute top-1.5 right-1.5 bg-destructive text-white p-1 rounded-full shadow-md hover:bg-destructive/90"
