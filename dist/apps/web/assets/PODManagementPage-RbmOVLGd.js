@@ -891,6 +891,7 @@ function LorryReceiptsPodHubPage() {
       const clientName = getClientName(trip);
       const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
       const route = formatRoute(trip);
+      const actualFile = getActualPodFile(trip);
       return /* @__PURE__ */ React.createElement("tr", { key: trip.id, className: "hover:bg-slate-800/40 transition" }, /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pl-5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg" }, lrNum), /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -923,55 +924,34 @@ function LorryReceiptsPodHubPage() {
           title: "Share on WhatsApp"
         },
         /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-3.5 h-3.5" })
-      ), (() => {
-        const actualFile = getActualPodFile(trip);
-        return actualFile ? /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            onClick: () => setViewingPodDoc({
-              url: pb.files.getUrl(trip, actualFile),
-              tripId: trip.trip_id || trip.id,
-              truck: trip.truck_number,
-              client: clientName
-            }),
-            className: "p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition",
-            title: "View Signed POD"
-          },
-          /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" })
-        ) : isReq ? /* @__PURE__ */ React.createElement(
-          "label",
-          {
-            htmlFor: "upload-lr-" + trip.id,
-            className: "p-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 rounded-lg cursor-pointer transition flex items-center gap-1",
-            title: "Upload POD File"
-          },
-          /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
-          /* @__PURE__ */ React.createElement("input", {
-            type: "file",
-            id: "upload-lr-" + trip.id,
-            className: "hidden",
-            accept: "image/*,application/pdf",
-            onChange: (e) => handleUploadPod(e, trip.id)
-          })
-        ) : null;
-      })() : isReq ? /* @__PURE__ */ React.createElement(
+      ), actualFile ? /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => setViewingPodDoc({
+            url: pb.files.getUrl(trip, actualFile),
+            tripId: trip.trip_id || trip.id,
+            truck: trip.truck_number,
+            client: clientName
+          }),
+          className: "p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition",
+          title: "View Signed POD"
+        },
+        /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" })
+      ) : isReq ? /* @__PURE__ */ React.createElement(
         "label",
         {
           htmlFor: "upload-lr-" + trip.id,
-          className: "p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg cursor-pointer transition",
+          className: "p-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 rounded-lg cursor-pointer transition flex items-center gap-1",
           title: "Upload POD File"
         },
         /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
-        /* @__PURE__ */ React.createElement(
-          "input",
-          {
-            type: "file",
-            id: "upload-lr-" + trip.id,
-            className: "hidden",
-            accept: "image/*,application/pdf",
-            onChange: (e) => handleUploadPod(e, trip.id)
-          }
-        )
+        /* @__PURE__ */ React.createElement("input", {
+          type: "file",
+          id: "upload-lr-" + trip.id,
+          className: "hidden",
+          accept: "image/*,application/pdf",
+          onChange: (e) => handleUploadPod(e, trip.id)
+        })
       ) : null)));
     }))))
   ) : (
