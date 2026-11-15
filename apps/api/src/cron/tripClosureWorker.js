@@ -58,8 +58,6 @@ export async function processTripClosures() {
     }
 
     const nowMs = Date.now();
-    const TEN_MINUTES_MS = 10 * 60 * 1000;
-
     for (const trip of trips) {
       const blockers = [];
 
@@ -83,51 +81,37 @@ export async function processTripClosures() {
 
       // Evaluation
       if (blockers.length === 0) {
-        // Zero blockers!
-        if (!trip.closure_verified_at) {
-          // Initiate the 10-minute buffer
-          const verifiedAt = new Date().toISOString();
-          await pb.collection('trip_logs').update(trip.id, {
-            closure_verified_at: verifiedAt,
-            closure_blockers: '[]',
-          }, { $autoCancel: false }).catch(() => {});
-          logger.info(`[TripClosure] Trip ${trip.trip_id || trip.id} passed POD gate. 10-min closure buffer started at ${verifiedAt}.`);
-        } else {
-          // Check if 10-minute buffer has elapsed
-          const verifiedMs = new Date(trip.closure_verified_at).getTime();
-          if (!isNaN(verifiedMs) && (nowMs - verifiedMs >= TEN_MINUTES_MS)) {
-            // Buffer elapsed -> Automatically close trip!
-            const closedAt = new Date().toISOString();
-            await pb.collection('trip_logs').update(trip.id, {
-              trip_status: 'Completed',
-              auto_closed_at: closedAt,
-              closure_blockers: '[]',
-              subcontractor_settlement_status: trip.ownership_type === 'Attached' ? 'Settled' : (trip.subcontractor_settlement_status || 'Settled')
-            }, { $autoCancel: false });
+        // Zero blockers! Immediately close trip (10-minute buffer eliminated)
+        const closedAt = new Date().toISOString();
+        await pb.collection('trip_logs').update(trip.id, {
+          trip_status: 'Completed',
+          auto_closed_at: closedAt,
+          closure_verified_at: closedAt,
+          closure_blockers: '[]',
+          subcontractor_settlement_status: trip.ownership_type === 'Attached' ? 'Settled' : (trip.subcontractor_settlement_status || 'Settled')
+        }, { $autoCancel: false });
 
-            logger.info(`[TripClosure] 🎉 Auto-closed trip ${trip.trip_id || trip.id} after 10-minute buffer.`);
+        logger.info(`[TripClosure] 🎉 Auto-closed trip ${trip.trip_id || trip.id} immediately without delay.`);
 
-            // Create completion record in operations_tasks
-            try {
-              const taskNumber = `CLS-${Date.now().toString(36).toUpperCase()}`;
-              await pb.collection('operations_tasks').create({
-                task_number: taskNumber,
-                title: `Trip Auto-Closed: ${trip.route || 'Shipment'} (${trip.truck_number || ''})`,
-                description: `Trip automatically closed after 10-minute buffer with verified POD status.`,
-                category: 'Dispatch & Trips',
-                department: 'Operations',
-                priority: 'Low',
-                status: 'Completed',
-                completion_date: closedAt,
-                related_entity_type: 'trip_logs',
-                related_entity_id: trip.id,
-                created_by_name: 'Trip Closure Automation Engine',
-                assigned_to_name: trip.driver_name || 'Fleet Dispatcher',
-              }, { $autoCancel: false });
-            } catch (taskErr) {
-              logger.warn(`[TripClosure] Notice creating task record: ${taskErr.message}`);
-            }
-          }
+        // Create completion record in operations_tasks
+        try {
+          const taskNumber = `CLS-${Date.now().toString(36).toUpperCase()}`;
+          await pb.collection('operations_tasks').create({
+            task_number: taskNumber,
+            title: `Trip Auto-Closed: ${trip.route || 'Shipment'} (${trip.truck_number || ''})`,
+            description: `Trip automatically closed immediately upon verified POD status.`,
+            category: 'Dispatch & Trips',
+            department: 'Operations',
+            priority: 'Low',
+            status: 'Completed',
+            completion_date: closedAt,
+            related_entity_type: 'trip_logs',
+            related_entity_id: trip.id,
+            created_by_name: 'Trip Closure Automation Engine',
+            assigned_to_name: trip.driver_name || 'Fleet Dispatcher',
+          }, { $autoCancel: false });
+        } catch (taskErr) {
+          logger.warn(`[TripClosure] Notice creating task record: ${taskErr.message}`);
         }
       } else {
         // Blocker exists (Pending POD Upload): store blocker and reset verification buffer

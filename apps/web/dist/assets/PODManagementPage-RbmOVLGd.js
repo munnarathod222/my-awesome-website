@@ -28,6 +28,76 @@ import {
 import "./vendor-radix-BQCqNqg0.js";
 import "./vendor-pdf-DtmgLs_2.js";
 const { useState, useEffect, useMemo, useRef } = React;
+
+function getCourierTrackingUrl(partner, awb) {
+  if (!awb) return null;
+  const clean = String(awb).trim();
+  const p = String(partner || "").toUpperCase();
+  if (p.includes("DTDC")) return "https://www.dtdc.in/tracking/shipment-tracking.asp?strCnno=" + encodeURIComponent(clean);
+  if (p.includes("TRACKON")) return "https://trackon.in/Tracking/Index?docketNo=" + encodeURIComponent(clean);
+  if (p.includes("BLUEDART") || p.includes("BLUE DART")) return "https://www.bluedart.com/tracking?trackNumber=" + encodeURIComponent(clean);
+  if (p.includes("DELHIVERY")) return "https://www.delhivery.com/track/package/" + encodeURIComponent(clean);
+  if (p.includes("SPEED POST") || p.includes("POST")) return "https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx";
+  if (p.includes("PROFESSIONAL")) return "https://www.tpcindia.com/track.aspx?awb=" + encodeURIComponent(clean);
+  return null;
+}
+
+function getPodCourierInfo(trip) {
+  const awb = trip.pod_courier_awb ? String(trip.pod_courier_awb).trim() : "";
+  const partner = trip.pod_courier_partner || "DTDC";
+  const courierDate = trip.pod_courier_date || "";
+  const isDeliveredToClient = trip.pod_hardcopy_status === "Delivered to Client";
+  
+  if (isDeliveredToClient) {
+    return {
+      status: "delivered",
+      badgeText: "✓ Delivered to Client",
+      badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      partner, awb, courierDate
+    };
+  }
+  
+  if (awb) {
+    return {
+      status: "in_transit",
+      badgeText: "🚚 " + partner + ": " + awb,
+      badgeClass: "bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono",
+      partner, awb, courierDate,
+      trackingUrl: getCourierTrackingUrl(partner, awb)
+    };
+  }
+  
+  const dateRef = trip.delivered_at || trip.date;
+  let days = 0;
+  if (dateRef) {
+    const ms = Date.now() - new Date(dateRef).getTime();
+    days = Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+  }
+  
+  if (days >= 5) {
+    return {
+      status: "overdue",
+      badgeText: "🚨 " + days + "d OVERDUE COURIER",
+      badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse font-bold",
+      days
+    };
+  } else if (days >= 3) {
+    return {
+      status: "warning",
+      badgeText: "⚠️ " + days + "d Uncouriered",
+      badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold",
+      days
+    };
+  } else {
+    return {
+      status: "pending",
+      badgeText: "⏱️ " + days + "d Pending Courier",
+      badgeClass: "bg-slate-800 text-slate-300 border-slate-700 font-medium",
+      days
+    };
+  }
+}
+
 function LorryReceiptsPodHubPage() {
   const [activeTab, setActiveTab] = useState("pod");
   const [trips, setTrips] = useState([]);
@@ -63,6 +133,18 @@ function LorryReceiptsPodHubPage() {
   const [viewingPodDoc, setViewingPodDoc] = useState(null);
   const [uploadingTripId, setUploadingTripId] = useState(null);
   const [editLrTrip, setEditLrTrip] = useState(null);
+  const [courierModalTrip, setCourierModalTrip] = useState(null);
+  const [courierForm, setCourierForm] = useState({
+    partner: "DTDC",
+    awb: "",
+    date: new Date().toISOString().split("T")[0],
+    recipient: "",
+    notes: "",
+    isDelivered: false
+  });
+  const [savingCourier, setSavingCourier] = useState(false);
+  const [courierFilter, setCourierFilter] = useState("all");
+
   const [newLrNumber, setNewLrNumber] = useState("");
   const [createForm, setCreateForm] = useState({
     selectedTripId: "",
@@ -700,6 +782,64 @@ function LorryReceiptsPodHubPage() {
       toast.error("Failed to update status. Please try again.");
     }
   };
+  
+  const handleOpenCourierModal = (trip) => {
+    setCourierModalTrip(trip);
+    const client = getClientName(trip);
+    setCourierForm({
+      partner: trip.pod_courier_partner || "DTDC",
+      awb: trip.pod_courier_awb || "",
+      date: trip.pod_courier_date || new Date().toISOString().split("T")[0],
+      recipient: trip.pod_courier_recipient || (client ? client + " Billing Desk" : ""),
+      notes: trip.pod_courier_notes || "",
+      isDelivered: trip.pod_hardcopy_status === "Delivered to Client"
+    });
+  };
+
+  const handleSaveCourier = async () => {
+    if (!courierModalTrip) return;
+    setSavingCourier(true);
+    try {
+      const isDel = courierForm.isDelivered;
+      const updateData = {
+        pod_courier_partner: courierForm.partner,
+        pod_courier_awb: courierForm.awb.trim(),
+        pod_courier_date: courierForm.date,
+        pod_courier_recipient: courierForm.recipient.trim(),
+        pod_courier_notes: courierForm.notes.trim(),
+        pod_hardcopy_status: isDel ? "Delivered to Client" : (courierForm.awb.trim() ? "Couriered" : "Pending Courier")
+      };
+      if (isDel && !courierModalTrip.pod_courier_delivered_date) {
+        updateData.pod_courier_delivered_date = new Date().toISOString().split("T")[0];
+      }
+      
+      await pb.collection("trip_logs").update(courierModalTrip.id, updateData);
+      setTrips(prev => prev.map(t => t.id === courierModalTrip.id ? { ...t, ...updateData } : t));
+      toast.success("Courier tracking updated for " + (courierModalTrip.trip_id || courierModalTrip.truck_number || "trip"));
+      setCourierModalTrip(null);
+    } catch (err) {
+      toast.error("Failed to save courier info: " + err.message);
+    } finally {
+      setSavingCourier(false);
+    }
+  };
+
+  const handleSendCourierWhatsApp = (trip, formOverride) => {
+    const f = formOverride || {
+      partner: trip.pod_courier_partner || "DTDC",
+      awb: trip.pod_courier_awb || "",
+      date: trip.pod_courier_date || new Date().toISOString().split("T")[0]
+    };
+    const client = getClientName(trip);
+    const truck = trip.truck_number || "";
+    const route = formatRoute(trip);
+    const trackUrl = getCourierTrackingUrl(f.partner, f.awb);
+    
+    const text = "*JAI BHAVANI CARGO OPERATIONS*\n📦 *PHYSICAL POD COURIER DISPATCH NOTICE*\n\n🔹 *Client:* " + client + "\n🔹 *Trip ID:* #" + (trip.trip_id || trip.id?.slice(0, 8)) + "\n🔹 *Vehicle:* " + truck + "\n🔹 *Route:* " + route + "\n🔹 *Courier Partner:* " + f.partner + "\n🔹 *Docket / AWB #:* " + f.awb + "\n🔹 *Dispatch Date:* " + f.date + (trackUrl ? "\n🔹 *Live Tracking:* " + trackUrl : "") + "\n\nPlease confirm physical acknowledgment upon delivery for billing clearance.\n\nOperations Desk: +91 7794072244";
+    
+    window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(text), "_blank");
+  };
+
   const handleSaveLrNumber = async () => {
     if (!editLrTrip) return;
     try {
@@ -925,6 +1065,11 @@ function LorryReceiptsPodHubPage() {
         }
       }
       const podSt = getPodStatus(t);
+      if (activeTab === "pod") {
+        if (courierFilter === "pending" && (t.pod_courier_awb || t.pod_hardcopy_status === "Delivered to Client")) return false;
+        if (courierFilter === "couriered" && (!t.pod_courier_awb || t.pod_hardcopy_status === "Delivered to Client")) return false;
+        if (courierFilter === "delivered" && t.pod_hardcopy_status !== "Delivered to Client") return false;
+      }
       if (statusFilter === "pod_pending" && podSt !== "Pending") return false;
       if (statusFilter === "pod_uploaded" && podSt !== "Uploaded") return false;
       if (statusFilter === "pod_verified" && podSt !== "Verified") return false;
@@ -932,7 +1077,7 @@ function LorryReceiptsPodHubPage() {
       if (statusFilter === "completed" && !(t.status === "Completed" || t.trip_status === "Completed" || t.status === "Delivered" || t.trip_status === "Delivered")) return false;
       return true;
     });
-  }, [trips, clientList, clientMap, search, statusFilter, clientFilter, activeTab]);
+  }, [trips, clientList, clientMap, search, statusFilter, clientFilter, activeTab, courierFilter]);
   const podClientsCount = useMemo(() => {
     return clientList.filter(clientRequiresPod).length;
   }, [clientList]);
@@ -995,7 +1140,22 @@ function LorryReceiptsPodHubPage() {
     /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-4 h-4" }),
     /* @__PURE__ */ React.createElement("span", null, "Lorry Receipts (LR / Bilty)"),
     /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs font-mono " + (activeTab === "lr" ? "bg-slate-950 text-amber-400 font-bold" : "bg-slate-800 text-slate-300") }, trips.length)
-  )), activeTab === "pod" ? /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-blue-400 text-xs font-bold uppercase tracking-wider" }, "Required POD Trips"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white mt-1 font-mono" }, podTripsList.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Clients requiring POD (", podClientsCount, " clients)")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-amber-400 text-xs font-bold uppercase tracking-wider" }, "POD Pending Review"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono" }, pendingPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Awaiting receiver signed paper")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-cyan-400 text-xs font-bold uppercase tracking-wider" }, "POD Uploaded"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-cyan-400 mt-1 font-mono" }, uploadedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Uploaded & awaiting verify")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-emerald-400 text-xs font-bold uppercase tracking-wider" }, "POD Verified"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono" }, verifiedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Officially signed & cleared"))) : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-slate-400 text-xs font-bold uppercase tracking-wider" }, "Total Consignments"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white mt-1 font-mono" }, trips.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Complete fleet dispatch register")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-amber-400 text-xs font-bold uppercase tracking-wider" }, "In-Transit / Live"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono" }, inTransitCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Dispatched on highway")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-blue-400 text-xs font-bold uppercase tracking-wider" }, "POD Required LRs"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-blue-400 mt-1 font-mono" }, podTripsList.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Mandated by consignor/client")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-emerald-400 text-xs font-bold uppercase tracking-wider" }, "POD Verified"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono" }, verifiedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Delivery fully acknowledged"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-800" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 w-full" }, /* @__PURE__ */ React.createElement(SearchIcon, { className: "absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" }), /* @__PURE__ */ React.createElement(
+  )), activeTab === "pod" ? /* @__PURE__ */ React.createElement("div", { className: "space-y-3" },
+  /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap bg-slate-900/80 p-2 rounded-2xl border border-slate-800" },
+    /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-slate-400 font-bold uppercase px-2" }, "📦 Courier Status:"),
+    [
+      { id: "all", label: "All PODs" },
+      { id: "pending", label: "🚨 Pending Courier (Action Needed)" },
+      { id: "couriered", label: "🚚 In-Transit Couriers" },
+      { id: "delivered", label: "✓ Delivered to Client" }
+    ].map(f => React.createElement("button", {
+      key: f.id,
+      type: "button",
+      onClick: () => setCourierFilter(f.id),
+      className: "px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer " + (courierFilter === f.id ? (f.id === "pending" ? "bg-rose-500 text-white shadow-md font-extrabold" : "bg-blue-600 text-white shadow-md font-extrabold") : "bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200")
+    }, f.label))
+  ),
+  /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-blue-400 text-xs font-bold uppercase tracking-wider" }, "Required POD Trips"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white mt-1 font-mono" }, podTripsList.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Clients requiring POD (", podClientsCount, " clients)")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-amber-400 text-xs font-bold uppercase tracking-wider" }, "POD Pending Review"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono" }, pendingPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Awaiting receiver signed paper")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-cyan-400 text-xs font-bold uppercase tracking-wider" }, "POD Uploaded"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-cyan-400 mt-1 font-mono" }, uploadedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Uploaded & awaiting verify")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-emerald-400 text-xs font-bold uppercase tracking-wider" }, "POD Verified"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono" }, verifiedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "Officially signed & cleared")))) : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-slate-400 text-xs font-bold uppercase tracking-wider" }, "Total Consignments"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white mt-1 font-mono" }, trips.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Complete fleet dispatch register")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-amber-400 text-xs font-bold uppercase tracking-wider" }, "In-Transit / Live"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono" }, inTransitCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Dispatched on highway")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-blue-400 text-xs font-bold uppercase tracking-wider" }, "POD Required LRs"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-blue-400 mt-1 font-mono" }, podTripsList.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Mandated by consignor/client")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-emerald-400 text-xs font-bold uppercase tracking-wider" }, "POD Verified"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono" }, verifiedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Delivery fully acknowledged"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-800" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 w-full" }, /* @__PURE__ */ React.createElement(SearchIcon, { className: "absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" }), /* @__PURE__ */ React.createElement(
     Input,
     {
       placeholder: activeTab === "lr" ? "Search by LR #, Trip ID, Truck #, Client, Route..." : "Search POD by Trip ID, Truck #, Client, Route...",
@@ -1039,7 +1199,7 @@ function LorryReceiptsPodHubPage() {
     "View All Clients (Including Non-POD)"
   )) : activeTab === "lr" ? (
     /* TAB 1: LORRY RECEIPTS (LR / BILTY) TABLE */
-    /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left text-xs border-collapse" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { className: "bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pl-5" }, "LR / Bilty #"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Trip & Truck"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Client & Route"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Booking Date"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Freight"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "POD Requirement"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pr-5 text-right" }, "Actions"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-slate-800/60 text-slate-200" }, filteredTrips.map((trip) => {
+    /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left text-xs border-collapse" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { className: "bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pl-5" }, "LR / Bilty #"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Trip & Truck"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Client & Route"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Booking Date"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Freight"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "POD Requirement"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Physical Courier Tracking"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pr-5 text-right" }, "Actions"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-slate-800/60 text-slate-200" }, filteredTrips.map((trip) => {
       const lrNum = getLrNumber(trip);
       const podSt = getPodStatus(trip);
       const clObj = getClientForTrip(trip);
@@ -1058,7 +1218,34 @@ function LorryReceiptsPodHubPage() {
           title: "Edit LR Number"
         },
         "Edit"
-      )), trip.eway_bill_number && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500 font-mono mt-0.5" }, "E-Way: ", trip.eway_bill_number)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(TruckIcon, { className: "w-3.5 h-3.5 text-slate-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-mono" }, trip.truck_number || "TG12U2637")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 font-mono" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), trip.driver_name && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500" }, trip.driver_name)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-100" }, clientName), isReq && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "POD Req")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-0.5" }, route)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300 font-mono" }, formatTripDate(trip.date)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 font-mono font-bold text-emerald-400" }, "\u20B9", Number(trip.revenue || 0).toLocaleString("en-IN")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, podSt === "Not Required" ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700" }, "Not Required") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified POD" : podSt === "Uploaded" ? "\u231B POD Uploaded" : "\u26A0 POD Pending")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
+      )), trip.eway_bill_number && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500 font-mono mt-0.5" }, "E-Way: ", trip.eway_bill_number)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(TruckIcon, { className: "w-3.5 h-3.5 text-slate-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-mono" }, trip.truck_number || "TG12U2637")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 font-mono" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), trip.driver_name && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500" }, trip.driver_name)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-100" }, clientName), isReq && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "POD Req")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-0.5" }, route)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300 font-mono" }, formatTripDate(trip.date)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 font-mono font-bold text-emerald-400" }, "\u20B9", Number(trip.revenue || 0).toLocaleString("en-IN")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, podSt === "Not Required" ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700" }, "Not Required") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified POD" : podSt === "Uploaded" ? "\u231B POD Uploaded" : "\u26A0 POD Pending")),
+/* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, (() => {
+  const cInfo = getPodCourierInfo(trip);
+  return React.createElement("div", { className: "space-y-1" },
+    React.createElement("span", {
+      className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border " + cInfo.badgeClass
+    }, cInfo.badgeText),
+    cInfo.trackingUrl ? React.createElement("a", {
+      href: cInfo.trackingUrl,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "block text-[10px] text-blue-400 hover:underline font-mono",
+      title: "Open live courier tracking"
+    }, "Track live ↗") : null,
+    cInfo.courierDate ? React.createElement("p", { className: "text-[9px] text-slate-500 font-mono" }, "Sent: " + cInfo.courierDate) : null
+  );
+})()),
+/* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5 flex-wrap" },
+/* @__PURE__ */ React.createElement("button", {
+  onClick: () => handleOpenCourierModal(trip),
+  className: "px-2 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition",
+  title: "Log physical POD courier details"
+}, "🚚 " + (trip.pod_courier_awb ? "Edit Courier" : "Courier POD")),
+trip.pod_courier_awb ? React.createElement("button", {
+  onClick: () => handleSendCourierWhatsApp(trip),
+  className: "p-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center justify-center cursor-pointer transition",
+  title: "Send WhatsApp courier dispatch notice to client"
+}, "📲") : null, /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => {
@@ -1889,7 +2076,114 @@ function LorryReceiptsPodHubPage() {
       className: "rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold cursor-pointer"
     },
     "Create & Issue LR"
-  ))))), editLrTrip && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl" }, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base" }, "Edit Lorry Receipt (LR) #"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400" }, "Trip: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, editLrTrip.trip_id || editLrTrip.id), " \u2022 Truck: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, editLrTrip.truck_number)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-xs text-slate-400 block mb-1.5 font-medium" }, "New LR Number:"), /* @__PURE__ */ React.createElement(
+  ))))), courierModalTrip && /* @__PURE__ */ React.createElement("div", {
+  className: "fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4",
+  style: { zIndex: 99999 }
+}, /* @__PURE__ */ React.createElement("div", {
+  className: "bg-[#0b141a] border border-blue-500/30 rounded-3xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl text-slate-100 font-sans"
+},
+  /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3" },
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" },
+      /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center text-lg" }, "🚚"),
+      /* @__PURE__ */ React.createElement("div", null,
+        /* @__PURE__ */ React.createElement("h3", { className: "font-black text-white text-base" }, "Log POD Courier Dispatch"),
+        /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" },
+          "Trip: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-amber-400" }, courierModalTrip.trip_id || courierModalTrip.id?.slice(0, 8)),
+          " • Truck: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, courierModalTrip.truck_number),
+          " • Client: ", /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-emerald-400" }, getClientName(courierModalTrip))
+        )
+      )
+    ),
+    /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      onClick: () => setCourierModalTrip(null),
+      className: "w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm font-bold cursor-pointer"
+    }, "✕")
+  ),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" },
+    /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Courier Company:"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5" },
+      ["DTDC", "Trackon", "Professional", "BlueDart", "Delhivery", "Speed Post", "Hand Delivery"].map(p =>
+        /* @__PURE__ */ React.createElement("button", {
+          key: p,
+          type: "button",
+          onClick: () => setCourierForm({ ...courierForm, partner: p }),
+          className: "px-2.5 py-1 rounded-xl text-xs font-bold transition cursor-pointer " + (courierForm.partner === p ? "bg-blue-600 text-white shadow-md scale-105" : "bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800")
+        }, p)
+      )
+    )
+  ),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" },
+    /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Docket / AWB Tracking Number:"),
+    /* @__PURE__ */ React.createElement("input", {
+      type: "text",
+      value: courierForm.awb,
+      onChange: (e) => setCourierForm({ ...courierForm, awb: e.target.value }),
+      placeholder: "e.g. D123456789 / 76543210",
+      className: "w-full h-9 px-3 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+    }),
+    courierForm.awb.trim() ? /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-blue-400 font-mono" },
+      "Live tracking link will be generated automatically for " + courierForm.partner
+    ) : null
+  ),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
+    /* @__PURE__ */ React.createElement("div", { className: "space-y-1" },
+      /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Dispatch Date:"),
+      /* @__PURE__ */ React.createElement("input", {
+        type: "date",
+        value: courierForm.date,
+        onChange: (e) => setCourierForm({ ...courierForm, date: e.target.value }),
+        className: "w-full h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-mono focus:outline-none"
+      })
+    ),
+    /* @__PURE__ */ React.createElement("div", { className: "space-y-1" },
+      /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Billing Desk / Attention:"),
+      /* @__PURE__ */ React.createElement("input", {
+        type: "text",
+        value: courierForm.recipient,
+        onChange: (e) => setCourierForm({ ...courierForm, recipient: e.target.value }),
+        placeholder: "e.g. Regional Billing Desk",
+        className: "w-full h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none"
+      })
+    )
+  ),
+  
+  /* @__PURE__ */ React.createElement("label", { className: "flex items-center gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer text-xs" },
+    /* @__PURE__ */ React.createElement("input", {
+      type: "checkbox",
+      checked: courierForm.isDelivered,
+      onChange: (e) => setCourierForm({ ...courierForm, isDelivered: e.target.checked }),
+      className: "rounded border-slate-700 text-emerald-500 focus:ring-0"
+    }),
+    /* @__PURE__ */ React.createElement("span", { className: "text-slate-200 font-medium" }, "Mark as officially received/acknowledged by client billing desk")
+  ),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 pt-2 border-t border-slate-800" },
+    /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      onClick: () => handleSendCourierWhatsApp(courierModalTrip, courierForm),
+      disabled: !courierForm.awb.trim(),
+      className: "px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+    }, "📲 WhatsApp Client Notice"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+      /* @__PURE__ */ React.createElement("button", {
+        type: "button",
+        onClick: () => setCourierModalTrip(null),
+        className: "px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-bold text-slate-300 cursor-pointer"
+      }, "Cancel"),
+      /* @__PURE__ */ React.createElement("button", {
+        type: "button",
+        onClick: handleSaveCourier,
+        disabled: savingCourier,
+        className: "px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md shadow-blue-600/30 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+      }, savingCourier ? "Saving..." : "💾 Save Courier Details")
+    )
+  )
+)),
+editLrTrip && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl" }, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base" }, "Edit Lorry Receipt (LR) #"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400" }, "Trip: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, editLrTrip.trip_id || editLrTrip.id), " \u2022 Truck: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, editLrTrip.truck_number)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-xs text-slate-400 block mb-1.5 font-medium" }, "New LR Number:"), /* @__PURE__ */ React.createElement(
     Input,
     {
       value: newLrNumber,
