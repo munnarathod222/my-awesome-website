@@ -1319,7 +1319,7 @@ trip.pod_courier_awb ? React.createElement("button", {
     }))))
   ) : (
     /* TAB 2: PROOF OF DELIVERY (POD) TABLE - STRICTLY FOR REQUIRED POD CLIENTS */
-    /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left text-xs border-collapse" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { className: "bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pl-5" }, "Trip & LR Ref"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Client & Requirement"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Vehicle & Driver"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Delivery Route"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Trip Date"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "POD Document"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Status"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pr-5 text-right" }, "Actions"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-slate-800/60 text-slate-200" }, filteredTrips.map((trip) => {
+    /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left text-xs border-collapse" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { className: "bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pl-5" }, "Trip & LR Ref"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Client & Requirement"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Vehicle & Driver"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Delivery Route"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Trip Date"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "POD Document"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Digital POD"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Physical Courier"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pr-5 text-right" }, "Actions"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-slate-800/60 text-slate-200" }, filteredTrips.map((trip) => {
       const lrNum = getLrNumber(trip);
       const podSt = getPodStatus(trip);
       const clObj = getClientForTrip(trip);
@@ -1363,7 +1363,38 @@ trip.pod_courier_awb ? React.createElement("button", {
           accept: "image/*,application/pdf",
           onChange: (e) => handleUploadPod(e, trip.id, false)
         })
-      )), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : podSt === "Not Required" ? "bg-slate-800 text-slate-400 border-slate-700" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "\u231B Uploaded (Review)" : podSt === "Not Required" ? "Not Required" : "\u26A0 Pending POD")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
+      )), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : podSt === "Not Required" ? "bg-slate-800 text-slate-400 border-slate-700" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "\u231B Uploaded (Review)" : podSt === "Not Required" ? "Not Required" : "\u26A0 Pending POD")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, (() => {
+  const cInfo = getPodCourierInfo(trip, isReq);
+  return React.createElement("div", { className: "space-y-1" },
+    React.createElement("span", {
+      className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border " + cInfo.badgeClass
+    }, cInfo.badgeText),
+    cInfo.trackingUrl ? React.createElement("a", {
+      href: cInfo.trackingUrl,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "block text-[10px] text-blue-400 hover:underline font-mono",
+      title: "Open live courier tracking"
+    }, "Track " + cInfo.partner + " ↗") : null,
+    cInfo.courierDate ? React.createElement("p", { className: "text-[9px] text-slate-500 font-mono" }, "Sent: " + cInfo.courierDate) : null,
+    !isReq && cInfo.status === "not_required" ? React.createElement("p", { className: "text-[9px] text-slate-500 italic" }, "Client: POD Not Required") : null
+  );
+})()), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5 flex-wrap" },
+        /* @__PURE__ */ React.createElement("button", {
+          type: "button",
+          onClick: () => handleOpenCourierModal(trip),
+          className: isReq
+            ? "px-2 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-xs"
+            : "px-2 py-1.5 rounded-lg bg-slate-800/40 hover:bg-slate-800/80 text-slate-400 border border-slate-700/50 text-[11px] font-medium flex items-center gap-1 cursor-pointer transition",
+          title: isReq ? "Log physical POD courier details" : "Optional: Client does not require physical POD"
+        }, "🚚 " + (trip.pod_courier_awb ? "Edit Courier" : (isReq ? "Courier POD" : "Optional Courier"))),
+        trip.pod_courier_awb ? /* @__PURE__ */ React.createElement("button", {
+          type: "button",
+          onClick: () => handleSendCourierWhatsApp(trip),
+          className: "p-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center cursor-pointer transition",
+          title: "Send WhatsApp courier dispatch update to client"
+        }, "📲") : null,
+        /* @__PURE__ */ React.createElement(
           "label",
           {
             htmlFor: "pod-upload-" + trip.id,
