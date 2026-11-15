@@ -14,52 +14,52 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { sendWhatsAppNotification, getWhatsAppApiStatus } from '@/lib/whatsappClient.js';
 
-// Pre-configured default sub-transporters and market brokers
-const DEFAULT_TRANSPORTERS = [
-  {
-    id: 'sub_1',
-    name: 'Sri Venkateswara Roadlines & Fleet',
-    owner: 'Venkatesh Goud',
-    phone: '9849112233',
-    city: 'Hyderabad',
-    trucks: '32FT MXL, 24FT'
-  },
-  {
-    id: 'sub_2',
-    name: 'Mahalaxmi Transport Services',
-    owner: 'Subba Rao',
-    phone: '9700889900',
-    city: 'Bangalore / Hyd',
-    trucks: '32FT MXL (3 Trucks)'
-  },
-  {
-    id: 'sub_3',
-    name: 'Bhavani Express Subcontractor',
-    owner: 'Narayana Reddy',
-    phone: '9123409876',
-    city: 'Vijayawada',
-    trucks: '24FT, 32FT SXL'
-  },
-  {
-    id: 'sub_4',
-    name: 'Balaji Freight Carrier',
-    owner: 'Ramesh Patel',
-    phone: '9820012345',
-    city: 'Bhiwandi / Mumbai',
-    trucks: '32FT MXL, Taurus'
-  },
-  {
-    id: 'sub_5',
-    name: 'Deccan Container Logistics',
-    owner: 'Syed Khaja',
-    phone: '8106729777',
-    city: 'Hyderabad DC',
-    trucks: '32FT MXL, 40FT Trailer'
-  }
+// Pre-configured default sub-transporters: empty by default (no dummy data)
+const DEFAULT_TRANSPORTERS = [];
+
+const QUICK_TRUCK_TYPES = [
+  '32FT MXL',
+  '32FT SXL',
+  '32FT HQ',
+  '24FT Container',
+  '24FT Open',
+  '22FT Container',
+  '20FT Container',
+  '19FT Container',
+  '17FT Canter',
+  '14FT Canter',
+  'Taurus (10W)',
+  '12 Wheeler (25 MT)',
+  '14 Wheeler (30 MT)',
+  '16 Wheeler (35 MT)',
+  'Trailer 40FT HQ',
+  'Trailer 40FT Flatbed',
+  'Tata Ace / Pickup',
+  'Part Load (LTL)'
 ];
 
-const QUICK_TRUCK_TYPES = ['32FT MXL', '32FT SXL', '24FT', '20FT', '14FT', 'Taurus (10W)', 'Trailer 40FT'];
-const QUICK_WEIGHTS = ['18 MT', '15 MT', '9 MT', '7 MT', '25 MT', 'Part Load'];
+const QUICK_WEIGHTS = [
+  '1 MT',
+  '2 MT',
+  '2.5 MT',
+  '3.5 MT',
+  '5 MT',
+  '7 MT',
+  '9 MT',
+  '12 MT',
+  '15 MT',
+  '16 MT',
+  '18 MT',
+  '20 MT',
+  '22 MT',
+  '25 MT',
+  '28 MT',
+  '30 MT',
+  '35 MT',
+  '40 MT',
+  'Part Load',
+  'Full Truck Load (FTL)'
+];
 const QUICK_PICKUPS = [
   'Hyderabad - KD Supply Chain (P&G DC), Kothur - 509228',
   'Hyderabad - Tukkuguda Hub',
@@ -95,9 +95,16 @@ export default function SimpleLoadBroadcastModal({ isOpen, onClose, initialData 
   });
   const [offerRate, setOfferRate] = useState('Best Quote / Market Rate');
 
-  // Sub-Transporters list & selection
-  const [transporters, setTransporters] = useState(DEFAULT_TRANSPORTERS);
-  const [selectedIds, setSelectedIds] = useState(['sub_1', 'sub_2']);
+  // Sub-Transporters list & selection: load real subcontractors and user-saved brokers
+  const [transporters, setTransporters] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jbc_custom_brokers');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedIds, setSelectedIds] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Custom manual phone input
@@ -138,20 +145,29 @@ export default function SimpleLoadBroadcastModal({ isOpen, onClose, initialData 
             id: r.id,
             name: r.subcontractor_name || r.company_name || 'Subcontractor',
             owner: r.owner_name || '',
-            phone: (r.phone || '').replace(/[^0-9]/g, ''),
+            phone: (r.phone || '').replace(/[^0-9]/g, '').slice(-10),
             city: r.city || r.routes_operated || '',
             trucks: r.truck_numbers || `${r.attached_trucks_count || 1} Attached Trucks`
-          })).filter(r => r.phone);
+          })).filter(r => r.phone && r.phone.length === 10);
 
-          // Combine with defaults
-          const existingPhones = new Set(mapped.map(m => m.phone));
-          const combined = [...mapped, ...DEFAULT_TRANSPORTERS.filter(d => !existingPhones.has(d.phone))];
-          setTransporters(combined);
+          let savedCustom = [];
+          try {
+            const s = localStorage.getItem('jbc_custom_brokers');
+            if (s) savedCustom = JSON.parse(s);
+          } catch {}
+
+          const map = new Map();
+          [...mapped, ...savedCustom].forEach(item => {
+            if (item.phone && !map.has(item.phone)) map.set(item.phone, item);
+          });
+          const all = Array.from(map.values());
+          setTransporters(all);
+          if (all.length > 0) {
+            setSelectedIds(prev => prev.length > 0 ? prev : all.slice(0, 3).map(a => a.id));
+          }
         }
       })
-      .catch(() => {
-        setTransporters(DEFAULT_TRANSPORTERS);
-      });
+      .catch(() => {});
   }, [isOpen]);
 
   // Reset queue when selection changes
@@ -191,7 +207,13 @@ export default function SimpleLoadBroadcastModal({ isOpen, onClose, initialData 
       city: 'Direct Contact',
       trucks: 'Market Vehicle'
     };
-    setTransporters(prev => [newContact, ...prev]);
+    setTransporters(prev => {
+      const updated = [newContact, ...prev.filter(p => p.phone !== newContact.phone)];
+      try {
+        localStorage.setItem('jbc_custom_brokers', JSON.stringify(updated.filter(u => String(u.id).startsWith('custom_'))));
+      } catch {}
+      return updated;
+    });
     setSelectedIds(prev => [newContact.id, ...prev]);
     setCustomName('');
     setCustomPhone('');
@@ -230,7 +252,7 @@ A new load has been created based on your account settings.
 💰 Rate: ${offerRate}
 
 Please check the load details and contact us immediately to confirm vehicle placement:
-📞 Vinod Rathod (Jai Bhavani Cargo): +91 7794072244 / +91 8106729777
+📞 Vinod Rathod (Jai Bhavani Cargo): +91 7794072244
 
 Jai Bhavani Cargo Logistics Operations Desk`;
   };
@@ -433,21 +455,31 @@ Jai Bhavani Cargo Logistics Operations Desk`;
                 </div>
               </div>
 
-              {/* TRUCK TYPE PILLS */}
+              {/* TRUCK TYPE INPUT & EXTENDED PILLS */}
               <div className="space-y-1.5 pt-1 border-t border-border/40">
-                <Label className="text-xs font-bold text-foreground flex items-center justify-between">
-                  <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-primary" /> Vehicle Type:</span>
-                  <span className="text-[11px] font-mono text-primary font-black">{truckType}</span>
-                </Label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                    <Truck className="w-3.5 h-3.5 text-primary" /> Vehicle Type:
+                  </Label>
+                  <span className="text-[11px] font-mono text-primary font-black bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
+                    {truckType || 'Not specified'}
+                  </span>
+                </div>
+                <Input 
+                  value={truckType}
+                  onChange={e => setTruckType(e.target.value)}
+                  placeholder="Select pill below or type custom vehicle type..."
+                  className="h-8 text-xs bg-background border-border/70 rounded-xl font-medium"
+                />
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pt-0.5">
                   {QUICK_TRUCK_TYPES.map(t => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setTruckType(t)}
-                      className={`text-xs px-2.5 py-1 rounded-xl font-bold transition-all ${
+                      className={`text-[11px] px-2 py-0.5 rounded-lg font-semibold transition-all ${
                         truckType === t 
-                          ? 'bg-primary text-primary-foreground shadow-md scale-105' 
+                          ? 'bg-primary text-primary-foreground shadow-sm scale-105' 
                           : 'bg-background border border-border/70 hover:bg-muted text-muted-foreground'
                       }`}
                     >
@@ -457,21 +489,31 @@ Jai Bhavani Cargo Logistics Operations Desk`;
                 </div>
               </div>
 
-              {/* TONNAGE / WEIGHT PILLS */}
+              {/* TONNAGE / WEIGHT INPUT & EXTENDED PILLS */}
               <div className="space-y-1.5 pt-1 border-t border-border/40">
-                <Label className="text-xs font-bold text-foreground flex items-center justify-between">
-                  <span>Weight / Tonnage:</span>
-                  <span className="text-[11px] font-mono text-emerald-400 font-black">{weight}</span>
-                </Label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                    <span>📦</span> Weight / Tonnage (Custom & Presets):
+                  </Label>
+                  <span className="text-[11px] font-mono text-emerald-400 font-black bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    {weight || 'Not specified'}
+                  </span>
+                </div>
+                <Input 
+                  value={weight}
+                  onChange={e => setWeight(e.target.value)}
+                  placeholder="Type custom weight (e.g. 18 MT, 12.5 MT, 3500 KGS, Part Load...)"
+                  className="h-8 text-xs bg-background border-border/70 rounded-xl font-medium"
+                />
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pt-0.5">
                   {QUICK_WEIGHTS.map(w => (
                     <button
                       key={w}
                       type="button"
                       onClick={() => setWeight(w)}
-                      className={`text-xs px-2.5 py-1 rounded-xl font-bold transition-all ${
+                      className={`text-[11px] px-2 py-0.5 rounded-lg font-semibold transition-all ${
                         weight === w 
-                          ? 'bg-emerald-500 text-slate-950 font-black shadow-md scale-105' 
+                          ? 'bg-emerald-500 text-slate-950 font-black shadow-sm scale-105' 
                           : 'bg-background border border-border/70 hover:bg-muted text-muted-foreground'
                       }`}
                     >
@@ -621,45 +663,55 @@ Jai Bhavani Cargo Logistics Operations Desk`;
 
               {/* TRANSPORTER LIST */}
               <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
-                {filteredTransporters.map(t => {
-                  const isChecked = selectedIds.includes(t.id);
-                  return (
-                    <div 
-                      key={t.id}
-                      onClick={() => handleToggleSelect(t.id)}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                        isChecked 
-                          ? 'bg-primary/5 border-primary/40 shadow-sm' 
-                          : 'bg-card border-border/50 hover:bg-muted/30'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        <button type="button" className="text-primary shrink-0 focus:outline-none">
-                          {isChecked ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-muted-foreground" />}
-                        </button>
-                        <div className="truncate">
-                          <p className="text-xs font-bold text-foreground truncate">{t.name}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            {t.owner && `${t.owner} • `}{t.city && `${t.city} • `}
-                            <span className="font-mono text-primary font-medium">{t.phone}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSendSingleWhatsApp(t);
-                        }}
-                        className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0 transition-transform active:scale-95"
-                        title={`Direct send to ${t.name} on WhatsApp`}
+                {filteredTransporters.length === 0 ? (
+                  <div className="p-6 text-center border border-dashed border-border/60 rounded-xl bg-muted/10 space-y-1.5">
+                    <Users className="w-6 h-6 mx-auto text-muted-foreground/60" />
+                    <p className="text-xs font-bold text-foreground">No Sub-Transporters Found</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Add brokers above using Name & 10-digit Phone, or register them in the Vendor Tracker.
+                    </p>
+                  </div>
+                ) : (
+                  filteredTransporters.map(t => {
+                    const isChecked = selectedIds.includes(t.id);
+                    return (
+                      <div 
+                        key={t.id}
+                        onClick={() => handleToggleSelect(t.id)}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                          isChecked 
+                            ? 'bg-primary/5 border-primary/40 shadow-sm' 
+                            : 'bg-card border-border/50 hover:bg-muted/30'
+                        }`}
                       >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          <button type="button" className="text-primary shrink-0 focus:outline-none">
+                            {isChecked ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-muted-foreground" />}
+                          </button>
+                          <div className="truncate">
+                            <p className="text-xs font-bold text-foreground truncate">{t.name}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {t.owner && `${t.owner} • `}{t.city && `${t.city} • `}
+                              <span className="font-mono text-primary font-medium">{t.phone}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSendSingleWhatsApp(t);
+                          }}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0 transition-transform active:scale-95"
+                          title={`Direct send to ${t.name} on WhatsApp`}
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 
