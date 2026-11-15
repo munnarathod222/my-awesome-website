@@ -42,7 +42,7 @@ function getCourierTrackingUrl(partner, awb) {
   return null;
 }
 
-function getPodCourierInfo(trip) {
+function getPodCourierInfo(trip, isRequired = true) {
   const awb = trip.pod_courier_awb ? String(trip.pod_courier_awb).trim() : "";
   const partner = trip.pod_courier_partner || "DTDC";
   const courierDate = trip.pod_courier_date || "";
@@ -53,7 +53,7 @@ function getPodCourierInfo(trip) {
       status: "delivered",
       badgeText: "✓ Delivered to Client",
       badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-      partner, awb, courierDate
+      partner, awb, courierDate, isRequired
     };
   }
   
@@ -63,7 +63,19 @@ function getPodCourierInfo(trip) {
       badgeText: "🚚 " + partner + ": " + awb,
       badgeClass: "bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono",
       partner, awb, courierDate,
-      trackingUrl: getCourierTrackingUrl(partner, awb)
+      trackingUrl: getCourierTrackingUrl(partner, awb),
+      isRequired
+    };
+  }
+
+  // If client does not require POD, courier is NOT needed
+  if (!isRequired) {
+    return {
+      status: "not_required",
+      badgeText: "⚪ POD Not Required",
+      badgeClass: "bg-slate-800/60 text-slate-400 border-slate-700/60 text-[10px]",
+      partner: "", awb: "", courierDate: "",
+      isRequired: false
     };
   }
   
@@ -79,21 +91,24 @@ function getPodCourierInfo(trip) {
       status: "overdue",
       badgeText: "🚨 " + days + "d OVERDUE COURIER",
       badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse font-bold",
-      days
+      days,
+      isRequired: true
     };
   } else if (days >= 3) {
     return {
       status: "warning",
       badgeText: "⚠️ " + days + "d Uncouriered",
       badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold",
-      days
+      days,
+      isRequired: true
     };
   } else {
     return {
       status: "pending",
       badgeText: "⏱️ " + days + "d Pending Courier",
       badgeClass: "bg-slate-800 text-slate-300 border-slate-700 font-medium",
-      days
+      days,
+      isRequired: true
     };
   }
 }
@@ -1066,7 +1081,7 @@ function LorryReceiptsPodHubPage() {
       }
       const podSt = getPodStatus(t);
       if (activeTab === "pod") {
-        if (courierFilter === "pending" && (t.pod_courier_awb || t.pod_hardcopy_status === "Delivered to Client")) return false;
+        if (courierFilter === "pending") { if (!isTripPodRequired(t) || t.pod_courier_awb || t.pod_hardcopy_status === "Delivered to Client") return false; }
         if (courierFilter === "couriered" && (!t.pod_courier_awb || t.pod_hardcopy_status === "Delivered to Client")) return false;
         if (courierFilter === "delivered" && t.pod_hardcopy_status !== "Delivered to Client") return false;
       }
@@ -1143,12 +1158,17 @@ function LorryReceiptsPodHubPage() {
   )), activeTab === "pod" ? /* @__PURE__ */ React.createElement("div", { className: "space-y-3" },
   /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap bg-slate-900/80 p-2 rounded-2xl border border-slate-800" },
     /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-slate-400 font-bold uppercase px-2" }, "📦 Courier Status:"),
-    [
-      { id: "all", label: "All PODs" },
-      { id: "pending", label: "🚨 Pending Courier (Action Needed)" },
-      { id: "couriered", label: "🚚 In-Transit Couriers" },
-      { id: "delivered", label: "✓ Delivered to Client" }
-    ].map(f => React.createElement("button", {
+    (() => {
+    const pCount = trips.filter(t => isTripPodRequired(t) && !t.pod_courier_awb && t.pod_hardcopy_status !== "Delivered to Client").length;
+    const cCount = trips.filter(t => t.pod_courier_awb && t.pod_hardcopy_status !== "Delivered to Client").length;
+    const dCount = trips.filter(t => t.pod_hardcopy_status === "Delivered to Client").length;
+    return [
+      { id: "all", label: "All Shipments (" + trips.length + ")" },
+      { id: "pending", label: "🚨 Pending Courier (" + pCount + ")" },
+      { id: "couriered", label: "🚚 In-Transit (" + cCount + ")" },
+      { id: "delivered", label: "✓ Delivered (" + dCount + ")" }
+    ];
+  })().map(f => React.createElement("button", {
       key: f.id,
       type: "button",
       onClick: () => setCourierFilter(f.id),
@@ -1220,7 +1240,8 @@ function LorryReceiptsPodHubPage() {
         "Edit"
       )), trip.eway_bill_number && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500 font-mono mt-0.5" }, "E-Way: ", trip.eway_bill_number)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(TruckIcon, { className: "w-3.5 h-3.5 text-slate-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-mono" }, trip.truck_number || "TG12U2637")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 font-mono" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), trip.driver_name && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500" }, trip.driver_name)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-100" }, clientName), isReq && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "POD Req")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-0.5" }, route)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300 font-mono" }, formatTripDate(trip.date)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 font-mono font-bold text-emerald-400" }, "\u20B9", Number(trip.revenue || 0).toLocaleString("en-IN")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, podSt === "Not Required" ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700" }, "Not Required") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified POD" : podSt === "Uploaded" ? "\u231B POD Uploaded" : "\u26A0 POD Pending")),
 /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, (() => {
-  const cInfo = getPodCourierInfo(trip);
+  const isPodReq = isTripPodRequired(trip);
+  const cInfo = getPodCourierInfo(trip, isPodReq);
   return React.createElement("div", { className: "space-y-1" },
     React.createElement("span", {
       className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border " + cInfo.badgeClass
@@ -1232,15 +1253,18 @@ function LorryReceiptsPodHubPage() {
       className: "block text-[10px] text-blue-400 hover:underline font-mono",
       title: "Open live courier tracking"
     }, "Track live ↗") : null,
-    cInfo.courierDate ? React.createElement("p", { className: "text-[9px] text-slate-500 font-mono" }, "Sent: " + cInfo.courierDate) : null
+    cInfo.courierDate ? React.createElement("p", { className: "text-[9px] text-slate-500 font-mono" }, "Sent: " + cInfo.courierDate) : null,
+    !isPodReq && cInfo.status === "not_required" ? React.createElement("p", { className: "text-[9px] text-slate-500 italic" }, "Client: POD Not Required") : null
   );
 })()),
 /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5 flex-wrap" },
 /* @__PURE__ */ React.createElement("button", {
   onClick: () => handleOpenCourierModal(trip),
-  className: "px-2 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition",
-  title: "Log physical POD courier details"
-}, "🚚 " + (trip.pod_courier_awb ? "Edit Courier" : "Courier POD")),
+  className: isTripPodRequired(trip)
+    ? "px-2 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition"
+    : "px-2 py-1 rounded-lg bg-slate-800/40 hover:bg-slate-800/80 text-slate-400 border border-slate-700/50 text-[10px] font-medium flex items-center gap-1 cursor-pointer transition",
+  title: isTripPodRequired(trip) ? "Log physical POD courier details" : "Optional: Client does not require physical POD"
+}, "🚚 " + (trip.pod_courier_awb ? "Edit Courier" : (isTripPodRequired(trip) ? "Courier POD" : "Optional Courier"))),
 trip.pod_courier_awb ? React.createElement("button", {
   onClick: () => handleSendCourierWhatsApp(trip),
   className: "p-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center justify-center cursor-pointer transition",
@@ -2100,6 +2124,18 @@ trip.pod_courier_awb ? React.createElement("button", {
       className: "w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm font-bold cursor-pointer"
     }, "✕")
   ),
+  
+  (() => {
+    const req = isTripPodRequired(courierModalTrip);
+    const cName = getClientName(courierModalTrip);
+    return req
+      ? React.createElement("div", { className: "p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2 font-medium" },
+          "⚠️ POD Required: Client '", cName, "' requires physical hard-copy POD. Log courier docket below."
+        )
+      : React.createElement("div", { className: "p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 text-xs flex items-center gap-2" },
+          "ℹ️ POD Optional: Client '", cName, "' has 'POD Required' turned OFF. Physical couriering is not mandatory."
+        );
+  })(),
   
   /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" },
     /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Courier Company:"),

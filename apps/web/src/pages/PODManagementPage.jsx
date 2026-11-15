@@ -1,3 +1,88 @@
+
+export function getCourierTrackingUrl(partner, awb) {
+  if (!awb) return null;
+  const clean = String(awb).trim();
+  const p = (partner || '').toUpperCase();
+  if (p.includes('DTDC')) return 'https://www.dtdc.in/tracking.asp?awb=' + encodeURIComponent(clean);
+  if (p.includes('TRACKON')) return 'https://trackon.in/tracking?awb=' + encodeURIComponent(clean);
+  if (p.includes('BLUEDART') || p.includes('BLUE DART')) return 'https://www.bluedart.com/tracking?numbers=' + encodeURIComponent(clean);
+  if (p.includes('DELHIVERY')) return 'https://www.delhivery.com/track/package/' + encodeURIComponent(clean);
+  if (p.includes('SPEED POST') || p.includes('INDIA POST') || p.includes('POST')) return 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx';
+  if (p.includes('PROFESSIONAL')) return 'https://www.tpcindia.com/track.aspx?awb=' + encodeURIComponent(clean);
+  return null;
+}
+
+export function getPodCourierInfo(trip, isRequired = true) {
+  const awb = trip.pod_courier_awb ? String(trip.pod_courier_awb).trim() : "";
+  const partner = trip.pod_courier_partner || "DTDC";
+  const courierDate = trip.pod_courier_date || "";
+  const isDeliveredToClient = trip.pod_hardcopy_status === "Delivered to Client";
+  
+  if (isDeliveredToClient) {
+    return {
+      status: "delivered",
+      badgeText: "✓ Delivered to Client",
+      badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      partner, awb, courierDate, isRequired
+    };
+  }
+  
+  if (awb) {
+    return {
+      status: "in_transit",
+      badgeText: "🚚 " + partner + ": " + awb,
+      badgeClass: "bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono",
+      partner, awb, courierDate,
+      trackingUrl: getCourierTrackingUrl(partner, awb),
+      isRequired
+    };
+  }
+
+  // If client does not require POD, courier delivery is not needed
+  if (!isRequired) {
+    return {
+      status: "not_required",
+      badgeText: "⚪ POD Not Required",
+      badgeClass: "bg-slate-800/60 text-slate-400 border-slate-700/60 text-[10px]",
+      partner: "", awb: "", courierDate: "",
+      isRequired: false
+    };
+  }
+  
+  const dateRef = trip.delivered_at || trip.date;
+  let days = 0;
+  if (dateRef) {
+    const ms = Date.now() - new Date(dateRef).getTime();
+    days = Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+  }
+  
+  if (days >= 5) {
+    return {
+      status: "overdue",
+      badgeText: "🚨 " + days + "d OVERDUE COURIER",
+      badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse font-bold",
+      days,
+      isRequired: true
+    };
+  } else if (days >= 3) {
+    return {
+      status: "warning",
+      badgeText: "⚠️ " + days + "d Uncouriered",
+      badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold",
+      days,
+      isRequired: true
+    };
+  } else {
+    return {
+      status: "pending",
+      badgeText: "⏱️ " + days + "d Pending Courier",
+      badgeClass: "bg-slate-800 text-slate-300 border-slate-700 font-medium",
+      days,
+      isRequired: true
+    };
+  }
+}
+
 const getActualPodFile = (trip) => {
   if (!trip || !trip.pod_file) return null;
   if (Array.isArray(trip.pod_file)) {
