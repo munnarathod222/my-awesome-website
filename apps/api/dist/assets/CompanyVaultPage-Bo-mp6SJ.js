@@ -518,33 +518,123 @@ const handleOpenUploadAgreement = (doc = null) => {
 
 const handleSaveAgreement = async (ev) => {
   ev.preventDefault();
-  if (!agreementForm.title) { u.error('Please enter an agreement title'); return; }
+  if (!agreementForm.title || !agreementForm.title.trim()) {
+    u.error('Please enter an agreement title');
+    return;
+  }
   V(true);
   try {
-    const formData = new FormData();
-    formData.append('title', agreementForm.title);
-    formData.append('category', 'Agreements & Contracts');
-    formData.append('sub_category', agreementForm.agreement_type);
-    formData.append('financial_year', 'FY 2026-27');
-    formData.append('counterparty_name', agreementForm.counterparty);
-    formData.append('effective_date', agreementForm.start_date);
-    formData.append('expiry_date', agreementForm.expiry_date);
-    formData.append('contract_value', agreementForm.contract_value);
-    formData.append('notes', agreementForm.notes);
-    if (agreementForm.file_url) formData.append('file_url', agreementForm.file_url);
-    if (h) formData.append('file', h);
-    if (editingAgreement && editingAgreement.id) {
-      await B.collection('company_documents').update(editingAgreement.id, formData);
-      u.success('Agreement updated!');
-    } else {
-      await B.collection('company_documents').create(formData);
-      u.success('Agreement saved to Vault!');
+    let fileUrl = agreementForm.file_url ? agreementForm.file_url.trim() : "";
+    let fileName = M ? M.name : (fileUrl ? "Document" : "N/A");
+    let fileSize = M ? `${(M.size / (1024 * 1024)).toFixed(2)} MB` : "N/A";
+
+    if (M) {
+      try {
+        const fd = new FormData();
+        fd.append("file", M);
+        fd.append("truck_id", "COMPANY_VAULT");
+        fd.append("document_type", "Other");
+        fd.append("document_name", agreementForm.title.trim());
+        fd.append("notes", `Company Vault Agreement: ${agreementForm.title.trim()} (${agreementForm.counterparty || 'Company'})`);
+        fd.append("status", "Active");
+        fd.append("expiry_date", agreementForm.expiry_date ? new Date(agreementForm.expiry_date).toISOString() : "2099-12-31T00:00:00.000Z");
+        
+        const uploadRes = await B.collection("truck_documents").create(fd, { $autoCancel: false });
+        if (uploadRes && uploadRes.file) {
+          fileUrl = B.files.getURL(uploadRes, uploadRes.file);
+        }
+      } catch (uploadErr) {
+        console.warn("Direct upload error, falling back:", uploadErr);
+        if (!fileUrl && M) {
+          fileUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => resolve("");
+            reader.readAsDataURL(M);
+          });
+        }
+      }
     }
+
+    let updatedList;
+    if (editingAgreement && editingAgreement.id) {
+      updatedList = i.map(doc => {
+        if (doc.id === editingAgreement.id) {
+          return {
+            ...doc,
+            title: agreementForm.title.trim(),
+            category: "Agreements & Contracts",
+            sub_category: agreementForm.agreement_type || "Other Legal Document",
+            financial_year: "FY 2026-27",
+            counterparty_name: agreementForm.counterparty ? agreementForm.counterparty.trim() : "",
+            effective_date: agreementForm.start_date || "",
+            expiry_date: agreementForm.expiry_date || "",
+            contract_value: agreementForm.contract_value || "",
+            file_url: fileUrl || doc.file_url || "",
+            file_name: M ? fileName : (doc.file_name || fileName),
+            file_size: M ? fileSize : (doc.file_size || fileSize),
+            notes: agreementForm.notes || "",
+            updated_at: new Date().toISOString()
+          };
+        }
+        return doc;
+      });
+      u.success(`"${agreementForm.title.trim()}" updated successfully!`);
+    } else {
+      const newDoc = {
+        id: "doc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+        title: agreementForm.title.trim(),
+        category: "Agreements & Contracts",
+        sub_category: agreementForm.agreement_type || "Other Legal Document",
+        financial_year: "FY 2026-27",
+        counterparty_name: agreementForm.counterparty ? agreementForm.counterparty.trim() : "",
+        effective_date: agreementForm.start_date || "",
+        expiry_date: agreementForm.expiry_date || "",
+        contract_value: agreementForm.contract_value || "",
+        file_url: fileUrl,
+        file_name: fileName,
+        file_size: fileSize,
+        notes: agreementForm.notes || "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      updatedList = [newDoc, ...i];
+      u.success(`"${newDoc.title}" saved to Company Vault!`);
+    }
+
+    const jsonStr = JSON.stringify(updatedList);
+    try {
+      await B.collection("company_settings").update(a?.id || "companysettings", { company_docs_json: jsonStr }, { $autoCancel: false });
+    } catch (updErr) {
+      const rList = await B.collection("company_settings").getList(1, 1, { $autoCancel: false });
+      if (rList.items && rList.items.length > 0) {
+        await B.collection("company_settings").update(rList.items[0].id, { company_docs_json: jsonStr }, { $autoCancel: false });
+      }
+    }
+
+    H(updatedList);
+    z(prev => ({ ...prev, company_docs_json: jsonStr }));
+    try { localStorage.setItem("jbc_company_vault_docs", jsonStr); } catch (e) {}
+
+    try {
+      await B.collection("contracts").create({
+        contract_ref: agreementForm.title.trim(),
+        counterparty: agreementForm.counterparty ? agreementForm.counterparty.trim() : "",
+        client_name: agreementForm.counterparty ? agreementForm.counterparty.trim() : "",
+        role: agreementForm.agreement_type || "Other Legal Document",
+        contract_start: agreementForm.start_date || "",
+        contract_end: agreementForm.expiry_date || "",
+        status: "Active",
+        notes: (agreementForm.notes || "") + (fileUrl ? ` | File: ${fileUrl}` : "")
+      }, { $autoCancel: false });
+    } catch (cErr) {}
+
     setIsAgreementModalOpen(false);
+    setEditingAgreement(null);
     Ae(null);
-    C();
   } catch (err) {
-    u.error('Failed to save: ' + (err.message || 'Unknown error'));
+    console.error("Error saving agreement:", err);
+    u.error("Failed to save: " + (err.message || "Unknown error"));
   } finally {
     V(false);
   }

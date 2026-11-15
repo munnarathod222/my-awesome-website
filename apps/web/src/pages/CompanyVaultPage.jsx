@@ -267,10 +267,11 @@ export default function CompanyVaultPage() {
           setUploadProgressText(`Uploading truck RC ${i + 1} of ${multiRcFiles.length}...`);
           
           const formData = new FormData();
-          formData.append('document_file', fileObj);
+          formData.append('file', fileObj);
+          formData.append('truck_id', 'COMPANY_VAULT');
           formData.append('document_name', fileObj.name);
-          const uploadRes = await pb.collection('company_documents').create(formData);
-          const fileUrl = pb.files.getURL(uploadRes, uploadRes.document_file);
+          const uploadRes = await pb.collection('truck_documents').create(formData);
+          const fileUrl = pb.files.getURL(uploadRes, uploadRes.file);
 
           const cleanName = fileObj.name.replace(/\.[^/.]+$/, '');
           const truckMatch = cleanName.match(/([A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4})/i);
