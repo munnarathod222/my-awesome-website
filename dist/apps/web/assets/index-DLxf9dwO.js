@@ -210,6 +210,7 @@ Jai Bhavani Cargo Operations Desk`;
   };
 
   return e.jsx("div", {
+    style: { zIndex: 99999 },
     className: "fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200",
     children: e.jsxs("div", {
       className: "bg-[#0b141a] text-slate-100 border border-emerald-500/30 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden font-sans",
