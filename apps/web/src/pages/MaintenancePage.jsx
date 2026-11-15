@@ -429,7 +429,7 @@ export default function MaintenancePage() {
   const handleAddTruckProblem = async (e) => {
     if (e) e.preventDefault();
     if (!selectedTruck) return;
-    if (!newProblem.description.trim()) {
+    if (!newProblem?.description || !newProblem.description.trim()) {
       toast.error('Please enter problem description');
       return;
     }
@@ -439,7 +439,7 @@ export default function MaintenancePage() {
       const isBreakdown = newProblem.issue_type === 'breakdown';
       const payload = {
         truck_id: selectedTruck.truck_number,
-        description: newProblem.description.trim(),
+        description: (newProblem.description || '').trim(),
         category: newProblem.category || 'Other',
         severity: isBreakdown ? 'Critical' : (newProblem.severity || 'Medium'),
         status: 'Open',
@@ -681,24 +681,26 @@ export default function MaintenancePage() {
     });
 
     // Filter by search query if any
-    if (punchListSearch.trim()) {
-      const q = punchListSearch.toLowerCase().trim();
+    const query = (punchListSearch || '').trim().toLowerCase();
+    if (query) {
       list = list.filter(entry => {
-        const matchesTruck = entry.truckNumber.toLowerCase().includes(q) || (entry.truckName && entry.truckName.toLowerCase().includes(q));
-        const matchesItem = entry.items.some(i => (i.description || '').toLowerCase().includes(q) || (i.category || '').toLowerCase().includes(q));
+        const truckNumStr = String(entry.truckNumber || '').toLowerCase();
+        const truckNameStr = String(entry.truckName || '').toLowerCase();
+        const matchesTruck = truckNumStr.includes(query) || truckNameStr.includes(query);
+        const matchesItem = (entry.items || []).some(i => String(i.description || '').toLowerCase().includes(query) || String(i.category || '').toLowerCase().includes(query));
         return matchesTruck || matchesItem;
       });
     }
 
     // Filter by selected truck if not 'all'
-    if (selectedPunchListTruck !== 'all') {
+    if (selectedPunchListTruck && selectedPunchListTruck !== 'all') {
       list = list.filter(entry => entry.truckNumber === selectedPunchListTruck);
     }
 
     // Sort: trucks with pending items first, then by truck number
     list.sort((a, b) => {
-      if (b.pendingCount !== a.pendingCount) return b.pendingCount - a.pendingCount;
-      return a.truckNumber.localeCompare(b.truckNumber);
+      if ((b.pendingCount || 0) !== (a.pendingCount || 0)) return (b.pendingCount || 0) - (a.pendingCount || 0);
+      return String(a.truckNumber || '').localeCompare(String(b.truckNumber || ''));
     });
 
     return list;
@@ -3400,7 +3402,7 @@ export default function MaintenancePage() {
                       <Button
                         type="submit"
                         size="sm"
-                        disabled={isAddingProblem || !newProblem.description.trim()}
+                        disabled={isAddingProblem || !(newProblem?.description || '').trim()}
                         className="rounded-xl h-8 px-4 text-xs font-bold gap-1 shadow-sm"
                       >
                         <Plus className="w-3.5 h-3.5" />

@@ -128,7 +128,7 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit, 
       toast.error('Truck selection is required');
       return;
     }
-    if (!formData.description.trim()) {
+    if (!(formData?.description || '').trim()) {
       toast.error('Problem description is required');
       return;
     }
