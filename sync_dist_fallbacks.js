@@ -16,6 +16,7 @@ const primaryTyreManagementPage = path.resolve(__dirname, 'dist/assets/TyreManag
 const primaryPodManagementPage = path.resolve(__dirname, 'dist/assets/PODManagementPage-RbmOVLGd.js');
 const primaryLorryReceiptsPage = path.resolve(__dirname, 'dist/assets/LorryReceiptsPage-DLxf9dwO.js');
 const primaryClientPortalPage = path.resolve(__dirname, 'dist/assets/ClientPortalPage-DuEOcerk.js');
+const primaryVendorTrackerPage = path.resolve(__dirname, 'dist/assets/VendorTrackerPage-CVOInZPv.js');
 
 if (!fs.existsSync(primaryIndexHtml) || !fs.existsSync(primaryBundle)) {
   console.error('Critical: Primary modern assets missing!');
@@ -32,6 +33,7 @@ const tyreManagementPageBuffer = fs.existsSync(primaryTyreManagementPage) ? fs.r
 const podManagementPageBuffer = fs.existsSync(primaryPodManagementPage) ? fs.readFileSync(primaryPodManagementPage) : null;
 const lorryReceiptsPageBuffer = fs.existsSync(primaryLorryReceiptsPage) ? fs.readFileSync(primaryLorryReceiptsPage) : null;
 const clientPortalPageBuffer = fs.existsSync(primaryClientPortalPage) ? fs.readFileSync(primaryClientPortalPage) : null;
+const vendorTrackerPageBuffer = fs.existsSync(primaryVendorTrackerPage) ? fs.readFileSync(primaryVendorTrackerPage) : null;
 
 console.log(`Modern index.html size: ${htmlContent.length} bytes`);
 console.log(`Modern index-DLxf9dwO.js bundle size: ${bundleBuffer.length} bytes`);
@@ -56,17 +58,18 @@ for (const target of targets) {
     fs.mkdirSync(path.join(target, 'assets'), { recursive: true });
     fs.writeFileSync(path.join(target, 'index.html'), htmlContent, 'utf8');
     fs.writeFileSync(path.join(target, 'assets', 'index-DLxf9dwO.js'), bundleBuffer);
+    fs.writeFileSync(path.join(target, 'assets', 'index-B9k2Lm7P.js'), bundleBuffer);
     if (fs.existsSync(primaryTripLogsHashed)) {
       fs.copyFileSync(primaryTripLogsHashed, path.join(target, 'assets', 'TripLogsPage-B9k2Lm7P.js'));
-    }
-    if (fs.existsSync(primaryIndexHashed)) {
-      fs.copyFileSync(primaryIndexHashed, path.join(target, 'assets', 'index-B9k2Lm7P.js'));
     }
     if (profilePageBuffer) {
       fs.writeFileSync(path.join(target, 'assets', 'ProfilePage-f6cQzKX5.js'), profilePageBuffer);
     }
     if (tripLogsPageBuffer) {
       fs.writeFileSync(path.join(target, 'assets', 'TripLogsPage-B1zVaUO1.js'), tripLogsPageBuffer);
+    }
+    if (vendorTrackerPageBuffer) {
+      fs.writeFileSync(path.join(target, 'assets', 'VendorTrackerPage-CVOInZPv.js'), vendorTrackerPageBuffer);
     }
     if (maintenancePageBuffer) {
       fs.writeFileSync(path.join(target, 'assets', 'MaintenancePage-FpBhnDc2.js'), maintenancePageBuffer);

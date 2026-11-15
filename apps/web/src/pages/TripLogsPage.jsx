@@ -14,7 +14,7 @@ import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail, ArrowRightLeft, FileCheck2, Users, Clock, MoreVertical } from 'lucide-react';
+import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail, ArrowRightLeft, FileCheck2, Users, Clock, MoreVertical, Radio } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
@@ -1326,6 +1326,27 @@ const TripLogsPage = () => {
                                     <DropdownMenuItem
                                       className="font-bold text-xs py-2 text-sky-400 cursor-pointer flex items-center gap-2"
                                       onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'driver_dispatch' })}
+                              >
+                                <Truck className="w-4 h-4" />
+                                Driver Dispatch Info
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="font-bold text-xs py-2 text-emerald-400 cursor-pointer flex items-center gap-2"
+                                onClick={() => window.dispatchEvent(new CustomEvent('jbc-open-broadcast-modal', {
+                                  detail: {
+                                    origin: log.route ? log.route.split('->')[0]?.trim() : '',
+                                    destination: log.route ? log.route.split('->')[1]?.trim() : '',
+                                    pickup: log.route,
+                                    client_name: log.client_name,
+                                    truck_type: log.truck_type || '32FT MXL',
+                                    date: log.date
+                                  }
+                                }))}
+                              >
+                                <Radio className="w-4 h-4 text-emerald-400" />
+                                📢 Broadcast Load to Sub-Transporters
+                              </DropdownMenuItem>
+
                                     >
                                       📍 Send Location to Driver (GPS Navigation)
                                     </DropdownMenuItem>

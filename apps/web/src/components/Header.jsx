@@ -7,8 +7,9 @@ import {
   LayoutDashboard, Sparkles, BarChart3, Calculator, CalendarDays, Trophy, PieChart, TrendingUp,
   CheckSquare, ClipboardList, MapPin, FileText, Droplet, Wrench, Package, FileBox, ShieldAlert,
   ShieldCheck, CreditCard, MessageSquare as MessageSquareWarning, Mail, Contact2, Settings,
-  QrCode, Navigation, HardDrive, RefreshCw, Receipt, Wallet, Camera, Calendar, Inbox
+  QrCode, Navigation, HardDrive, RefreshCw, Receipt, Wallet, Camera, Calendar, Inbox, Radio
 } from 'lucide-react';
+import SimpleLoadBroadcastModal from '@/components/SimpleLoadBroadcastModal.jsx';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -111,6 +112,8 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [backingUp, setBackingUp] = useState(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [broadcastInitialData, setBroadcastInitialData] = useState(null);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [isTripOpen, setIsTripOpen] = useState(false);
   const [isAdvanceOpen, setIsAdvanceOpen] = useState(false);
@@ -182,6 +185,17 @@ export default function Header() {
       setIsTripOpen(true);
     };
     window.addEventListener('jbc-open-trip-modal', handleOpenTripModal);
+  useEffect(() => {
+    const handleOpenBroadcastModal = (e) => {
+      if (e?.detail) {
+        setBroadcastInitialData(e.detail);
+      }
+      setIsBroadcastModalOpen(true);
+    };
+    window.addEventListener('jbc-open-broadcast-modal', handleOpenBroadcastModal);
+    return () => window.removeEventListener('jbc-open-broadcast-modal', handleOpenBroadcastModal);
+  }, []);
+
     return () => window.removeEventListener('jbc-open-trip-modal', handleOpenTripModal);
   }, []);
 
