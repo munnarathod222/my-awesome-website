@@ -137,6 +137,7 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit, 
     Object.keys(formData).forEach(key => {
       data.append(key, formData[key]);
     });
+    data.append('issue_type', issueType);
 
     selectedImages.forEach((file) => {
       data.append('image_urls', file);

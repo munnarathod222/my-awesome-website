@@ -531,7 +531,11 @@ export function computeLogDrivenFleetAnalytics({
         trips: (trips || []).length,
         expenses: (expenses || []).length,
         fuel_logs: (fuelLogs || []).length,
-        breakdowns: (maintenanceProblems || []).length + (accidents || []).length
+        breakdowns: (maintenanceProblems || []).filter(p => {
+          const sev = (p.severity || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          return (sev === 'critical' || cat.includes('breakdown') || p.issue_type === 'breakdown') && p.status !== 'Cancelled';
+        }).length + (accidents || []).filter(a => (a.accident_type || '').toLowerCase().includes('breakdown') || Number(a.damage_cost) > 10000).length
       }
     },
     trucks: truckMetrics

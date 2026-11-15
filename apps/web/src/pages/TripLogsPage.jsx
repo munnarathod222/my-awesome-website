@@ -1346,7 +1346,9 @@ const TripLogsPage = () => {
                                 <Radio className="w-4 h-4 text-emerald-400" />
                                 📢 Broadcast Load to Sub-Transporters
                               </DropdownMenuItem>
-
+                                    <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-rose-400 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'driver_location' })}
                                     >
                                       📍 Send Location to Driver (GPS Navigation)
                                     </DropdownMenuItem>

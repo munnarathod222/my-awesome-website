@@ -3,6 +3,38 @@ const path = require('path');
 
 console.log('--- sync_dist_fallbacks.js: Protecting and syncing modern unified production bundle ---');
 
+// 1. Sync from fresh apps/web/dist build if present
+const webDist = path.resolve(__dirname, 'apps/web/dist');
+const targets = [
+  path.resolve(__dirname, 'dist'),
+  path.resolve(__dirname, 'dist/apps/web'),
+  path.resolve(__dirname, 'apps/api/dist'),
+  path.resolve(__dirname, 'apps/web/dist')
+];
+
+function copyDirRecursive(src, dest) {
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+if (fs.existsSync(webDist) && fs.existsSync(path.join(webDist, 'index.html'))) {
+  for (const t of targets) {
+    if (t !== webDist) {
+      copyDirRecursive(webDist, t);
+    }
+  }
+  console.log('✓ Successfully synced fresh apps/web/dist assets across all distribution directories.');
+}
+
 const primaryIndexHtml = path.resolve(__dirname, 'dist/index.html');
 const primaryBundle = path.resolve(__dirname, 'dist/assets/index-DLxf9dwO.js');
 const primaryIndexHashed = path.resolve(__dirname, 'dist/assets/index-B9k2Lm7P.js');
@@ -45,13 +77,6 @@ if (tyreManagementPageBuffer) console.log(`Modern TyreManagementPage-Boonzp_q.js
 if (podManagementPageBuffer) console.log(`Modern PODManagementPage-RbmOVLGd.js size: ${podManagementPageBuffer.length} bytes`);
 if (lorryReceiptsPageBuffer) console.log(`Modern LorryReceiptsPage-DLxf9dwO.js size: ${lorryReceiptsPageBuffer.length} bytes`);
 if (clientPortalPageBuffer) console.log(`Modern ClientPortalPage-DuEOcerk.js size: ${clientPortalPageBuffer.length} bytes`);
-
-const targets = [
-  path.resolve(__dirname, 'dist'),
-  path.resolve(__dirname, 'dist/apps/web'),
-  path.resolve(__dirname, 'apps/api/dist'),
-  path.resolve(__dirname, 'apps/web/dist')
-];
 
 for (const target of targets) {
   if (fs.existsSync(target)) {

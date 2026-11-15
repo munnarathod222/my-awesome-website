@@ -147,6 +147,13 @@ export default function MaintenancePage() {
   const [problemDrawerFilter, setProblemDrawerFilter] = useState('all'); // 'all', 'pending', 'resolved'
   const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
 
+  // Google Keep Style Workshop Punch List states
+  const [punchListQuickInput, setPunchListQuickInput] = useState({});
+  const [punchListExpandedTrucks, setPunchListExpandedTrucks] = useState({});
+  const [punchListViewMode, setPunchListViewMode] = useState('keep'); // 'keep' or 'table'
+  const [punchListSearch, setPunchListSearch] = useState('');
+  const [selectedPunchListTruck, setSelectedPunchListTruck] = useState('all');
+
   // Global filters (still used for inventory/problems tabs)
   const [filters, setFilters] = useState({
     truck_id: 'all',
@@ -513,28 +520,69 @@ export default function MaintenancePage() {
 
   const handleShareChecklist = (truckNumber, pendingList) => {
     if (!pendingList || pendingList.length === 0) {
-      toast.info('No pending problems on this truck checklist');
+      toast.info(`No pending checklist items for ${truckNumber}`);
       return;
     }
-    let text = `🔧 *WORKSHOP JOB CHECKLIST*\n🚚 *Vehicle:* ${truckNumber}\n📅 *Date:* ${format(new Date(), 'dd MMM yyyy')}\n\n`;
-    text += `*Items to Inspect & Resolve (${pendingList.length} points):*\n`;
+    let text = `🛠️ *WORKSHOP REPAIR CHECKLIST*\n`;
+    text += `🚛 *Vehicle:* ${truckNumber}\n`;
+    text += `📅 *Date:* ${format(new Date(), 'dd-MMM-yyyy')}\n\n`;
+    text += `*Pending Tasks to Check & Fix (${pendingList.length} items):*\n`;
     pendingList.forEach((p, idx) => {
-      text += `${idx + 1}. [ ] ${p.description} [${p.category || 'General'}]\n`;
+      text += `◻️ ${idx + 1}. ${p.description}\n`;
     });
-    text += `\n_Please check and fix each point during workshop servicing._`;
+    text += `\n*Jai Bhavani Cargo - Fleet Maintenance*\n`;
+    text += `_Contact / Dispatch: +91 7794072244_`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
-      toast.success('Checklist copied to clipboard!');
+      toast.success(`Checklist for ${truckNumber} copied to clipboard!`);
     }
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(whatsappUrl, '_blank');
   };
 
+  const handleQuickAddPunchListItem = async (truckNumber) => {
+    const text = (punchListQuickInput[truckNumber] || '').trim();
+    if (!truckNumber || !text) return;
+    try {
+      const payload = {
+        truck_id: truckNumber,
+        description: text,
+        category: 'Workshop Checklist',
+        severity: 'Medium',
+        status: 'Open',
+        assigned_technician: '',
+        date_reported: new Date().toISOString()
+      };
+      await pb.collection('maintenance_problems').create(payload, { $autoCancel: false });
+      toast.success(`Added to ${truckNumber} punch list`);
+      setPunchListQuickInput(prev => ({ ...prev, [truckNumber]: '' }));
+      fetchData();
+    } catch (err) {
+      console.error('Failed to add checklist item:', err);
+      toast.error(err.message || 'Failed to add item');
+    }
+  };
+
+  const handleClearCompletedTruckProblems = async (truckNumber, completedList) => {
+    if (!completedList || completedList.length === 0) return;
+    if (!window.confirm(`Clear all ${completedList.length} completed items for ${truckNumber}?`)) return;
+    try {
+      await Promise.all(
+        completedList.map(item => pb.collection('maintenance_problems').delete(item.id, { $autoCancel: false }))
+      );
+      toast.success(`Cleared ${completedList.length} completed items`);
+      fetchData();
+    } catch (e) {
+      console.error('Failed to clear completed items:', e);
+      toast.error('Failed to clear completed items');
+    }
+  };
+
   const handleProblemSubmit = async (formDataOrObj) => {
     try {
       await pb.collection('maintenance_problems').create(formDataOrObj, { $autoCancel: false });
-      toast.success('Problem reported successfully');
+      toast.success('Problem recorded successfully');
       setIsProblemModalOpen(false);
       fetchData();
     } catch (err) {
@@ -578,6 +626,84 @@ export default function MaintenancePage() {
     return filtered.sort((a, b) => new Date(b.date_reported || 0) - new Date(a.date_reported || 0));
   }, [problems, filters]);
 
+  // Google Keep Style Multi-Truck Punch List Aggregation
+  const punchListByTruck = useMemo(() => {
+    const truckMap = new Map();
+    
+    // Seed with all fleet trucks
+    trucks.forEach(t => {
+      if (t.truck_number) {
+        truckMap.set(t.truck_number, {
+          truckNumber: t.truck_number,
+          truckName: t.truck_name || '',
+          truckObj: t,
+          items: []
+        });
+      }
+    });
+
+    // Populate problem items
+    problems.forEach(p => {
+      const tNum = p.truck_id;
+      if (!tNum) return;
+      let targetKey = tNum;
+      if (!truckMap.has(targetKey)) {
+        const matched = trucks.find(t => t.id === tNum);
+        if (matched && matched.truck_number) {
+          targetKey = matched.truck_number;
+        }
+      }
+      if (!truckMap.has(targetKey)) {
+        truckMap.set(targetKey, {
+          truckNumber: targetKey,
+          truckName: '',
+          truckObj: null,
+          items: []
+        });
+      }
+      truckMap.get(targetKey).items.push(p);
+    });
+
+    // Map into structured arrays
+    let list = Array.from(truckMap.values()).map(entry => {
+      // Sort items by date descending
+      const sortedItems = [...entry.items].sort((a, b) => new Date(b.date_reported || b.created || 0) - new Date(a.date_reported || a.created || 0));
+      const pending = sortedItems.filter(i => i.status !== 'Resolved');
+      const resolved = sortedItems.filter(i => i.status === 'Resolved');
+      return {
+        ...entry,
+        items: sortedItems,
+        pending,
+        resolved,
+        pendingCount: pending.length,
+        resolvedCount: resolved.length
+      };
+    });
+
+    // Filter by search query if any
+    if (punchListSearch.trim()) {
+      const q = punchListSearch.toLowerCase().trim();
+      list = list.filter(entry => {
+        const matchesTruck = entry.truckNumber.toLowerCase().includes(q) || (entry.truckName && entry.truckName.toLowerCase().includes(q));
+        const matchesItem = entry.items.some(i => (i.description || '').toLowerCase().includes(q) || (i.category || '').toLowerCase().includes(q));
+        return matchesTruck || matchesItem;
+      });
+    }
+
+    // Filter by selected truck if not 'all'
+    if (selectedPunchListTruck !== 'all') {
+      list = list.filter(entry => entry.truckNumber === selectedPunchListTruck);
+    }
+
+    // Sort: trucks with pending items first, then by truck number
+    list.sort((a, b) => {
+      if (b.pendingCount !== a.pendingCount) return b.pendingCount - a.pendingCount;
+      return a.truckNumber.localeCompare(b.truckNumber);
+    });
+
+    return list;
+  }, [trucks, problems, punchListSearch, selectedPunchListTruck]);
+
   const filteredInventory = useMemo(() => inventory.filter(item => {
     const matchSearch = item.item_name.toLowerCase().includes(inventorySearch.toLowerCase());
     const matchCategory = inventoryCategory === 'all' || item.category === inventoryCategory;
@@ -594,7 +720,7 @@ export default function MaintenancePage() {
   const statsSummary = useMemo(() => {
     const totalSpent = serviceLogs.reduce((sum, s) => sum + (Number(s.cost_amount) || 0), 0);
     const activeIssues = problems.filter(p => p.status !== 'Resolved').length;
-    const criticalBreakdowns = problems.filter(p => p.status !== 'Resolved' && (p.severity === 'Critical' || (p.category && p.category.toLowerCase().includes('breakdown')))).length;
+    const criticalBreakdowns = problems.filter(p => p.status !== 'Resolved' && (p.severity === 'Critical' || (p.category && p.category.toLowerCase().includes('breakdown')) || p.issue_type === 'breakdown')).length;
     const routineProblems = Math.max(0, activeIssues - criticalBreakdowns);
     const overdueCount = trucks.reduce((count, truck) => {
       const liveOdo = getLiveOdometer(truck);
@@ -870,14 +996,23 @@ export default function MaintenancePage() {
           <div className={cn("absolute top-0 left-0 w-full h-[3px]", statsSummary.criticalBreakdowns > 0 ? "bg-gradient-to-r from-rose-500 to-red-600" : "bg-gradient-to-r from-amber-500 to-yellow-500")} />
           <CardContent className="p-6 flex items-center gap-4">
             <div className={cn("p-3.5 rounded-2xl border shadow-sm", statsSummary.criticalBreakdowns > 0 ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20")}>
-              <AlertTriangle className={cn("w-6 h-6", statsSummary.criticalBreakdowns > 0 && "animate-pulse")} />
+              {statsSummary.criticalBreakdowns > 0 ? (
+                <AlertTriangle className="w-6 h-6 animate-pulse" />
+              ) : (
+                <CheckSquare className="w-6 h-6" />
+              )}
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {statsSummary.criticalBreakdowns > 0 ? 'Active Roadside Breakdowns' : 'Workshop Pending Issues'}
+                {statsSummary.criticalBreakdowns > 0 ? 'Active Roadside Breakdowns' : 'Workshop Punch List'}
               </p>
               <p className={cn("text-2xl font-black mt-1 font-mono", statsSummary.criticalBreakdowns > 0 ? "text-rose-400" : "text-amber-400")}>
-                {statsSummary.activeIssues} <span className="text-xs font-normal text-muted-foreground">{statsSummary.criticalBreakdowns > 0 ? `(${statsSummary.criticalBreakdowns} critical)` : 'Checklist Items'}</span>
+                {statsSummary.criticalBreakdowns > 0 ? statsSummary.criticalBreakdowns : statsSummary.routineProblems}
+                <span className="text-xs font-normal text-muted-foreground ml-1.5 font-sans">
+                  {statsSummary.criticalBreakdowns > 0
+                    ? `(+${statsSummary.routineProblems} routine notes)`
+                    : `tasks across ${trucks.length} trucks`}
+                </span>
               </p>
             </div>
           </CardContent>
@@ -940,7 +1075,12 @@ export default function MaintenancePage() {
               <ClipboardList className="w-4 h-4" /> Inspections
             </TabsTrigger>
             <TabsTrigger value="problems" className="gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all shrink-0">
-              <AlertTriangle className="w-4 h-4" /> Reported Problems
+              <CheckSquare className="w-4 h-4" /> Workshop Punch Lists
+              {statsSummary.routineProblems > 0 && (
+                <Badge variant="secondary" className="ml-1 font-bold bg-amber-500/20 text-amber-400 border-0 text-[10px]">
+                  {statsSummary.routineProblems}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="inventory" className="gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all shrink-0">
               <Package className="w-4 h-4" /> Inventory
@@ -1990,194 +2130,507 @@ export default function MaintenancePage() {
           </Card>
         </TabsContent>
 
-        {/* TAB 3: Workshop Problems & Checklist */}
-        <TabsContent value="problems" className="m-0 space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-card p-4 rounded-2xl border border-border shadow-sm">
+        {/* TAB 3: Workshop Punch Lists (Google Keep Style) */}
+        <TabsContent value="problems" className="m-0 space-y-5">
+          {/* Top Bar with Search & View Toggle */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-card/80 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-border shadow-sm">
             <div>
               <h2 className="text-base sm:text-lg font-bold font-heading text-foreground flex items-center gap-2">
-                <ClipboardCheck className="w-5 h-5 text-primary" />
-                Fleet Workshop Issues & Checklist
+                <CheckSquare className="w-5 h-5 text-primary" />
+                Fleet Workshop Punch Lists
+                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border-primary/20">
+                  Google Keep Style
+                </Badge>
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Log vehicle defects and check them off one-by-one during workshop visits.
+                Fast tick-box notes per truck for driver defects, workshop jobs &amp; instant WhatsApp handover to mechanics.
               </p>
             </div>
-            <Button onClick={() => setIsProblemModalOpen(true)} className="rounded-xl shadow-sm text-xs font-bold gap-1.5 h-9">
-              <Plus className="w-4 h-4" /> Add Truck Problem
-            </Button>
+
+            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search defects (e.g. wiper, horn, brake)..."
+                  value={punchListSearch}
+                  onChange={(e) => setPunchListSearch(e.target.value)}
+                  className="pl-8 h-9 text-xs rounded-xl bg-background border-border"
+                />
+                {punchListSearch && (
+                  <button 
+                    onClick={() => setPunchListSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* View Switcher */}
+              <div className="flex items-center bg-muted/60 p-0.5 rounded-xl border border-border/40 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPunchListViewMode('keep')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+                    punchListViewMode === 'keep' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <CheckSquare className="w-3.5 h-3.5 text-primary" /> Keep Notes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPunchListViewMode('table')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+                    punchListViewMode === 'table' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <ClipboardList className="w-3.5 h-3.5" /> Table
+                </button>
+              </div>
+
+              <Button 
+                onClick={() => setIsProblemModalOpen(true)} 
+                variant="outline"
+                className="rounded-xl shadow-sm text-xs font-bold gap-1.5 h-9 border-border bg-card hover:bg-muted"
+              >
+                <Plus className="w-3.5 h-3.5 text-primary" /> Detailed / Breakdown
+              </Button>
+            </div>
           </div>
 
-          <Card className="rounded-2xl shadow-sm overflow-hidden border-border bg-card">
-            <div className="p-4 border-b border-border bg-muted/20 flex flex-wrap gap-4 items-center">
-              <Select value={filters.truck_id} onValueChange={(v) => setFilters(p => ({...p, truck_id: v}))}>
-                <SelectTrigger className="w-[180px] h-10 rounded-xl bg-background shadow-sm border-border">
-                  <SelectValue placeholder="All Trucks" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Trucks</SelectItem>
-                  {uniqueTrucks.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={filters.problemStatus} onValueChange={(v) => setFilters(p => ({...p, problemStatus: v}))}>
-                <SelectTrigger className="w-[180px] h-10 rounded-xl bg-background shadow-sm border-border">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Open">Pending (Open)</SelectItem>
-                  <SelectItem value="Resolved">Resolved</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead>Date Reported</TableHead>
-                    <TableHead>Truck</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell colSpan={7}><Skeleton className="h-5 w-full" /></TableCell>
-                      </TableRow>
-                    ))
-                  ) : filteredProblems.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center py-8">No reported problems matching filters.</TableCell></TableRow>
-                  ) : (
-                    filteredProblems.map(prob => {
-                      const isDone = prob.status === 'Resolved';
-                      return (
-                        <TableRow key={prob.id} className={isDone ? "opacity-75 bg-muted/5" : ""}>
-                          <TableCell className="font-medium whitespace-nowrap">{formatDate(prob.date_reported)}</TableCell>
-                          <TableCell><Badge variant="outline" className="font-mono font-bold">{prob.truck_id}</Badge></TableCell>
-                          <TableCell>{prob.category}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className={
-                              prob.severity === 'Critical' ? 'bg-destructive text-destructive-foreground' :
-                              prob.severity === 'High' ? 'bg-destructive/20 text-destructive' :
-                              'bg-muted text-muted-foreground'
-                            }>
-                              {prob.severity}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={isDone ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}>
-                              {prob.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className={`max-w-xs truncate ${isDone ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>
-                            {prob.description}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Button
-                                size="sm"
-                                variant={isDone ? "outline" : "default"}
-                                className={`h-7 px-2.5 text-[11px] rounded-lg font-bold gap-1 ${
-                                  isDone 
-                                    ? "border-muted-foreground/30 text-muted-foreground hover:bg-muted" 
-                                    : "bg-emerald-500 hover:bg-emerald-600 text-white"
-                                }`}
-                                onClick={() => handleToggleProblemStatus(prob)}
+          {/* Quick Truck Selector Chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setSelectedPunchListTruck('all')}
+              className={cn(
+                "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0",
+                selectedPunchListTruck === 'all'
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-card border-border hover:bg-muted/50 text-muted-foreground"
+              )}
+            >
+              All Trucks ({punchListByTruck.length})
+            </button>
+            {punchListByTruck.map(t => {
+              const hasPending = t.pendingCount > 0;
+              const isSelected = selectedPunchListTruck === t.truckNumber;
+              return (
+                <button
+                  key={t.truckNumber}
+                  type="button"
+                  onClick={() => setSelectedPunchListTruck(t.truckNumber)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-xs font-bold font-mono whitespace-nowrap transition-all border shrink-0 flex items-center gap-1.5",
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : hasPending
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/15"
+                        : "bg-card border-border hover:bg-muted/50 text-muted-foreground"
+                  )}
+                >
+                  <span>{t.truckNumber}</span>
+                  {hasPending && (
+                    <span className={cn(
+                      "px-1.5 py-0.2 rounded-full text-[10px] font-extrabold",
+                      isSelected ? "bg-primary-foreground text-primary" : "bg-amber-500 text-white"
+                    )}>
+                      {t.pendingCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* GOOGLE KEEP NOTES VIEW */}
+          {punchListViewMode === 'keep' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {punchListByTruck.length === 0 ? (
+                <div className="col-span-full text-center py-12 border border-dashed border-border/50 rounded-2xl bg-card/40 space-y-2">
+                  <CheckSquare className="w-8 h-8 text-muted-foreground mx-auto opacity-60" />
+                  <p className="text-sm font-semibold text-foreground">No matching truck punch lists found</p>
+                  <p className="text-xs text-muted-foreground">Try clearing the search query or selecting All Trucks.</p>
+                </div>
+              ) : (
+                punchListByTruck.map((entry) => (
+                  <div 
+                    key={entry.truckNumber} 
+                    className={cn(
+                      "bg-card border rounded-2xl p-4 shadow-sm transition-all duration-200 flex flex-col justify-between hover:shadow-md",
+                      entry.pendingCount > 0 ? "border-amber-500/30 bg-card/95" : "border-border/70 bg-card/60"
+                    )}
+                  >
+                    <div>
+                      {/* Card Header: Truck Number + Badges + WhatsApp Action */}
+                      <div className="flex items-start justify-between gap-2 pb-3 border-b border-border/40">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-primary shrink-0" />
+                            <span className="font-mono font-black text-base tracking-tight text-foreground">
+                              {entry.truckNumber}
+                            </span>
+                            {entry.truckName && (
+                              <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[100px]">
+                                ({entry.truckName})
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            {entry.pendingCount > 0 ? (
+                              <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold py-0 h-5">
+                                {entry.pendingCount} pending {entry.pendingCount === 1 ? 'task' : 'tasks'}
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 text-[10px] font-bold py-0 h-5">
+                                ✓ All clear
+                              </Badge>
+                            )}
+                            {entry.resolvedCount > 0 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                • {entry.resolvedCount} completed
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {entry.pendingCount > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleShareChecklist(entry.truckNumber, entry.pending)}
+                              className="h-8 px-2.5 rounded-xl border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 text-xs font-bold gap-1.5 shadow-none"
+                              title="Send checklist to mechanic on WhatsApp"
+                            >
+                              <Share2 className="w-3.5 h-3.5 text-emerald-500" />
+                              <span className="hidden sm:inline">WhatsApp</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quick Add Bar: Google Keep Style */}
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleQuickAddPunchListItem(entry.truckNumber);
+                        }}
+                        className="mt-3 flex items-center gap-2"
+                      >
+                        <Input
+                          placeholder="+ Add issue... (e.g. Wiper blade, Horn loose)"
+                          value={punchListQuickInput[entry.truckNumber] || ''}
+                          onChange={(e) => setPunchListQuickInput(prev => ({ ...prev, [entry.truckNumber]: e.target.value }))}
+                          className="h-9 text-xs rounded-xl bg-background border-border shadow-none focus-visible:ring-1 focus-visible:ring-primary"
+                        />
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={!(punchListQuickInput[entry.truckNumber] || '').trim()}
+                          className="h-9 px-3 rounded-xl text-xs font-bold shrink-0"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-0.5" /> Add
+                        </Button>
+                      </form>
+
+                      {/* Pending Checklist Items with interactive check boxes */}
+                      <div className="mt-3 space-y-1.5">
+                        {entry.pending.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/40">
+                            No pending issues! Type above to add a reminder before workshop visit.
+                          </div>
+                        ) : (
+                          entry.pending.map((item) => (
+                            <div
+                              key={item.id}
+                              className="group flex items-start gap-2.5 p-2 rounded-xl hover:bg-muted/40 transition-colors border border-transparent hover:border-border/50"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleToggleProblemStatus(item)}
+                                className="mt-0.5 w-4 h-4 rounded border border-border hover:border-primary flex items-center justify-center shrink-0 bg-background transition-colors"
+                                title="Click to mark resolved"
                               >
-                                {isDone ? (
-                                  <><RotateCcw className="w-3 h-3" /> Reopen</>
-                                ) : (
-                                  <><CheckCircle2 className="w-3 h-3" /> Resolve</>
-                                )}
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-7 h-7" 
-                                onClick={() => handleDeleteProblem(prob.id)}
+                                {/* Empty box ready to be checked */}
+                              </button>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-foreground leading-snug break-words">
+                                  {item.description}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                                  <span>{formatDate(item.date_reported)}</span>
+                                  {item.severity === 'Critical' && (
+                                    <Badge variant="outline" className="text-[9px] bg-rose-500/10 text-rose-500 border-rose-500/30 px-1 py-0 h-4">
+                                      Breakdown
+                                    </Badge>
+                                  )}
+                                  {item.category && item.category !== 'Other' && item.category !== 'Workshop Checklist' && (
+                                    <span className="text-[9px] bg-muted px-1.5 py-0.2 rounded-md font-medium">
+                                      {item.category}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProblem(item.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-opacity shrink-0"
+                                title="Delete item"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
+                              </button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                          ))
+                        )}
+                      </div>
 
-            {/* Mobile Card Stack View */}
-            <div className="block md:hidden divide-y divide-border/30">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="p-4 space-y-2">
-                    <Skeleton className="h-5 w-1/3" />
-                    <Skeleton className="h-4 w-1/2" />
+                      {/* Completed Section (Collapsible) */}
+                      {entry.resolved.length > 0 && (
+                        <div className="mt-3 pt-2 border-t border-border/30">
+                          <button
+                            type="button"
+                            onClick={() => setPunchListExpandedTrucks(prev => ({ ...prev, [entry.truckNumber]: !prev[entry.truckNumber] }))}
+                            className="flex items-center justify-between w-full text-[11px] font-semibold text-muted-foreground hover:text-foreground py-1"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              Completed ({entry.resolved.length})
+                            </span>
+                            <span className="text-[10px] underline">
+                              {punchListExpandedTrucks[entry.truckNumber] ? 'Hide' : 'Show'}
+                            </span>
+                          </button>
+
+                          {punchListExpandedTrucks[entry.truckNumber] && (
+                            <div className="space-y-1.5 mt-2 animate-in fade-in duration-150">
+                              {entry.resolved.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="group flex items-start gap-2.5 p-2 rounded-xl bg-muted/20 opacity-70 transition-opacity hover:opacity-100"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleProblemStatus(item)}
+                                    className="mt-0.5 w-4 h-4 rounded bg-emerald-500 border border-emerald-500 text-white flex items-center justify-center shrink-0 transition-colors"
+                                    title="Click to reopen"
+                                  >
+                                    <Check className="w-3 h-3 stroke-[3]" />
+                                  </button>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs line-through text-muted-foreground leading-snug break-words">
+                                      {item.description}
+                                    </p>
+                                    <span className="text-[9px] text-muted-foreground">
+                                      Resolved: {formatDate(item.date_solved || item.updated)}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteProblem(item.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-opacity shrink-0"
+                                    title="Delete item"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                              <div className="pt-1 flex justify-end">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleClearCompletedTruckProblems(entry.truckNumber, entry.resolved)}
+                                  className="text-[10px] h-6 px-2 text-muted-foreground hover:text-destructive"
+                                >
+                                  Clear all completed
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))
-              ) : filteredProblems.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-xs">No reported problems matching filters.</div>
-              ) : (
-                filteredProblems.map(prob => {
-                  const isDone = prob.status === 'Resolved';
-                  return (
-                    <div key={prob.id} className={`p-4 space-y-2.5 ${isDone ? "opacity-75 bg-muted/5" : ""}`}>
-                      <div className="flex justify-between items-start gap-3">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className="font-mono font-bold text-[10px]">{prob.truck_id}</Badge>
-                            <span className="text-[10px] text-muted-foreground">({prob.category})</span>
-                          </div>
-                          <p className={`text-xs mt-1.5 leading-normal ${isDone ? 'line-through text-muted-foreground' : 'text-foreground font-semibold'}`}>
-                            {prob.description}
-                          </p>
-                        </div>
-                        <Badge className={isDone ? 'bg-success/20 text-success border-0 text-[9px] font-bold' : 'bg-warning/20 text-warning border-0 text-[9px] font-bold'}>
-                          {prob.status}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/20 pt-2">
-                        <span>Reported: {formatDate(prob.date_reported)}</span>
-                        <div className="flex items-center gap-1.5">
-                          <Badge variant="secondary" className={cn(
-                            "text-[9px] font-bold uppercase tracking-wider",
-                            prob.severity === 'Critical' || prob.severity === 'High' ? 'bg-destructive/20 text-destructive border-0' : 'bg-muted text-muted-foreground border-0'
-                          )}>
-                            {prob.severity}
-                          </Badge>
-                          <Button
-                            size="sm"
-                            variant={isDone ? "outline" : "default"}
-                            className={`h-6 px-2 text-[10px] rounded-md font-bold gap-1 ${
-                              isDone ? "border-muted-foreground/30 text-muted-foreground" : "bg-emerald-500 text-white"
-                            }`}
-                            onClick={() => handleToggleProblemStatus(prob)}
-                          >
-                            {isDone ? 'Reopen' : 'Resolve'}
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-muted-foreground hover:text-destructive w-6 h-6" 
-                            onClick={() => handleDeleteProblem(prob.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
               )}
             </div>
-          </Card>
+          ) : (
+            /* CLASSIC TABLE VIEW */
+            <Card className="rounded-2xl shadow-sm overflow-hidden border-border bg-card">
+              <div className="p-4 border-b border-border bg-muted/20 flex flex-wrap gap-4 items-center">
+                <Select value={filters.truck_id} onValueChange={(v) => setFilters(p => ({...p, truck_id: v}))}>
+                  <SelectTrigger className="w-[180px] h-10 rounded-xl bg-background shadow-sm border-border">
+                    <SelectValue placeholder="All Trucks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Trucks</SelectItem>
+                    {uniqueTrucks.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filters.problemStatus} onValueChange={(v) => setFilters(p => ({...p, problemStatus: v}))}>
+                  <SelectTrigger className="w-[180px] h-10 rounded-xl bg-background shadow-sm border-border">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="Open">Pending (Open)</SelectItem>
+                    <SelectItem value="Resolved">Resolved</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow>
+                      <TableHead>Date Reported</TableHead>
+                      <TableHead>Truck</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Severity</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell colSpan={7}><Skeleton className="h-5 w-full" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : filteredProblems.length === 0 ? (
+                      <TableRow><TableCell colSpan={7} className="text-center py-8">No reported problems matching filters.</TableCell></TableRow>
+                    ) : (
+                      filteredProblems.map(prob => {
+                        const isDone = prob.status === 'Resolved';
+                        return (
+                          <TableRow key={prob.id} className={isDone ? "opacity-75 bg-muted/5" : ""}>
+                            <TableCell className="font-medium whitespace-nowrap">{formatDate(prob.date_reported)}</TableCell>
+                            <TableCell><Badge variant="outline" className="font-mono font-bold">{prob.truck_id}</Badge></TableCell>
+                            <TableCell>{prob.category}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className={
+                                prob.severity === 'Critical' ? 'bg-destructive text-destructive-foreground' :
+                                prob.severity === 'High' ? 'bg-destructive/20 text-destructive' :
+                                'bg-muted text-muted-foreground'
+                              }>
+                                {prob.severity}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={isDone ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}>
+                                {prob.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className={`max-w-xs truncate ${isDone ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>
+                              {prob.description}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant={isDone ? "outline" : "default"}
+                                  className={`h-7 px-2.5 text-[11px] rounded-lg font-bold gap-1 ${
+                                    isDone 
+                                      ? "border-muted-foreground/30 text-muted-foreground hover:bg-muted" 
+                                      : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                                  }`}
+                                  onClick={() => handleToggleProblemStatus(prob)}
+                                >
+                                  {isDone ? (
+                                    <><RotateCcw className="w-3 h-3" /> Reopen</>
+                                  ) : (
+                                    <><CheckCircle2 className="w-3 h-3" /> Resolve</>
+                                  )}
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-7 h-7" 
+                                  onClick={() => handleDeleteProblem(prob.id)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card Stack View */}
+              <div className="block md:hidden divide-y divide-border/30">
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="p-4 space-y-2">
+                      <Skeleton className="h-5 w-1/3" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  ))
+                ) : filteredProblems.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-xs">No reported problems matching filters.</div>
+                ) : (
+                  filteredProblems.map(prob => {
+                    const isDone = prob.status === 'Resolved';
+                    return (
+                      <div key={prob.id} className={`p-4 space-y-2.5 ${isDone ? "opacity-75 bg-muted/5" : ""}`}>
+                        <div className="flex justify-between items-start gap-3">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="outline" className="font-mono font-bold text-[10px]">{prob.truck_id}</Badge>
+                              <span className="text-[10px] text-muted-foreground">({prob.category})</span>
+                            </div>
+                            <p className={`text-xs mt-1.5 leading-normal ${isDone ? 'line-through text-muted-foreground' : 'text-foreground font-semibold'}`}>
+                              {prob.description}
+                            </p>
+                          </div>
+                          <Badge className={isDone ? 'bg-success/20 text-success border-0 text-[9px] font-bold' : 'bg-warning/20 text-warning border-0 text-[9px] font-bold'}>
+                            {prob.status}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/20 pt-2">
+                          <span>Reported: {formatDate(prob.date_reported)}</span>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="secondary" className={cn(
+                              "text-[9px] font-bold uppercase tracking-wider",
+                              prob.severity === 'Critical' || prob.severity === 'High' ? 'bg-destructive/20 text-destructive border-0' : 'bg-muted text-muted-foreground border-0'
+                            )}>
+                              {prob.severity}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant={isDone ? "outline" : "default"}
+                              className={`h-6 px-2 text-[10px] rounded-md font-bold gap-1 ${
+                                isDone ? "border-muted-foreground/30 text-muted-foreground" : "bg-emerald-500 text-white"
+                              }`}
+                              onClick={() => handleToggleProblemStatus(prob)}
+                            >
+                              {isDone ? 'Reopen' : 'Resolve'}
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-muted-foreground hover:text-destructive w-6 h-6" 
+                              onClick={() => handleDeleteProblem(prob.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
