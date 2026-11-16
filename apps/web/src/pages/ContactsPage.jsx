@@ -267,7 +267,7 @@ export default function ContactsPage() {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6 relative pb-24 font-sans"
+      className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-4 sm:space-y-6 relative pb-36 sm:pb-24 font-sans"
     >
       <Helmet><title>Contacts Directory | Dashboard</title></Helmet>
 

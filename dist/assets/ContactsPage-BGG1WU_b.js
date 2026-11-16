@@ -1624,7 +1624,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
   const [selectedCity, setSelectedCity] = useState("all");
   const [filterEmergencyOnly, setFilterEmergencyOnly] = useState(false);
   const [filterPreferredOnly, setFilterPreferredOnly] = useState(false);
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState(() => (typeof window !== "undefined" && window.innerWidth < 768 ? "grid" : "table"));
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkAction, setBulkAction] = useState("");
   const [bulkParam, setBulkParam] = useState("");
@@ -1815,13 +1815,13 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-wrap text-xs", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none text-xs w-full sm:flex-wrap shrink-0", children: [
           /* @__PURE__ */ jsxs(
             "select",
             {
               value: selectedBrand,
               onChange: (e2) => setSelectedBrand(e2.target.value),
-              className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none",
+              className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none shrink-0",
               children: [
                 /* @__PURE__ */ jsx("option", { value: "all", children: "\u{1F69B} All Truck Brands" }),
                 TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ jsx("option", { value: b, children: b }, b))
@@ -1833,7 +1833,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
             {
               value: selectedCity,
               onChange: (e2) => setSelectedCity(e2.target.value),
-              className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none",
+              className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none shrink-0",
               children: [
                 /* @__PURE__ */ jsx("option", { value: "all", children: "\u{1F4CD} All Cities" }),
                 cityOptions.filter((c) => c !== "all").map((c) => /* @__PURE__ */ jsx("option", { value: c, children: c }, c))
@@ -1864,7 +1864,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
               ]
             }
           ),
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border shrink-0 ml-auto sm:ml-0", children: [
             /* @__PURE__ */ jsx(
               "button",
               {
@@ -1983,7 +1983,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
         /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground", children: "\u2715" })
       ] })
     ] }) }),
-    viewMode === "table" ? /* @__PURE__ */ jsx("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm", children: /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "w-full caption-bottom text-sm border-collapse", children: [
+    viewMode === "table" ? /* @__PURE__ */ jsx("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm", children: /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "w-full caption-bottom text-sm border-collapse min-w-[720px]", children: [
       /* @__PURE__ */ jsx("thead", { className: "bg-muted/30 border-b border-border/80", children: /* @__PURE__ */ jsxs("tr", { children: [
         /* @__PURE__ */ jsx("th", { className: "w-[40px] text-center p-3", children: /* @__PURE__ */ jsx(
           "input",
@@ -2846,7 +2846,7 @@ function Va() {
   };
 
   return h.createElement("div", {
-    className: "max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0 font-sans"
+    className: "max-w-7xl mx-auto p-2.5 sm:p-6 pb-36 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0 font-sans"
   },
     h.createElement(oa, null, h.createElement("title", null, "Transport CRM & Fleet Directory | Jai Bhavani Cargo")),
     
@@ -2966,7 +2966,7 @@ function Va() {
     h.createElement("button", {
       type: "button",
       onClick: () => handleOpenEdit(null),
-      className: "fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center gap-1.5 px-4 py-3 bg-primary text-primary-foreground font-bold text-xs rounded-full shadow-2xl border-2 border-background active:scale-95 transition-transform"
+      className: "fixed bottom-24 right-4 z-40 md:hidden flex items-center justify-center gap-1.5 px-4 py-3 bg-primary text-primary-foreground font-bold text-xs rounded-full shadow-2xl border-2 border-background active:scale-95 transition-transform"
     }, h.createElement(ca, { className: "w-4 h-4" }), " Add Contact")
   );
 }
