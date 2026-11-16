@@ -2252,6 +2252,536 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
 
 
 
+
+// ── VCard Bulk Import Modal & Parser ──────────────────────────────
+function parseVCardText(raw) {
+  if (!raw || typeof raw !== 'string') return [];
+  const clean = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const unfolded = [];
+  for (let i = 0; i < clean.length; i++) {
+    const l = clean[i];
+    if (i > 0 && /^[ \t]/.test(l)) unfolded[unfolded.length - 1] += l.substring(1);
+    else unfolded.push(l);
+  }
+
+  function decodeQP(s, cs = 'UTF-8') {
+    if (!s) return '';
+    const cl = s.replace(/=(?:\r\n|\r|\n)/g, '');
+    try {
+      const bytes = [];
+      for (let i = 0; i < cl.length; i++) {
+        if (cl[i] === '=' && i + 2 < cl.length) {
+          const hex = cl.substring(i + 1, i + 3);
+          if (/^[0-9A-Fa-f]{2}$/.test(hex)) {
+            bytes.push(parseInt(hex, 16));
+            i += 2;
+            continue;
+          }
+        }
+        bytes.push(cl.charCodeAt(i));
+      }
+      return new TextDecoder(cs.toLowerCase().includes('utf') ? 'utf-8' : cs).decode(new Uint8Array(bytes));
+    } catch (e) {
+      return cl.replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+    }
+  }
+
+  function autoCat(name = '', org = '', title = '', note = '', addr = '') {
+    const c = (name + ' ' + org + ' ' + title + ' ' + note + ' ' + addr).toLowerCase();
+    if (/\b(mechanics?|garages?|workshops?|motor works?|repairs?|service cent(er|re)s?|grease|diesel services?)\b/.test(c)) return 'Mechanic';
+    if (/\b(electricians?|electricals?|batter(y|ies)|wirings?|alternators?|starters?|dynamos?|auto electric)\b/.test(c)) return 'Electrician';
+    if (/\b(punctures?|tyres?|tires?|tubeless|wheels?|alignments?|vulcaniz\w*)\b/.test(c)) return 'Puncture Shop';
+    if (/\b(transport(ers?|s)?|cargo|logistics?|freights?|roadlines?|carriers?|fleets?|truck owners?|lorr(y|ies)|bilty|trailers?)\b/.test(c)) return 'Transporter';
+    if (/\b(showrooms?|tata motors|mahindra|eicher|ashok leyland|bharatbenz|isuzu|dealers?|dealerships?)\b/.test(c)) return 'Showroom';
+    if (/\b(spare parts?|spares?|automobiles?|lubricants?|oil depots?|filters?|springs?|clutch)\b/.test(c)) return 'Spare Parts';
+    if (/\b(weldings?|bodyworks?|body works?|cabins?|chassis|fabricat\w*)\b/.test(c)) return 'Bodywork / Welding';
+    if (/\b(cranes?|tow(ing)?|hydra|recovery trucks?)\b/.test(c)) return 'Crane / Tow Truck';
+    if (/\b(hydraulics?|plastics?|hoses?|pipes?|jacks?)\b/.test(c)) return 'Hydraulics';
+    if (/\b(washings?|water services?|pressure wash)\b/.test(c)) return 'Washing Centre';
+    if (/\b(rto|fitness|permits?|road tax|agents?|registrations?)\b/.test(c)) return 'RTO Agent';
+    if (/\b(warehouses?|godowns?|cold storages?|depots?|c&f|cf agents?|hubs?)\b/.test(c)) return 'Warehouse';
+    if (/\b(drivers?|pilots?|chauffeurs?)\b/.test(c)) return 'Driver';
+    if (/\b(bank(ers?|s)?|loans?|dsa|finances?|branch managers?|credit cards?|emi)\b/.test(c)) return 'Banking';
+    if (/\b(clients?|customers?|pvt ltd|ltd|industries|mills|pharma|exports?|fmcg|steel|cement)\b/.test(c)) return 'Client';
+    if (/\b(vendors?|suppliers?|traders?)\b/.test(c)) return 'Vendor';
+    return 'Other';
+  }
+
+  function cleanPhone(raw) {
+    if (!raw) return '';
+    let cl = raw.trim().replace(/[^\d+]/g, '');
+    if (/^[6-9]\d{9}$/.test(cl)) return '+91 ' + cl.slice(0, 5) + ' ' + cl.slice(5);
+    if (/^91[6-9]\d{9}$/.test(cl)) { const n = cl.slice(2); return '+91 ' + n.slice(0, 5) + ' ' + n.slice(5); }
+    if (/^0[6-9]\d{9}$/.test(cl)) { const n = cl.slice(1); return '+91 ' + n.slice(0, 5) + ' ' + n.slice(5); }
+    return raw.trim();
+  }
+
+  const list = [];
+  let cur = null;
+
+  for (let l of unfolded) {
+    l = l.trim();
+    if (!l) continue;
+    if (l.toUpperCase() === 'BEGIN:VCARD') {
+      cur = { fn: '', nParts: [], org: '', title: '', phones: [], emails: [], addresses: [], notes: [], urls: [] };
+      continue;
+    }
+    if (l.toUpperCase() === 'END:VCARD') {
+      if (cur) {
+        let name = cur.fn || cur.nParts.filter(Boolean).join(' ') || cur.org || (cur.phones[0] ? 'Contact (' + cur.phones[0] + ')' : 'Unnamed Contact');
+        const phone = cur.phones[0] || '';
+        const altPhone = cur.phones.slice(1).join(', ');
+        const email = cur.emails[0] || '';
+        const addr = cur.addresses[0] || '-';
+        let note = cur.notes.join('\n');
+        if (altPhone) note = note ? note + '\nAlt Phone: ' + altPhone : 'Alt Phone: ' + altPhone;
+        if (cur.org && cur.org !== name) note = note ? note + '\nOrg: ' + cur.org : 'Org: ' + cur.org;
+        const gUrl = cur.urls.find(u => u.includes('maps') || u.includes('goo.gl')) || cur.urls[0] || '';
+        const cat = autoCat(name, cur.org, cur.title, note, addr);
+        const digits = phone.replace(/\D/g, '');
+        const key = digits.length >= 10 ? digits.slice(-10) : digits;
+
+        list.push({
+          id: 'vcard_' + Math.random().toString(36).slice(2, 9),
+          company_name: name,
+          contact_type: cat,
+          phone_number: phone,
+          alternate_phone: altPhone,
+          physical_address: addr,
+          email: email,
+          designation: cur.title || '',
+          notes: note,
+          google_maps_url: gUrl,
+          selected: Boolean(phone || name !== 'Unnamed Contact'),
+          phoneKey: key
+        });
+        cur = null;
+      }
+      continue;
+    }
+    if (!cur) continue;
+    const cIdx = l.indexOf(':');
+    if (cIdx === -1) continue;
+    const pPart = l.substring(0, cIdx).replace(/^item\d+\./i, '');
+    let vPart = l.substring(cIdx + 1).trim();
+    const tokens = pPart.split(';');
+    const pName = tokens[0].toUpperCase();
+    const pParams = tokens.slice(1).map(p => p.toUpperCase());
+    const isQP = pParams.some(p => p.includes('QUOTED-PRINTABLE'));
+    const cs = (pParams.find(p => p.startsWith('CHARSET=')) || 'CHARSET=UTF-8').replace('CHARSET=', '');
+    if (isQP) vPart = decodeQP(vPart, cs);
+    vPart = vPart.replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+
+    if (pName === 'FN') cur.fn = vPart.trim();
+    else if (pName === 'N') cur.nParts = vPart.split(';').map(p => p.trim());
+    else if (pName === 'ORG') cur.org = vPart.split(';').map(p => p.trim()).filter(Boolean).join(' - ');
+    else if (pName === 'TITLE' || pName === 'ROLE') cur.title = vPart.trim();
+    else if (pName === 'TEL') {
+      const cp = cleanPhone(vPart);
+      if (cp && !cur.phones.includes(cp)) cur.phones.push(cp);
+    }
+    else if (pName === 'EMAIL' && vPart && !cur.emails.includes(vPart)) cur.emails.push(vPart.trim().toLowerCase());
+    else if (pName === 'ADR') {
+      const parts = vPart.split(';').map(p => p.trim()).filter(Boolean);
+      if (parts.length) cur.addresses.push(parts.join(', '));
+    }
+    else if (pName === 'NOTE' && vPart) cur.notes.push(vPart.trim());
+    else if (pName === 'URL' && vPart && !cur.urls.includes(vPart)) cur.urls.push(vPart.trim());
+  }
+  return list;
+}
+
+const VCARD_ALL_CATS = [
+  'Transporter', 'Truck Owner', 'Mechanic', 'Electrician', 'Puncture Shop',
+  'Showroom', 'Spare Parts', 'Bodywork / Welding', 'Crane / Tow Truck',
+  'Hydraulics', 'Washing Centre', 'RTO Agent', 'Warehouse', 'Client',
+  'Corporate', 'Driver', 'Employee', 'Banking', 'Loan Agent', 'Vendor', 'Other'
+];
+
+function VCardImportModal({ isOpen, onClose, onSuccess }) {
+  const { currentUser: authUser } = We();
+  const fileInputRef = h.useRef(null);
+
+  const [step, setStep] = h.useState('upload');
+  const [fileName, setFileName] = h.useState('');
+  const [parsedList, setParsedList] = h.useState([]);
+  const [existingPhones, setExistingPhones] = h.useState(new Map());
+  const [searchTerm, setSearchTerm] = h.useState('');
+  const [batchCat, setBatchCat] = h.useState('auto');
+  const [skipDuplicates, setSkipDuplicates] = h.useState(true);
+  const [importProgress, setImportProgress] = h.useState({ current: 0, total: 0 });
+  const [pasteMode, setPasteMode] = h.useState(false);
+  const [pasteStr, setPasteStr] = h.useState('');
+
+  h.useEffect(() => {
+    if (isOpen) {
+      setStep('upload');
+      setFileName('');
+      setParsedList([]);
+      setSearchTerm('');
+      setBatchCat('auto');
+      setSkipDuplicates(true);
+      setPasteMode(false);
+      setPasteStr('');
+      setImportProgress({ current: 0, total: 0 });
+
+      W.collection('contacts').getFullList({ fields: 'id,phone_number,company_name', $autoCancel: false })
+        .then(records => {
+          const map = new Map();
+          records.forEach(r => {
+            if (r.phone_number) {
+              const dig = r.phone_number.replace(/\D/g, '');
+              const k = dig.length >= 10 ? dig.slice(-10) : dig;
+              if (k) map.set(k, r.company_name || 'Existing Contact');
+            }
+          });
+          setExistingPhones(map);
+        })
+        .catch(err => console.warn('Could not load existing contacts for vCard check:', err));
+    }
+  }, [isOpen]);
+
+  const processText = (text, name = 'contacts.vcf') => {
+    if (!text || !text.trim()) {
+      S.error('File or text is empty');
+      return;
+    }
+    const contacts = parseVCardText(text);
+    if (!contacts.length) {
+      S.error('No contacts found in this vCard file');
+      return;
+    }
+    const mapped = contacts.map(c => {
+      const isDup = Boolean(c.phoneKey && existingPhones.has(c.phoneKey));
+      return {
+        ...c,
+        isDuplicate: isDup,
+        duplicateName: isDup ? existingPhones.get(c.phoneKey) : '',
+        selected: isDup ? !skipDuplicates : true
+      };
+    });
+    setFileName(name);
+    setParsedList(mapped);
+    setStep('preview');
+    S.success('Parsed ' + mapped.length + ' contacts from ' + name);
+  };
+
+  const handleFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => processText(ev.target?.result, f.name);
+    reader.onerror = () => S.error('Failed to read file');
+    reader.readAsText(f);
+  };
+
+  const handleBatchCatChange = (val) => {
+    setBatchCat(val);
+    if (val !== 'auto') {
+      setParsedList(prev => prev.map(c => ({ ...c, contact_type: val })));
+    }
+  };
+
+  const handleToggleAll = (sel) => {
+    setParsedList(prev => prev.map(c => (c.isDuplicate && skipDuplicates && sel ? { ...c, selected: false } : { ...c, selected: sel })));
+  };
+
+  const handleSkipDupChange = (checked) => {
+    setSkipDuplicates(checked);
+    if (checked) {
+      setParsedList(prev => prev.map(c => c.isDuplicate ? { ...c, selected: false } : c));
+    } else {
+      setParsedList(prev => prev.map(c => ({ ...c, selected: true })));
+    }
+  };
+
+  const totalCount = parsedList.length;
+  const dupCount = parsedList.filter(c => c.isDuplicate).length;
+  const selCount = parsedList.filter(c => c.selected).length;
+
+  const filteredList = parsedList.filter(c => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return c.company_name?.toLowerCase().includes(q) || c.phone_number?.includes(q) || c.contact_type?.toLowerCase().includes(q) || c.physical_address?.toLowerCase().includes(q);
+  });
+
+  const executeImport = async () => {
+    const targets = parsedList.filter(c => c.selected);
+    if (!targets.length) {
+      S.error('Please select at least one contact to import');
+      return;
+    }
+    setStep('importing');
+    setImportProgress({ current: 0, total: targets.length });
+
+    let saved = 0;
+    const CHUNK_SIZE = 5;
+    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
+      const chunk = targets.slice(i, i + CHUNK_SIZE);
+      await Promise.all(chunk.map(async (c) => {
+        try {
+          await W.collection('contacts').create({
+            contact_type: c.contact_type || 'Other',
+            company_name: c.company_name ? c.company_name.trim() : 'Unnamed Contact',
+            phone_number: c.phone_number ? c.phone_number.trim() : '',
+            physical_address: c.physical_address ? c.physical_address.trim() : '-',
+            email: c.email ? c.email.trim() : '',
+            notes: c.notes ? c.notes.trim() : '',
+            google_maps_url: c.google_maps_url ? c.google_maps_url.trim() : '',
+            designation: c.designation ? c.designation.trim() : '',
+            created_by: authUser?.id || 'admin'
+          }, { $autoCancel: false });
+          saved++;
+        } catch (err) {
+          console.warn('Failed contact save:', c.company_name, err);
+        }
+      }));
+      setImportProgress({ current: Math.min(i + CHUNK_SIZE, targets.length), total: targets.length });
+    }
+
+    if (saved > 0) {
+      S.success('🎉 Successfully imported ' + saved + ' contacts into Directory!');
+      onSuccess && onSuccess();
+      onClose();
+    } else {
+      S.error('Could not import contacts. Please try again.');
+      setStep('preview');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return h.createElement(le, { open: isOpen, onOpenChange: (open) => { if (!open && step !== 'importing') onClose(); } },
+    h.createElement(oe, { className: 'max-w-4xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-card border-border shadow-2xl rounded-2xl font-sans' },
+      
+      // Header
+      h.createElement(he, { className: 'p-5 sm:p-6 border-b border-border/60 bg-muted/20' },
+        h.createElement('div', { className: 'flex items-center justify-between' },
+          h.createElement('div', { className: 'flex items-center gap-3' },
+            h.createElement('div', { className: 'p-2.5 bg-primary/10 text-primary rounded-xl text-xl' }, '📇'),
+            h.createElement('div', null,
+              h.createElement(pe, { className: 'text-xl sm:text-2xl font-extrabold flex items-center gap-2' },
+                'Import Contacts from vCard (.vcf)',
+                h.createElement(ne, { variant: 'outline', className: 'bg-primary/10 text-primary border-primary/30 text-[10px] uppercase font-bold tracking-wider' }, 'Bulk Import')
+              ),
+              h.createElement('p', { className: 'text-xs text-muted-foreground mt-0.5' },
+                'Upload a single or multi-contact .vcf file exported from Android Contacts, iPhone, Google Contacts, or WhatsApp.'
+              )
+            )
+          ),
+          step !== 'importing' && h.createElement('button', { onClick: onClose, className: 'text-muted-foreground hover:text-foreground text-lg px-2 rounded-lg' }, '✕')
+        )
+      ),
+
+      // Body
+      h.createElement('div', { className: 'p-5 sm:p-6 flex-1 overflow-y-auto space-y-4' },
+        
+        // STEP 1: UPLOAD
+        step === 'upload' && h.createElement('div', { className: 'space-y-4' },
+          !pasteMode ? h.createElement('div', {
+            onClick: () => fileInputRef.current?.click(),
+            onDragOver: (e) => e.preventDefault(),
+            onDrop: (e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files?.[0];
+              if (f) {
+                const r = new FileReader();
+                r.onload = (ev) => processText(ev.target?.result, f.name);
+                r.readAsText(f);
+              }
+            },
+            className: 'border-2 border-dashed border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/10 rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3'
+          },
+            h.createElement('input', { ref: fileInputRef, type: 'file', accept: '.vcf,.vcard,text/vcard,text/x-vcard', className: 'hidden', onChange: handleFile }),
+            h.createElement('div', { className: 'p-4 bg-primary/15 text-primary rounded-2xl text-4xl' }, '📁'),
+            h.createElement('div', null,
+              h.createElement('h3', { className: 'text-base sm:text-lg font-bold text-foreground' }, 'Click to choose or drag & drop your .vcf file'),
+              h.createElement('p', { className: 'text-xs text-muted-foreground mt-1 max-w-md' }, 'Supports vCard 2.1, 3.0, and 4.0. Multiple contacts in one file will all be imported at once.')
+            ),
+            h.createElement('div', { className: 'flex items-center gap-2 pt-2' },
+              h.createElement(ne, { variant: 'outline', className: 'text-[11px] bg-background/80 font-mono text-muted-foreground' }, 'Android Contacts (.vcf)'),
+              h.createElement(ne, { variant: 'outline', className: 'text-[11px] bg-background/80 font-mono text-muted-foreground' }, 'iPhone / iCloud'),
+              h.createElement(ne, { variant: 'outline', className: 'text-[11px] bg-background/80 font-mono text-muted-foreground' }, 'WhatsApp Contact Cards')
+            )
+          ) : h.createElement('div', { className: 'space-y-3' },
+            h.createElement('div', { className: 'flex items-center justify-between' },
+              h.createElement(g, { className: 'text-xs font-bold text-foreground' }, 'Paste raw vCard (.vcf) text below:'),
+              h.createElement(P, { variant: 'ghost', size: 'sm', onClick: () => setPasteMode(false), className: 'text-xs text-primary' }, 'Switch to File Upload')
+            ),
+            h.createElement('textarea', {
+              rows: 8,
+              value: pasteStr,
+              onChange: (e) => setPasteStr(e.target.value),
+              placeholder: 'BEGIN:VCARD\nVERSION:3.0\nFN:Ramesh Kumar\nTEL;CELL:+91 98490 12345\nORG:Ramesh Motors\nEND:VCARD',
+              className: 'w-full bg-background border border-border/80 rounded-xl p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/40'
+            }),
+            h.createElement(P, { onClick: () => processText(pasteStr, 'pasted_vcard.vcf'), disabled: !pasteStr.trim(), className: 'w-full font-bold text-xs rounded-xl' }, 'Parse Pasted Text')
+          ),
+
+          h.createElement('div', { className: 'flex items-center justify-between text-xs text-muted-foreground pt-1' },
+            h.createElement('span', null, '💡 Tip: Export all phone contacts as a .vcf file and upload here'),
+            !pasteMode && h.createElement('button', { type: 'button', onClick: () => setPasteMode(true), className: 'text-primary hover:underline font-medium' }, 'Or paste raw vCard text')
+          )
+        ),
+
+        // STEP 2: PREVIEW
+        step === 'preview' && h.createElement('div', { className: 'space-y-4' },
+          // Stats
+          h.createElement('div', { className: 'grid grid-cols-3 gap-3 p-3.5 bg-muted/40 rounded-xl border border-border/60' },
+            h.createElement('div', { className: 'text-center' },
+              h.createElement('span', { className: 'text-[11px] text-muted-foreground font-medium block' }, 'Total in File'),
+              h.createElement('span', { className: 'text-lg font-extrabold text-foreground' }, totalCount)
+            ),
+            h.createElement('div', { className: 'text-center border-x border-border/60' },
+              h.createElement('span', { className: 'text-[11px] text-muted-foreground font-medium block' }, 'Ready to Import'),
+              h.createElement('span', { className: 'text-lg font-extrabold text-emerald-500' }, selCount)
+            ),
+            h.createElement('div', { className: 'text-center' },
+              h.createElement('span', { className: 'text-[11px] text-muted-foreground font-medium block' }, 'Existing Duplicates'),
+              h.createElement('span', { className: 'text-lg font-extrabold text-amber-500' }, dupCount)
+            )
+          ),
+
+          // Action Toolbar
+          h.createElement('div', { className: 'flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between' },
+            h.createElement('div', { className: 'flex items-center gap-3 flex-wrap' },
+              h.createElement('div', { className: 'flex items-center gap-1.5' },
+                h.createElement('span', { className: 'text-xs text-muted-foreground whitespace-nowrap' }, 'Category:'),
+                h.createElement('select', {
+                  value: batchCat,
+                  onChange: (e) => handleBatchCatChange(e.target.value),
+                  className: 'h-8 text-xs rounded-lg bg-background border border-border px-2 text-foreground'
+                },
+                  h.createElement('option', { value: 'auto' }, '✨ Keep Auto-Detected'),
+                  VCARD_ALL_CATS.map(cat => h.createElement('option', { key: cat, value: cat }, cat))
+                )
+              ),
+              h.createElement('label', { className: 'flex items-center gap-2 text-xs cursor-pointer select-none text-muted-foreground' },
+                h.createElement('input', {
+                  type: 'checkbox',
+                  checked: skipDuplicates,
+                  onChange: (e) => handleSkipDupChange(e.target.checked),
+                  className: 'rounded border-border'
+                }),
+                'Skip duplicates (' + dupCount + ' found)'
+              )
+            ),
+            h.createElement(k, {
+              value: searchTerm,
+              onChange: (e) => setSearchTerm(e.target.value),
+              placeholder: 'Search contacts...',
+              className: 'h-8 text-xs rounded-lg bg-background w-full md:w-52'
+            })
+          ),
+
+          // Select All & Change File
+          h.createElement('div', { className: 'flex items-center justify-between text-xs text-muted-foreground' },
+            h.createElement('div', { className: 'flex items-center gap-2' },
+              h.createElement(P, { variant: 'ghost', size: 'sm', onClick: () => handleToggleAll(true), className: 'h-6 text-xs px-2 text-primary' }, 'Select All'),
+              '•',
+              h.createElement(P, { variant: 'ghost', size: 'sm', onClick: () => handleToggleAll(false), className: 'h-6 text-xs px-2 text-muted-foreground hover:text-foreground' }, 'Deselect All')
+            ),
+            h.createElement(P, { variant: 'ghost', size: 'sm', onClick: () => { setStep('upload'); setParsedList([]); }, className: 'h-6 text-xs text-muted-foreground hover:text-foreground' }, 'Change File')
+          ),
+
+          // Table
+          h.createElement('div', { className: 'border border-border/80 rounded-xl overflow-hidden max-h-[360px] overflow-y-auto' },
+            h.createElement('table', { className: 'w-full text-xs text-left' },
+              h.createElement('thead', { className: 'bg-muted/60 text-muted-foreground uppercase text-[10px] font-bold sticky top-0 z-10 border-b border-border/80 backdrop-blur' },
+                h.createElement('tr', null,
+                  h.createElement('th', { className: 'p-2.5 w-10 text-center' }, '✓'),
+                  h.createElement('th', { className: 'p-2.5' }, 'Contact Name'),
+                  h.createElement('th', { className: 'p-2.5' }, 'Phone Number'),
+                  h.createElement('th', { className: 'p-2.5 w-40' }, 'Category'),
+                  h.createElement('th', { className: 'p-2.5 w-24 text-right' }, 'Status')
+                )
+              ),
+              h.createElement('tbody', { className: 'divide-y divide-border/60' },
+                filteredList.length === 0 ? h.createElement('tr', null,
+                  h.createElement('td', { colSpan: 5, className: 'p-6 text-center text-muted-foreground' }, 'No contacts found.')
+                ) : filteredList.map(c => h.createElement('tr', {
+                  key: c.id,
+                  className: 'hover:bg-muted/30 transition-colors ' + (c.selected ? 'bg-primary/[0.03]' : 'opacity-60')
+                },
+                  h.createElement('td', { className: 'p-2.5 text-center' },
+                    h.createElement('input', {
+                      type: 'checkbox',
+                      checked: c.selected,
+                      onChange: (e) => {
+                        const checked = e.target.checked;
+                        setParsedList(prev => prev.map(item => item.id === c.id ? { ...item, selected: checked } : item));
+                      },
+                      className: 'rounded border-border'
+                    })
+                  ),
+                  h.createElement('td', { className: 'p-2.5' },
+                    h.createElement('div', { className: 'font-bold text-foreground' }, c.company_name),
+                    c.designation ? h.createElement('div', { className: 'text-[11px] text-muted-foreground' }, c.designation) : null,
+                    c.physical_address && c.physical_address !== '-' ? h.createElement('div', { className: 'text-[10px] text-muted-foreground truncate max-w-xs' }, '📍 ' + c.physical_address) : null
+                  ),
+                  h.createElement('td', { className: 'p-2.5 font-mono text-foreground' },
+                    c.phone_number || h.createElement('span', { className: 'text-muted-foreground italic' }, 'No phone')
+                  ),
+                  h.createElement('td', { className: 'p-2.5' },
+                    h.createElement('select', {
+                      value: c.contact_type,
+                      onChange: (e) => {
+                        const v = e.target.value;
+                        setParsedList(prev => prev.map(item => item.id === c.id ? { ...item, contact_type: v } : item));
+                      },
+                      className: 'h-7 text-[11px] rounded bg-background border border-border px-2 w-36 text-foreground'
+                    },
+                      VCARD_ALL_CATS.map(cat => h.createElement('option', { key: cat, value: cat }, cat))
+                    )
+                  ),
+                  h.createElement('td', { className: 'p-2.5 text-right' },
+                    c.isDuplicate
+                      ? h.createElement(ne, { variant: 'outline', className: 'bg-amber-500/10 text-amber-500 border-amber-500/30 text-[10px] font-bold' }, 'Duplicate')
+                      : h.createElement(ne, { variant: 'outline', className: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 text-[10px] font-bold' }, 'New')
+                  )
+                ))
+              )
+            )
+          )
+        ),
+
+        // STEP 3: IMPORTING
+        step === 'importing' && h.createElement('div', { className: 'py-12 px-6 text-center space-y-4' },
+          h.createElement('div', { className: 'p-4 bg-primary/10 text-primary rounded-full w-16 h-16 mx-auto flex items-center justify-center text-3xl animate-pulse' }, '⏳'),
+          h.createElement('div', null,
+            h.createElement('h3', { className: 'text-lg font-bold text-foreground' }, 'Importing Contacts into Directory...'),
+            h.createElement('p', { className: 'text-xs text-muted-foreground mt-1' }, 'Saving ' + importProgress.current + ' of ' + importProgress.total + ' contacts. Please wait...')
+          ),
+          h.createElement('div', { className: 'w-full max-w-md mx-auto bg-muted rounded-full h-3 overflow-hidden border border-border' },
+            h.createElement('div', {
+              className: 'bg-primary h-full transition-all duration-300 rounded-full',
+              style: { width: (importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0) + '%' }
+            })
+          ),
+          h.createElement('div', { className: 'text-xs font-mono text-muted-foreground' },
+            Math.round(importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0) + '% completed'
+          )
+        )
+      ),
+
+      // Footer
+      h.createElement(ue, { className: 'p-4 sm:p-5 border-t border-border/60 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3' },
+        h.createElement('div', { className: 'text-xs text-muted-foreground' },
+          step === 'preview' ? 'Ready to save ' + selCount + ' contacts' : ''
+        ),
+        h.createElement('div', { className: 'flex items-center gap-2.5 w-full sm:w-auto justify-end' },
+          step !== 'importing' && h.createElement(P, { variant: 'outline', onClick: onClose, className: 'rounded-xl text-xs font-bold' }, 'Cancel'),
+          step === 'preview' && h.createElement(P, {
+            onClick: executeImport,
+            disabled: selCount === 0,
+            className: 'bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl shadow-md px-5 flex items-center gap-2'
+          }, '📇 Import ' + selCount + ' Contacts')
+        )
+      )
+    )
+  );
+}
+
 function Va() {
   const [currentView, setCurrentView] = h.useState("contacts");
   const [isSosOpen, setIsSosOpen] = h.useState(false);
@@ -2261,6 +2791,7 @@ function Va() {
   const [isDetailOpen, setIsDetailOpen] = h.useState(false);
   const [isExportOpen, setIsExportOpen] = h.useState(false);
   const [isScanOpen, setIsScanOpen] = h.useState(false);
+  const [isVCardOpen, setIsVCardOpen] = h.useState(false);
   const [isApiSendOpen, setIsApiSendOpen] = h.useState(false);
   const [isMultiShareOpen, setIsMultiShareOpen] = h.useState(false);
 
@@ -2362,6 +2893,12 @@ function Va() {
 
         h.createElement(P, {
           variant: "outline",
+          onClick: () => setIsVCardOpen(true),
+          className: "rounded-xl border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold text-xs gap-1.5 shadow-sm"
+        }, h.createElement("span", { className: "text-base leading-none" }, "📇"), " Import vCard (.vcf)"),
+
+        h.createElement(P, {
+          variant: "outline",
           onClick: () => setIsExportOpen(true),
           className: "rounded-xl text-xs font-bold gap-1.5"
         }, h.createElement(Be, { className: "w-4 h-4" }), " Export CSV"),
@@ -2416,6 +2953,7 @@ function Va() {
 
     h.createElement(Aa, { isOpen: isExportOpen, onClose: () => setIsExportOpen(false), contacts: contactsList }),
     h.createElement(Oa, { isOpen: isScanOpen, onClose: () => setIsScanOpen(false), onSuccess: () => { setIsScanOpen(false); refreshContacts(); } }),
+    h.createElement(VCardImportModal, { isOpen: isVCardOpen, onClose: () => setIsVCardOpen(false), onSuccess: () => { setIsVCardOpen(false); refreshContacts(); } }),
     h.createElement(Fa, { isOpen: isApiSendOpen, onClose: () => setIsApiSendOpen(false), contact: activeContact }),
     h.createElement(wa, { isOpen: isMultiShareOpen, onClose: () => setIsMultiShareOpen(false), contacts: selectedContactsForShare }),
 

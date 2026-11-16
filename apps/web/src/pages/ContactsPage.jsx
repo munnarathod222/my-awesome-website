@@ -4,7 +4,7 @@ import {
   Plus, Search, Download, Users, Building2, Truck, AlertCircle,
   Camera, Contact2, Wrench, ShoppingBag, Landmark, ChevronDown,
   Network, UserCog, Phone, MapPin, Zap, Disc, Banknote, HandCoins, CreditCard,
-  MessageSquare, CheckSquare, Square, Copy
+  MessageSquare, CheckSquare, Square, Copy, FileSpreadsheet
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button }    from '@/components/ui/button';
@@ -23,6 +23,7 @@ import ContactActionsMenu   from '@/components/ContactActionsMenu.jsx';
 import ContactExportModal   from '@/components/ContactExportModal.jsx';
 import BusinessCardUploadModal from '@/components/BusinessCardUploadModal.jsx';
 import TransportCrmWhatsAppShareModal from '@/components/TransportCrmWhatsAppShareModal.jsx';
+import VCardImportModal     from '@/components/VCardImportModal.jsx';
 import { getPastedMapUrl }  from '@/lib/contactUtils.js';
 import { openMapLocation }  from '@/lib/locationUtils.js';
 
@@ -135,6 +136,7 @@ export default function ContactsPage() {
   const [isDetailsOpen,     setIsDetailsOpen]    = useState(false);
   const [isExportOpen,      setIsExportOpen]     = useState(false);
   const [isAiModalOpen,     setIsAiModalOpen]    = useState(false);
+  const [isVCardModalOpen,  setIsVCardModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [selectedContact,   setSelectedContact]  = useState(null);
 
@@ -301,6 +303,15 @@ export default function ContactsPage() {
           >
             <Camera className="w-4 h-4 mr-1.5 text-primary" />
             Scan Visiting Card
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => setIsVCardModalOpen(true)}
+            className="rounded-xl border-border/80 shadow-sm text-xs font-bold hover:bg-primary/10 hover:text-primary transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-primary" />
+            Import vCard (.vcf)
           </Button>
 
           <Button
@@ -624,6 +635,12 @@ export default function ContactsPage() {
       <BusinessCardUploadModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
+        onSuccess={fetchContacts}
+      />
+
+      <VCardImportModal
+        isOpen={isVCardModalOpen}
+        onClose={() => setIsVCardModalOpen(false)}
         onSuccess={fetchContacts}
       />
 
