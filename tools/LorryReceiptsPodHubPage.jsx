@@ -1,4 +1,3 @@
-
 import {
   r as React,
   bs as Helmet,
@@ -28,11 +27,94 @@ import {
 } from "./index-DLxf9dwO.js";
 import "./vendor-radix-BQCqNqg0.js";
 import "./vendor-pdf-DtmgLs_2.js";
-
 const { useState, useEffect, useMemo, useRef } = React;
 
+function getCourierTrackingUrl(partner, awb) {
+  if (!awb) return null;
+  const clean = String(awb).trim();
+  const p = String(partner || "").toUpperCase();
+  if (p.includes("DTDC")) return "https://www.dtdc.in/tracking/shipment-tracking.asp?strCnno=" + encodeURIComponent(clean);
+  if (p.includes("TRACKON")) return "https://trackon.in/Tracking/Index?docketNo=" + encodeURIComponent(clean);
+  if (p.includes("BLUEDART") || p.includes("BLUE DART")) return "https://www.bluedart.com/tracking?trackNumber=" + encodeURIComponent(clean);
+  if (p.includes("DELHIVERY")) return "https://www.delhivery.com/track/package/" + encodeURIComponent(clean);
+  if (p.includes("SPEED POST") || p.includes("POST")) return "https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx";
+  if (p.includes("PROFESSIONAL")) return "https://www.tpcindia.com/track.aspx?awb=" + encodeURIComponent(clean);
+  return null;
+}
+
+function getPodCourierInfo(trip, isRequired = true) {
+  const awb = trip.pod_courier_awb ? String(trip.pod_courier_awb).trim() : "";
+  const partner = trip.pod_courier_partner || "DTDC";
+  const courierDate = trip.pod_courier_date || "";
+  const isDeliveredToClient = trip.pod_hardcopy_status === "Delivered to Client";
+  
+  if (isDeliveredToClient) {
+    return {
+      status: "delivered",
+      badgeText: "✓ Delivered to Client",
+      badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      partner, awb, courierDate, isRequired
+    };
+  }
+  
+  if (awb) {
+    return {
+      status: "in_transit",
+      badgeText: "🚚 " + partner + ": " + awb,
+      badgeClass: "bg-blue-500/15 text-blue-400 border-blue-500/30 font-mono",
+      partner, awb, courierDate,
+      trackingUrl: getCourierTrackingUrl(partner, awb),
+      isRequired
+    };
+  }
+
+  // If client does not require POD, courier is NOT needed
+  if (!isRequired) {
+    return {
+      status: "not_required",
+      badgeText: "⚪ POD Not Required",
+      badgeClass: "bg-slate-800/60 text-slate-400 border-slate-700/60 text-[10px]",
+      partner: "", awb: "", courierDate: "",
+      isRequired: false
+    };
+  }
+  
+  const dateRef = trip.delivered_at || trip.date;
+  let days = 0;
+  if (dateRef) {
+    const ms = Date.now() - new Date(dateRef).getTime();
+    days = Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+  }
+  
+  if (days >= 5) {
+    return {
+      status: "overdue",
+      badgeText: "🚨 " + days + "d OVERDUE COURIER",
+      badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse font-bold",
+      days,
+      isRequired: true
+    };
+  } else if (days >= 3) {
+    return {
+      status: "warning",
+      badgeText: "⚠️ " + days + "d Uncouriered",
+      badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold",
+      days,
+      isRequired: true
+    };
+  } else {
+    return {
+      status: "pending",
+      badgeText: "⏱️ " + days + "d Pending Courier",
+      badgeClass: "bg-slate-800 text-slate-300 border-slate-700 font-medium",
+      days,
+      isRequired: true
+    };
+  }
+}
+
 function LorryReceiptsPodHubPage() {
-  const [activeTab, setActiveTab] = useState("pod"); // Default to POD Hub as requested by user
+  const [activeTab, setActiveTab] = useState("pod");
   const [trips, setTrips] = useState([]);
   const [clientList, setClientList] = useState([]);
   const [clientMap, setClientMap] = useState({});
@@ -58,19 +140,27 @@ function LorryReceiptsPodHubPage() {
     hamali_charges: "",
     lr_number: ""
   });
-  const [savingLrEdit, setSavingLrEdit] = useState(false); // "pod_required", "all", or specific client_id
-  
-  // Modals & Viewer Controls
+  const [savingLrEdit, setSavingLrEdit] = useState(false);
   const [viewingLr, setViewingLr] = useState(null);
   const [lrCopyType, setLrCopyType] = useState("Transporter Copy");
-  const [previewScale, setPreviewScale] = useState(0.75); // Fits whole document on screen by default!
+  const [previewScale, setPreviewScale] = useState(0.75);
   const [isCreatingLr, setIsCreatingLr] = useState(false);
   const [viewingPodDoc, setViewingPodDoc] = useState(null);
   const [uploadingTripId, setUploadingTripId] = useState(null);
   const [editLrTrip, setEditLrTrip] = useState(null);
-  const [newLrNumber, setNewLrNumber] = useState("");
+  const [courierModalTrip, setCourierModalTrip] = useState(null);
+  const [courierForm, setCourierForm] = useState({
+    partner: "DTDC",
+    awb: "",
+    date: new Date().toISOString().split("T")[0],
+    recipient: "",
+    notes: "",
+    isDelivered: false
+  });
+  const [savingCourier, setSavingCourier] = useState(false);
+  const [courierFilter, setCourierFilter] = useState("all");
 
-  // Create LR Form state
+  const [newLrNumber, setNewLrNumber] = useState("");
   const [createForm, setCreateForm] = useState({
     selectedTripId: "",
     lrNumber: "",
@@ -89,8 +179,6 @@ function LorryReceiptsPodHubPage() {
     packagesCount: "1",
     weightKg: "1000"
   });
-
-  // Dynamic Company Settings from PocketBase & verified defaults
   const [companySettings, setCompanySettings] = useState({
     company_name: "JAI BHAVANI CARGO",
     tagline: "Goods Transport Operators & Fleet Contractors",
@@ -111,51 +199,41 @@ function LorryReceiptsPodHubPage() {
     logo_url: "/logo.png",
     lr_prefix: "JBC"
   });
-
-  // Helpers to resolve client information & POD requirement
   const clientRequiresPod = (cl) => {
     if (!cl) return false;
-    return cl.requires_pod === true || cl.requires_pod === 1 || cl.requires_pod === 'true' || cl.requires_pod === '1';
+    return cl.requires_pod === true || cl.requires_pod === 1 || cl.requires_pod === "true" || cl.requires_pod === "1";
   };
-
   const getClientForTrip = (trip) => {
     if (!trip) return null;
     if (trip.expand && trip.expand.client_id) return trip.expand.client_id;
     if (trip.client_id && clientMap[trip.client_id]) return clientMap[trip.client_id];
     if (trip.client_name) {
       const norm = trip.client_name.trim().toLowerCase();
-      const found = clientList.find(c => 
-        (c.client_name && c.client_name.trim().toLowerCase() === norm) ||
-        (c.company_name && c.company_name.trim().toLowerCase() === norm) ||
-        (c.name && c.name.trim().toLowerCase() === norm)
+      const found = clientList.find(
+        (c) => c.client_name && c.client_name.trim().toLowerCase() === norm || c.company_name && c.company_name.trim().toLowerCase() === norm || c.name && c.name.trim().toLowerCase() === norm
       );
       if (found) return found;
     }
     return null;
   };
-
   const getClientName = (trip) => {
     const cl = getClientForTrip(trip);
     if (cl) {
-      if (cl.company_name && cl.company_name.trim() !== '-' && cl.company_name.trim() !== '') return cl.company_name.trim();
-      if (cl.client_name && cl.client_name.trim() !== '-' && cl.client_name.trim() !== '') return cl.client_name.trim();
-      if (cl.name && cl.name.trim() !== '-' && cl.name.trim() !== '') return cl.name.trim();
+      if (cl.company_name && cl.company_name.trim() !== "-" && cl.company_name.trim() !== "") return cl.company_name.trim();
+      if (cl.client_name && cl.client_name.trim() !== "-" && cl.client_name.trim() !== "") return cl.client_name.trim();
+      if (cl.name && cl.name.trim() !== "-" && cl.name.trim() !== "") return cl.name.trim();
     }
-    if (trip.client_name && trip.client_name.trim() !== '-' && trip.client_name.trim() !== '') return trip.client_name.trim();
+    if (trip.client_name && trip.client_name.trim() !== "-" && trip.client_name.trim() !== "") return trip.client_name.trim();
     return "Direct Consignment";
   };
-
   const isTripPodRequired = (trip) => {
     const cl = getClientForTrip(trip);
-    // Strict client-first rule: If client is identified and does NOT require POD, NEVER treat as POD trip
     if (cl) {
       return clientRequiresPod(cl);
     }
-    // If no client object is found, check trip-level flag only
-    return trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === 'true';
+    return trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === "true";
   };
-
-  const getPodFiles = (trip) => {
+    const getPodFiles = (trip) => {
     if (!trip || !trip.pod_file) return [];
     let raw = trip.pod_file;
     if (typeof raw === "string") {
@@ -176,12 +254,10 @@ function LorryReceiptsPodHubPage() {
     }
     return [];
   };
-
   const getActualPodFile = (trip) => {
     const files = getPodFiles(trip);
     return files.length > 0 ? files[0] : null;
   };
-
   const compressDocumentImage = async (file, maxDimension = 1920, quality = 0.8) => {
     if (!file || !file.type || !file.type.startsWith("image/")) {
       return file;
@@ -238,7 +314,6 @@ function LorryReceiptsPodHubPage() {
       reader.readAsDataURL(file);
     });
   };
-
   const formatFileSize = (bytes) => {
     if (!bytes || bytes === 0) return "0 B";
     const k = 1024;
@@ -246,23 +321,8 @@ function LorryReceiptsPodHubPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
-
-  const openPodViewer = (trip) => {
-    const files = getPodFiles(trip);
-    const clientName = getClientName(trip);
-    setViewingPodDoc({
-      trip,
-      files,
-      activeIndex: 0,
-      tripId: trip.trip_id || trip.id,
-      truck: trip.truck_number,
-      client: clientName,
-      url: files.length > 0 ? pb.files.getUrl(trip, files[0]) : null
-    });
-  };
   const getPodStatus = (trip) => {
     const cl = getClientForTrip(trip);
-    // If client does not require POD, status is always "Not Required"
     if (cl && !clientRequiresPod(cl)) {
       return "Not Required";
     }
@@ -277,47 +337,41 @@ function LorryReceiptsPodHubPage() {
     if (hasActualFile || hasActualLink) return "Uploaded";
     return "Pending";
   };
-
   const formatTripDate = (dateStr) => {
     if (!dateStr) return "Today";
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      const day = String(d.getDate()).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, "0");
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       return day + " " + months[d.getMonth()] + " " + d.getFullYear();
     } catch (e) {
       return dateStr;
     }
   };
-
   const formatRoute = (trip) => {
     if (trip.route && trip.route.trim()) {
-      return trip.route.replace(/->/g, " ➔ ").replace(/➔/g, " ➔ ");
+      return trip.route.replace(/->/g, " \u2794 ").replace(/➔/g, " \u2794 ");
     }
     if (trip.origin || trip.destination) {
-      return (trip.origin || "Origin") + " ➔ " + (trip.destination || "Destination");
+      return (trip.origin || "Origin") + " \u2794 " + (trip.destination || "Destination");
     }
     return "Direct Highway Transit";
   };
-
-  // Helper to get formatted LR Number
   const getLrNumber = (trip) => {
     if (trip.lr_number && trip.lr_number.trim()) return trip.lr_number.trim();
     if (trip.client_trip_id && trip.client_trip_id.trim()) return trip.client_trip_id.trim();
     const idSuffix = (trip.trip_id || trip.id || "").replace(/[^0-9]/g, "").slice(-4) || "1001";
     return (companySettings.lr_prefix || "JBC") + "/26-27/" + idSuffix;
   };
-
   const loadData = async () => {
     setLoading(true);
     try {
-      // 1. Load Live Company Settings
       try {
         const compList = await pb.collection("company_settings").getList(1, 1, { $autoCancel: false }).catch(() => null);
         if (compList && compList.items && compList.items[0]) {
           const cs = compList.items[0];
-          setCompanySettings(prev => ({
+          setCompanySettings((prev) => ({
             ...prev,
             company_name: cs.company_name || prev.company_name,
             company_address: cs.company_address || prev.company_address,
@@ -338,44 +392,37 @@ function LorryReceiptsPodHubPage() {
             logo_url: cs.company_logo ? pb.files.getUrl(cs, cs.company_logo) : "/logo.png"
           }));
         }
-      } catch (err) {}
-
-      // 2. Load Clients
+      } catch (err) {
+      }
       const rawClients = await pb.collection("clients").getFullList({ $autoCancel: false }).catch(() => []);
       setClientList(rawClients);
       const cMap = {};
-      rawClients.forEach(cl => {
+      rawClients.forEach((cl) => {
         cMap[cl.id] = cl;
       });
       setClientMap(cMap);
-
-      // 2.5 Load Drivers (employees) and Trucks for dynamic LR resolution
       const rawEmployees = await pb.collection("employees").getFullList({ $autoCancel: false }).catch(() => []);
       const dMap = {};
-      rawEmployees.forEach(emp => {
+      rawEmployees.forEach((emp) => {
         if (emp.name) dMap[emp.name.toLowerCase().trim()] = emp;
         if (emp.id) dMap[emp.id] = emp;
       });
       setDriverMap(dMap);
-
       const rawTrucks = await pb.collection("trucks").getFullList({ $autoCancel: false }).catch(() => []);
       const tMap = {};
-      rawTrucks.forEach(trk => {
+      rawTrucks.forEach((trk) => {
         if (trk.truck_number) {
           tMap[trk.truck_number.trim().toUpperCase()] = trk;
-          tMap[trk.truck_number.replace(/s+/g, '').toUpperCase()] = trk;
+          tMap[trk.truck_number.replace(/s+/g, "").toUpperCase()] = trk;
         }
         if (trk.id) tMap[trk.id] = trk;
       });
       setTruckMap(tMap);
-
-      // 3. Load Trips with expanded client relation
       const tripList = await pb.collection("trip_logs").getFullList({
         sort: "-date",
         expand: "client_id",
         $autoCancel: false
       }).catch(() => []);
-
       setTrips(tripList);
     } catch (err) {
       console.error("Error loading trips:", err);
@@ -384,12 +431,9 @@ function LorryReceiptsPodHubPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     loadData();
   }, []);
-
-  // Upload POD File with automatic image compression and multi-file preservation
   const handleUploadPod = async (e, tripId, replaceAll = false) => {
     const rawFiles = Array.from(e.target.files || []);
     if (!rawFiles.length) return;
@@ -417,7 +461,7 @@ function LorryReceiptsPodHubPage() {
       const savedBytes = origTotal - compTotal;
       const savedPercent = origTotal > 0 && savedBytes > 0 ? Math.round((savedBytes / origTotal) * 100) : 0;
       if (savedPercent > 10) {
-        toast.success("Attached " + optimizedFiles.length + " POD page(s)! Compressed " + savedPercent + "% (" + formatFileSize(origTotal) + " → " + formatFileSize(compTotal) + ")");
+        toast.success("Attached " + optimizedFiles.length + " POD page(s)! Compressed " + savedPercent + "% (" + formatFileSize(origTotal) + " \u2192 " + formatFileSize(compTotal) + ")");
       } else {
         toast.success(optimizedFiles.length > 1 ? (optimizedFiles.length + " POD pages uploaded!") : "POD document uploaded successfully!");
       }
@@ -443,7 +487,6 @@ function LorryReceiptsPodHubPage() {
       if (e.target) e.target.value = "";
     }
   };
-
   const handleDeletePodPage = async (trip, fileName) => {
     if (!trip || !fileName) return;
     if (!window.confirm("Are you sure you want to remove this POD page?")) return;
@@ -478,8 +521,19 @@ function LorryReceiptsPodHubPage() {
       setUploadingTripId(null);
     }
   };
-
-  // ── Dynamic Production-Ready LR Resolution Helpers ──
+  const openPodViewer = (trip) => {
+    const files = getPodFiles(trip);
+    const clientName = getClientName(trip);
+    setViewingPodDoc({
+      trip,
+      files,
+      activeIndex: 0,
+      tripId: trip.trip_id || trip.id,
+      truck: trip.truck_number,
+      client: clientName,
+      url: files.length > 0 ? pb.files.getUrl(trip, files[0]) : null
+    });
+  };
   const cleanCity = (str) => {
     if (!str) return "";
     let s = str.trim();
@@ -497,7 +551,6 @@ function LorryReceiptsPodHubPage() {
     if (cityDict[s.toUpperCase()]) return cityDict[s.toUpperCase()];
     return s;
   };
-
   const parseRoute = (trip) => {
     if (!trip) return { origin: "Origin Station", destination: "Destination Station" };
     if (trip.origin && trip.destination && trip.origin !== trip.destination) {
@@ -519,13 +572,11 @@ function LorryReceiptsPodHubPage() {
     }
     return { origin: cleanCity(r), destination: cleanCity(r) };
   };
-
   const getConsignor = (trip) => {
     if (!trip) return { name: "", address: "", gstin: "", stateCode: "", phone: "" };
     const client = trip.client_id ? clientMap[trip.client_id] : null;
     const { origin } = parseRoute(trip);
     const companyName = client?.company_name || client?.client_name || trip.client_name || "Consignor Partner";
-    
     let address = "";
     if (client?.address) {
       address = client.address;
@@ -538,7 +589,6 @@ function LorryReceiptsPodHubPage() {
     } else {
       address = origin + " Commercial Logistics Hub";
     }
-
     const gstin = client?.gst_number || client?.gstin || (client?.pan_number ? "PAN: " + client.pan_number : "URP (Unregistered Shipper)");
     let stateCode = "36 (Telangana)";
     if (gstin && /^d{2}/.test(gstin)) {
@@ -551,11 +601,10 @@ function LorryReceiptsPodHubPage() {
         "33": "33 (Tamil Nadu)",
         "07": "07 (Delhi)"
       };
-      stateCode = stateMap[code] || (code + (client?.state ? " (" + client.state + ")" : ""));
+      stateCode = stateMap[code] || code + (client?.state ? " (" + client.state + ")" : "");
     } else if (client?.state) {
       stateCode = client.state;
     }
-
     return {
       name: companyName,
       address,
@@ -564,33 +613,26 @@ function LorryReceiptsPodHubPage() {
       phone: client?.phone || "On Registered File"
     };
   };
-
   const getConsignee = (trip) => {
     if (!trip) return { name: "", address: "", gstin: "", phone: "" };
     const { destination } = parseRoute(trip);
     const client = trip.client_id ? clientMap[trip.client_id] : null;
-
     const name = trip.consignee_name || (client?.company_name ? client.company_name + " (Receiving Hub / Consignee)" : "Consignee at Destination Dock");
-    const address = trip.consignee_address || (destination + " Destination Freight Terminal / Unloading Dock");
+    const address = trip.consignee_address || destination + " Destination Freight Terminal / Unloading Dock";
     const gstin = trip.consignee_gstin || "As per Commercial Invoice / Challan";
     const phone = trip.consignee_phone || "Authorized Receiving Dock Master";
-
     return { name, address, gstin, phone };
   };
-
   const getVehicleAndCrew = (trip) => {
     if (!trip) return { truckNo: "", truckSize: "", driverName: "", driverPhone: "", licenseNo: "" };
     const truckNo = (trip.truck_number || "TS08 UJ 5428").trim();
-    const cleanNo = truckNo.replace(/s+/g, '').toUpperCase();
+    const cleanNo = truckNo.replace(/s+/g, "").toUpperCase();
     const truck = truckMap[truckNo] || truckMap[cleanNo];
     const truckSize = truck?.truck_size || (truckNo.includes("5428") ? "32 FT MXL High-Cube Container" : "32ft Container (Commercial Fleet)");
-
     const driverName = (trip.driver_name || "Chandrakant Gaikwad").trim();
     const driver = driverMap[driverName.toLowerCase()] || (trip.driver_employee_id ? driverMap[trip.driver_employee_id] : null);
-
     const driverPhone = driver?.contact || trip.driver_phone || companySettings.company_phone;
-    const licenseNo = driver?.license_number ? ("DL: " + driver.license_number) : (trip.driver_dl ? ("DL: " + trip.driver_dl) : "DL: Verified Heavy Commercial DL on file");
-
+    const licenseNo = driver?.license_number ? "DL: " + driver.license_number : trip.driver_dl ? "DL: " + trip.driver_dl : "DL: Verified Heavy Commercial DL on file";
     return {
       truckNo,
       truckSize,
@@ -599,31 +641,24 @@ function LorryReceiptsPodHubPage() {
       licenseNo
     };
   };
-
   const getGoodsManifest = (trip) => {
     if (!trip) return { packages: "", description: "", invoiceNo: "", ewayBill: "", actualWeight: "", chargedWeight: "" };
-    const packages = trip.packages_count
-      ? (trip.packages_count + " " + (trip.package_type || "Packages"))
-      : "Full Truck Load (FTL) Sealed Container";
-
+    const packages = trip.packages_count ? trip.packages_count + " " + (trip.package_type || "Packages") : "Full Truck Load (FTL) Sealed Container";
     const description = trip.goods_description || trip.description || "Containerized Commercial Freight & Goods";
-    const invoiceNo = trip.invoice_number || trip.dispatch_invoice_no || trip.client_trip_id || ("INV-" + (trip.trip_id || trip.id || "101").replace(/D/g, ''));
+    const invoiceNo = trip.invoice_number || trip.dispatch_invoice_no || trip.client_trip_id || "INV-" + (trip.trip_id || trip.id || "101").replace(/D/g, "");
     const ewayBill = trip.eway_bill_number || trip.dispatch_eway_bill_no || "As per Tax Invoice / Attached";
-
     let actualWeight = "As per Weight Slip";
     if (trip.actual_weight) {
-      actualWeight = Number(trip.actual_weight).toLocaleString('en-IN') + " Kg";
+      actualWeight = Number(trip.actual_weight).toLocaleString("en-IN") + " Kg";
     } else if (trip.kms) {
-      actualWeight = Math.round(trip.kms * 8.5).toLocaleString('en-IN') + " Kg (Vol)";
+      actualWeight = Math.round(trip.kms * 8.5).toLocaleString("en-IN") + " Kg (Vol)";
     }
-
     let chargedWeight = "FTL 7.5 MT Capacity";
     if (trip.charged_weight) {
-      chargedWeight = Number(trip.charged_weight).toLocaleString('en-IN') + " Kg";
+      chargedWeight = Number(trip.charged_weight).toLocaleString("en-IN") + " Kg";
     } else if (trip.actual_weight) {
-      chargedWeight = Number(trip.actual_weight).toLocaleString('en-IN') + " Kg";
+      chargedWeight = Number(trip.actual_weight).toLocaleString("en-IN") + " Kg";
     }
-
     return {
       packages,
       description,
@@ -633,7 +668,6 @@ function LorryReceiptsPodHubPage() {
       chargedWeight
     };
   };
-
   const getFreightCharges = (trip) => {
     if (!trip) return { basic: 0, hamali: 0, total: 0, advance: 0, balance: 0, paymentTerms: "" };
     const basic = Number(trip.revenue || trip.freight || 0);
@@ -641,17 +675,14 @@ function LorryReceiptsPodHubPage() {
     const total = basic + hamali;
     const advance = Number(trip.advance_received_from_client || 0);
     const balance = Math.max(0, total - advance);
-
     let paymentTerms = "BILLED TO CLIENT ACCOUNT (TBB)";
     if (trip.client_payment_status === "Paid") {
       paymentTerms = "FREIGHT PRE-PAID (PAID IN FULL)";
     } else if (trip.client_payment_status === "To Pay") {
       paymentTerms = "TO PAY AT DESTINATION / UNLOADING";
     }
-
     return { basic, hamali, total, advance, balance, paymentTerms };
   };
-
   const handleOpenEditConsignment = (trip) => {
     if (!trip) return;
     const client = clientMap[trip.client_id];
@@ -673,7 +704,6 @@ function LorryReceiptsPodHubPage() {
       lr_number: getLrNumber(trip)
     });
   };
-
   const handleSaveConsignmentDetails = async () => {
     if (!editLrModalTrip) return;
     setSavingLrEdit(true);
@@ -694,12 +724,9 @@ function LorryReceiptsPodHubPage() {
       lr_number: lrEditForm.lr_number.trim(),
       client_trip_id: lrEditForm.lr_number.trim()
     };
-
-    // Optimistically update viewingLr and trips list
     const updatedTrip = { ...editLrModalTrip, ...payload };
     setViewingLr(updatedTrip);
-    setTrips(prev => prev.map(t => t.id === tripId ? { ...t, ...payload } : t));
-
+    setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, ...payload } : t));
     let success = false;
     try {
       await pb.collection("trip_logs").update(tripId, payload, { $autoCancel: false });
@@ -725,7 +752,6 @@ function LorryReceiptsPodHubPage() {
         console.error("API update error:", apiErr);
       }
     }
-
     setSavingLrEdit(false);
     if (success) {
       toast.success("LR Consignment Details saved successfully!");
@@ -734,13 +760,9 @@ function LorryReceiptsPodHubPage() {
       toast.error("Failed to save LR details. Please try again.");
     }
   };
-
-  // Toggle POD verification status (with optimistic UI & dual PocketBase + API fallback)
   const handleTogglePodVerify = async (trip) => {
     const nextStatus = trip.pod_status === "Verified" ? "Uploaded" : "Verified";
-    // 1. Optimistic UI update so button transitions immediately
-    setTrips(prev => prev.map(t => t.id === trip.id ? { ...t, pod_status: nextStatus } : t));
-    
+    setTrips((prev) => prev.map((t) => t.id === trip.id ? { ...t, pod_status: nextStatus } : t));
     let success = false;
     try {
       await pb.collection("trip_logs").update(trip.id, { pod_status: nextStatus }, { $autoCancel: false });
@@ -767,18 +789,72 @@ function LorryReceiptsPodHubPage() {
         console.error("API fallback also failed:", apiErr);
       }
     }
-
     if (success) {
       toast.success(nextStatus === "Verified" ? "POD verified successfully!" : "POD status marked as Uploaded");
       loadData();
     } else {
-      // Revert optimistic update
-      setTrips(prev => prev.map(t => t.id === trip.id ? { ...t, pod_status: trip.pod_status } : t));
+      setTrips((prev) => prev.map((t) => t.id === trip.id ? { ...t, pod_status: trip.pod_status } : t));
       toast.error("Failed to update status. Please try again.");
     }
   };
+  
+  const handleOpenCourierModal = (trip) => {
+    setCourierModalTrip(trip);
+    const client = getClientName(trip);
+    setCourierForm({
+      partner: trip.pod_courier_partner || "DTDC",
+      awb: trip.pod_courier_awb || "",
+      date: trip.pod_courier_date || new Date().toISOString().split("T")[0],
+      recipient: trip.pod_courier_recipient || (client ? client + " Billing Desk" : ""),
+      notes: trip.pod_courier_notes || "",
+      isDelivered: trip.pod_hardcopy_status === "Delivered to Client"
+    });
+  };
 
-  // Save quick LR Number edit
+  const handleSaveCourier = async () => {
+    if (!courierModalTrip) return;
+    setSavingCourier(true);
+    try {
+      const isDel = courierForm.isDelivered;
+      const updateData = {
+        pod_courier_partner: courierForm.partner,
+        pod_courier_awb: courierForm.awb.trim(),
+        pod_courier_date: courierForm.date,
+        pod_courier_recipient: courierForm.recipient.trim(),
+        pod_courier_notes: courierForm.notes.trim(),
+        pod_hardcopy_status: isDel ? "Delivered to Client" : (courierForm.awb.trim() ? "Couriered" : "Pending Courier")
+      };
+      if (isDel && !courierModalTrip.pod_courier_delivered_date) {
+        updateData.pod_courier_delivered_date = new Date().toISOString().split("T")[0];
+      }
+      
+      await pb.collection("trip_logs").update(courierModalTrip.id, updateData);
+      setTrips(prev => prev.map(t => t.id === courierModalTrip.id ? { ...t, ...updateData } : t));
+      toast.success("Courier tracking updated for " + (courierModalTrip.trip_id || courierModalTrip.truck_number || "trip"));
+      setCourierModalTrip(null);
+    } catch (err) {
+      toast.error("Failed to save courier info: " + err.message);
+    } finally {
+      setSavingCourier(false);
+    }
+  };
+
+  const handleSendCourierWhatsApp = (trip, formOverride) => {
+    const f = formOverride || {
+      partner: trip.pod_courier_partner || "DTDC",
+      awb: trip.pod_courier_awb || "",
+      date: trip.pod_courier_date || new Date().toISOString().split("T")[0]
+    };
+    const client = getClientName(trip);
+    const truck = trip.truck_number || "";
+    const route = formatRoute(trip);
+    const trackUrl = getCourierTrackingUrl(f.partner, f.awb);
+    
+    const text = "*JAI BHAVANI CARGO OPERATIONS*\n📦 *PHYSICAL POD COURIER DISPATCH NOTICE*\n\n🔹 *Client:* " + client + "\n🔹 *Trip ID:* #" + (trip.trip_id || trip.id?.slice(0, 8)) + "\n🔹 *Vehicle:* " + truck + "\n🔹 *Route:* " + route + "\n🔹 *Courier Partner:* " + f.partner + "\n🔹 *Docket / AWB #:* " + f.awb + "\n🔹 *Dispatch Date:* " + f.date + (trackUrl ? "\n🔹 *Live Tracking:* " + trackUrl : "") + "\n\nPlease confirm physical acknowledgment upon delivery for billing clearance.\n\nOperations Desk: +91 7794072244";
+    
+    window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(text), "_blank");
+  };
+
   const handleSaveLrNumber = async () => {
     if (!editLrTrip) return;
     try {
@@ -794,10 +870,8 @@ function LorryReceiptsPodHubPage() {
       toast.error("Failed to update LR number.");
     }
   };
-
-  // Open Create LR modal with auto-numbering
   const handleOpenCreateLr = () => {
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const randomSuffix = Math.floor(1e3 + Math.random() * 9e3);
     const autoLr = (companySettings.lr_prefix || "JBC") + "/26-27/" + randomSuffix;
     setCreateForm({
       selectedTripId: "",
@@ -819,14 +893,12 @@ function LorryReceiptsPodHubPage() {
     });
     setIsCreatingLr(true);
   };
-
-  // Auto-fill when existing trip is chosen in create modal
   const handleSelectTripForLr = (tripId) => {
-    const trip = trips.find(t => t.id === tripId);
+    const trip = trips.find((t) => t.id === tripId);
     if (!trip) return;
     const cl = getClientForTrip(trip);
     const clName = getClientName(trip);
-    setCreateForm(prev => ({
+    setCreateForm((prev) => ({
       ...prev,
       selectedTripId: trip.id,
       truckNumber: trip.truck_number || "",
@@ -842,8 +914,6 @@ function LorryReceiptsPodHubPage() {
       consigneeName: "Consignee Warehouse"
     }));
   };
-
-  // Submit Create LR
   const handleSubmitCreateLr = async (e) => {
     e.preventDefault();
     if (!createForm.lrNumber.trim()) {
@@ -856,10 +926,10 @@ function LorryReceiptsPodHubPage() {
           lr_number: createForm.lrNumber.trim(),
           client_trip_id: createForm.lrNumber.trim(),
           eway_bill_number: createForm.ewayBill.trim(),
-          truck_number: createForm.truckNumber.trim() || undefined,
-          driver_name: createForm.driverName.trim() || undefined,
-          driver_phone: createForm.driverPhone.trim() || undefined,
-          client_id: createForm.clientId || undefined
+          truck_number: createForm.truckNumber.trim() || void 0,
+          driver_name: createForm.driverName.trim() || void 0,
+          driver_phone: createForm.driverPhone.trim() || void 0,
+          client_id: createForm.clientId || void 0
         });
         toast.success("LR #" + createForm.lrNumber.trim() + " generated for trip!");
       } else {
@@ -872,12 +942,12 @@ function LorryReceiptsPodHubPage() {
           origin: createForm.origin.trim() || "Hyderabad",
           destination: createForm.destination.trim() || "Warangal",
           route: (createForm.origin.trim() || "Hyderabad") + " -> " + (createForm.destination.trim() || "Warangal"),
-          date: new Date().toISOString().split("T")[0],
+          date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
           revenue: parseFloat(createForm.freight) || 0,
           trip_status: "In-Transit",
           status: "In-Transit",
           eway_bill_number: createForm.ewayBill.trim(),
-          client_id: createForm.clientId || undefined,
+          client_id: createForm.clientId || void 0,
           client_name: createForm.clientName.trim() || "Direct Client",
           consignor_name: createForm.consignorName.trim(),
           consignee_name: createForm.consigneeName.trim(),
@@ -892,39 +962,22 @@ function LorryReceiptsPodHubPage() {
       toast.error("Failed to create LR.");
     }
   };
-
-  // WhatsApp Share
   const handleShareWhatsApp = (trip) => {
     const lrNum = getLrNumber(trip);
     const truck = trip.truck_number || "Assigned Vehicle";
     const driver = trip.driver_name || "Assigned Driver";
     const route = formatRoute(trip);
     const client = getClientName(trip);
-
     const msg = encodeURIComponent(
-      "*JAI BHAVANI CARGO MOVERS*\n" +
-      "📄 *OFFICIAL LORRY RECEIPT / BILTY*\n\n" +
-      "🔹 *LR Number:* #" + lrNum + "\n" +
-      "🔹 *Client:* " + client + "\n" +
-      "🔹 *Vehicle:* " + truck + "\n" +
-      "🔹 *Driver:* " + driver + "\n" +
-      "🔹 *Route:* " + route + "\n" +
-      "🔹 *POD Status:* " + getPodStatus(trip) + "\n\n" +
-      "Track & download verified documents at:\n" +
-      "https://www.jaibhavanicargo.com/lorry-receipts\n\n" +
-      "Head Office: +91 7794072244"
+      "*JAI BHAVANI CARGO MOVERS*\n\u{1F4C4} *OFFICIAL LORRY RECEIPT / BILTY*\n\n\u{1F539} *LR Number:* #" + lrNum + "\n\u{1F539} *Client:* " + client + "\n\u{1F539} *Vehicle:* " + truck + "\n\u{1F539} *Driver:* " + driver + "\n\u{1F539} *Route:* " + route + "\n\u{1F539} *POD Status:* " + getPodStatus(trip) + "\n\nTrack & download verified documents at:\nhttps://www.jaibhavanicargo.com/lorry-receipts\n\nHead Office: +91 7794072244"
     );
     window.open("https://api.whatsapp.com/send?text=" + msg, "_blank");
   };
-
-  // Clean A4 Iframe Print Engine with High-Fidelity Vector Styling
   const handlePrintLrIframe = () => {
     const content = document.getElementById("lr-printable-area");
     if (!content) return;
-
     let frame = document.getElementById("jbc-lr-print-frame");
     if (frame) frame.remove();
-
     frame = document.createElement("iframe");
     frame.id = "jbc-lr-print-frame";
     frame.style.position = "fixed";
@@ -934,10 +987,8 @@ function LorryReceiptsPodHubPage() {
     frame.style.height = "0";
     frame.style.border = "0";
     document.body.appendChild(frame);
-
     const doc = frame.contentWindow?.document;
     if (!doc) return;
-
     doc.open();
     doc.write(`
       <!DOCTYPE html>
@@ -993,21 +1044,17 @@ function LorryReceiptsPodHubPage() {
                 window.print();
               }, 250);
             };
-          </script>
+          <\/script>
         </body>
       </html>
     `);
     doc.close();
   };
-
-  // Filtered lists with precise client POD requirement awareness
   const filteredTrips = useMemo(() => {
-    return trips.filter(t => {
+    return trips.filter((t) => {
       const cl = getClientForTrip(t);
       const clName = getClientName(t).toLowerCase();
       const isPodReq = isTripPodRequired(t);
-
-      // 1. Text Search
       const lr = getLrNumber(t).toLowerCase();
       const trId = (t.trip_id || t.id || "").toLowerCase();
       const trk = (t.truck_number || "").toLowerCase();
@@ -1015,1696 +1062,1356 @@ function LorryReceiptsPodHubPage() {
       const ew = (t.eway_bill_number || "").toLowerCase();
       const drv = (t.driver_name || "").toLowerCase();
       const q = search.toLowerCase();
-
       const matchesSearch = !q || lr.includes(q) || trId.includes(q) || trk.includes(q) || clName.includes(q) || rt.includes(q) || ew.includes(q) || drv.includes(q);
       if (!matchesSearch) return false;
-
-      // 2. Client & POD Requirement Filter
       if (activeTab === "pod") {
         if (clientFilter === "pod_required") {
-          // Strictly show trips of clients who require POD
           if (!isPodReq) return false;
         } else if (clientFilter !== "all") {
-          // Filtered by specific client
           if (t.client_id !== clientFilter && cl?.id !== clientFilter) return false;
         } else {
-          // In POD Hub, only show POD-mandated trips
           if (!isPodReq) return false;
         }
       } else {
-        // LR tab
         if (clientFilter === "pod_required") {
           if (!isPodReq) return false;
         } else if (clientFilter !== "all") {
           if (t.client_id !== clientFilter && cl?.id !== clientFilter) return false;
         }
       }
-
-      // 3. Status Filter
       const podSt = getPodStatus(t);
+      if (activeTab === "pod") {
+        if (courierFilter === "pending") { if (!isTripPodRequired(t) || t.pod_courier_awb || t.pod_hardcopy_status === "Delivered to Client") return false; }
+        if (courierFilter === "couriered" && (!t.pod_courier_awb || t.pod_hardcopy_status === "Delivered to Client")) return false;
+        if (courierFilter === "delivered" && t.pod_hardcopy_status !== "Delivered to Client") return false;
+      }
       if (statusFilter === "pod_pending" && podSt !== "Pending") return false;
       if (statusFilter === "pod_uploaded" && podSt !== "Uploaded") return false;
       if (statusFilter === "pod_verified" && podSt !== "Verified") return false;
       if (statusFilter === "in_transit" && (t.status === "Completed" || t.trip_status === "Completed" || t.status === "Delivered" || t.trip_status === "Delivered")) return false;
       if (statusFilter === "completed" && !(t.status === "Completed" || t.trip_status === "Completed" || t.status === "Delivered" || t.trip_status === "Delivered")) return false;
-
       return true;
     });
-  }, [trips, clientList, clientMap, search, statusFilter, clientFilter, activeTab]);
-
-  // Clients that require POD count
+  }, [trips, clientList, clientMap, search, statusFilter, clientFilter, activeTab, courierFilter]);
   const podClientsCount = useMemo(() => {
     return clientList.filter(clientRequiresPod).length;
   }, [clientList]);
-
-  // Pod-required trips subset (strictly clients where requires_pod is enabled)
   const podTripsList = useMemo(() => {
     return trips.filter(isTripPodRequired);
   }, [trips, clientList, clientMap]);
-
-  // Metrics
   const totalCount = activeTab === "pod" ? podTripsList.length : trips.length;
-  const verifiedPodCount = podTripsList.filter(t => getPodStatus(t) === "Verified").length;
-  const uploadedPodCount = podTripsList.filter(t => getPodStatus(t) === "Uploaded").length;
-  const pendingPodCount = podTripsList.filter(t => getPodStatus(t) === "Pending").length;
-  const inTransitCount = trips.filter(t => t.status === "In-Transit" || t.trip_status === "In-Transit" || !t.status).length;
-
-  return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
-      <Helmet>
-        <title>Lorry Receipts & POD Hub | Jai Bhavani Cargo</title>
-      </Helmet>
-
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 p-6 rounded-3xl border border-slate-800 shadow-xl">
-        <div className="flex items-center gap-4">
-          <img
-            src={companySettings.logo_url || "/logo.png"}
-            onError={(e) => { e.target.src = "/logo.png"; }}
-            alt="Jai Bhavani Cargo"
-            className="w-14 h-14 object-contain rounded-2xl bg-white/5 p-1.5 border border-slate-700/80 shadow-inner hidden sm:block"
-          />
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
-                Fleet Operations & Documentation
-              </span>
-              <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-semibold">
-                Live & Synced
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
-              <FileTextIcon className="w-8 h-8 text-amber-400" />
-              Lorry Receipts & POD Hub
-            </h1>
-            <p className="text-slate-400 text-sm mt-1 max-w-2xl">
-              {companySettings.company_name} • Proof of Delivery ledger (strictly filtered to POD-mandated clients) & official executive Bilties.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <Button
-            onClick={loadData}
-            variant="outline"
-            className="rounded-xl border-slate-700 hover:bg-slate-800 text-slate-200 cursor-pointer"
-          >
-            <RefreshIcon className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            onClick={handleOpenCreateLr}
-            className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/20 cursor-pointer"
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Issue New LR / Bilty
-          </Button>
-        </div>
-      </div>
-
-      {/* View Switcher Tabs */}
-      <div className="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 w-full sm:w-fit">
-        <button
-          onClick={() => {
-            setActiveTab("pod");
-            setClientFilter("pod_required");
-          }}
-          className={"flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer " + (
-            activeTab === "pod"
-              ? "bg-blue-600 text-white shadow-md font-extrabold"
-              : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-          )}
-        >
-          <FileCheckIcon className="w-4 h-4" />
-          <span>POD Management Hub</span>
-          <span className={"px-2 py-0.5 rounded-full text-xs font-mono " + (activeTab === "pod" ? "bg-white text-blue-900 font-bold" : "bg-slate-800 text-slate-300")}>
-            {podTripsList.length} Trips
-          </span>
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab("lr");
-            setClientFilter("all");
-          }}
-          className={"flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer " + (
-            activeTab === "lr"
-              ? "bg-amber-500 text-slate-950 shadow-md font-extrabold"
-              : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-          )}
-        >
-          <FileTextIcon className="w-4 h-4" />
-          <span>Lorry Receipts (LR / Bilty)</span>
-          <span className={"px-2 py-0.5 rounded-full text-xs font-mono " + (activeTab === "lr" ? "bg-slate-950 text-amber-400 font-bold" : "bg-slate-800 text-slate-300")}>
-            {trips.length}
-          </span>
-        </button>
-      </div>
-
-      {/* Dynamic Metrics Row */}
-      {activeTab === "pod" ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-blue-400 text-xs font-bold uppercase tracking-wider">Required POD Trips</p>
-            <p className="text-2xl sm:text-3xl font-black text-white mt-1 font-mono">{podTripsList.length}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Clients requiring POD ({podClientsCount} clients)</p>
-          </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-amber-400 text-xs font-bold uppercase tracking-wider">POD Pending Review</p>
-            <p className="text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono">{pendingPodCount}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Awaiting receiver signed paper</p>
-          </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-cyan-400 text-xs font-bold uppercase tracking-wider">POD Uploaded</p>
-            <p className="text-2xl sm:text-3xl font-black text-cyan-400 mt-1 font-mono">{uploadedPodCount}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Uploaded & awaiting verify</p>
-          </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">POD Verified</p>
-            <p className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono">{verifiedPodCount}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Officially signed & cleared</p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Consignments</p>
-            <p className="text-2xl sm:text-3xl font-black text-white mt-1 font-mono">{trips.length}</p>
-            <p className="text-[11px] text-slate-500 mt-1">Complete fleet dispatch register</p>
-          </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-amber-400 text-xs font-bold uppercase tracking-wider">In-Transit / Live</p>
-            <p className="text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono">{inTransitCount}</p>
-            <p className="text-[11px] text-slate-500 mt-1">Dispatched on highway</p>
-          </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-blue-400 text-xs font-bold uppercase tracking-wider">POD Required LRs</p>
-            <p className="text-2xl sm:text-3xl font-black text-blue-400 mt-1 font-mono">{podTripsList.length}</p>
-            <p className="text-[11px] text-slate-500 mt-1">Mandated by consignor/client</p>
-          </div>
-          <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-            <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">POD Verified</p>
-            <p className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono">{verifiedPodCount}</p>
-            <p className="text-[11px] text-slate-500 mt-1">Delivery fully acknowledged</p>
-          </div>
-        </div>
-      )}
-
-      {/* Search and Filters Bar with Dedicated Client Filter */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-800">
-        {/* Search */}
-        <div className="relative flex-1 w-full">
-          <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <Input
-            placeholder={activeTab === "lr" ? "Search by LR #, Trip ID, Truck #, Client, Route..." : "Search POD by Trip ID, Truck #, Client, Route..."}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500 rounded-xl h-11 text-xs"
-          />
-        </div>
-
-        {/* Client Filter Selector */}
-        <div className="w-full md:w-auto">
-          <select
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 font-medium cursor-pointer h-11 w-full outline-none focus:border-amber-500"
-          >
-            <option value="pod_required">⚡ POD-Required Clients Only ({podClientsCount})</option>
-            <option value="all">🏢 All Clients (Full Ledger)</option>
-            <optgroup label="Filter by Specific Client">
-              {clientList.map(c => {
-                const name = (c.company_name && c.company_name.trim() !== '-') ? c.company_name : c.client_name || c.name || "Client";
-                const isReq = clientRequiresPod(c);
-                return (
-                  <option key={c.id} value={c.id}>
-                    {name} {isReq ? "★ (POD Required)" : ""}
-                  </option>
-                );
-              })}
-            </optgroup>
-          </select>
-        </div>
-
-        {/* Status Filter */}
-        <div className="w-full md:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 font-medium cursor-pointer h-11 w-full outline-none focus:border-amber-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="pod_pending">⚠ POD Pending</option>
-            <option value="pod_uploaded">⌛ POD Uploaded</option>
-            <option value="pod_verified">✓ POD Verified</option>
-            <option value="in_transit">In-Transit Only</option>
-            <option value="completed">Completed / Delivered</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <Card className="border border-slate-800 bg-slate-900/60 rounded-3xl overflow-hidden shadow-2xl">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="py-20 text-center text-slate-400">
-              <RefreshIcon className="w-8 h-8 animate-spin mx-auto text-amber-500 mb-3" />
-              <p className="font-semibold text-sm">Loading records from server...</p>
-            </div>
-          ) : filteredTrips.length === 0 ? (
-            <div className="py-16 text-center text-slate-400">
-              <FileCheckIcon className="w-12 h-12 mx-auto text-slate-600 mb-2 opacity-50" />
-              <p className="text-base font-bold text-slate-300">No matching consignments found</p>
-              <p className="text-xs text-slate-500 mt-1">
-                {activeTab === "pod"
-                  ? "Showing trips for clients who require POD. Try changing the client or status filter above."
-                  : "Try adjusting your search query or client filter."}
-              </p>
-              {activeTab === "pod" && clientFilter === "pod_required" && (
-                <button
-                  onClick={() => setClientFilter("all")}
-                  className="mt-3 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer transition"
-                >
-                  View All Clients (Including Non-POD)
-                </button>
-              )}
-            </div>
-          ) : activeTab === "lr" ? (
-            /* TAB 1: LORRY RECEIPTS (LR / BILTY) TABLE */
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800">
-                    <th className="p-3.5 pl-5">LR / Bilty #</th>
-                    <th className="p-3.5">Trip & Truck</th>
-                    <th className="p-3.5">Client & Route</th>
-                    <th className="p-3.5">Booking Date</th>
-                    <th className="p-3.5">Freight</th>
-                    <th className="p-3.5">POD Requirement</th>
-                    <th className="p-3.5 pr-5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                  {filteredTrips.map((trip) => {
-                    const lrNum = getLrNumber(trip);
-                    const podSt = getPodStatus(trip);
-                    const clObj = getClientForTrip(trip);
-                    const clientName = getClientName(trip);
-                    const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
-                    const route = formatRoute(trip);
-
-                    return (
-                      <tr key={trip.id} className="hover:bg-slate-800/40 transition">
-                        {/* LR # */}
-                        <td className="p-3.5 pl-5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
-                              {lrNum}
-                            </span>
-                            <button
-                              onClick={() => {
-                                setEditLrTrip(trip);
-                                setNewLrNumber(lrNum);
-                              }}
-                              className="text-slate-500 hover:text-slate-300 text-[10px] underline cursor-pointer"
-                              title="Edit LR Number"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                          {trip.eway_bill_number && (
-                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">E-Way: {trip.eway_bill_number}</p>
-                          )}
-                        </td>
-
-                        {/* Trip & Vehicle */}
-                        <td className="p-3.5">
-                          <div className="font-bold text-white flex items-center gap-1.5">
-                            <TruckIcon className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="font-mono">{trip.truck_number || "TG12U2637"}</span>
-                          </div>
-                          <p className="text-[11px] text-slate-400 font-mono">
-                            {trip.trip_id || trip.id?.slice(0, 10) || "TRIP"}
-                          </p>
-                          {trip.driver_name && (
-                            <p className="text-[10px] text-slate-500">{trip.driver_name}</p>
-                          )}
-                        </td>
-
-                        {/* Client & Route */}
-                        <td className="p-3.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="font-semibold text-slate-100">{clientName}</p>
-                            {isReq && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                POD Req
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{route}</p>
-                        </td>
-
-                        {/* Date */}
-                        <td className="p-3.5 text-slate-300 font-mono">
-                          {formatTripDate(trip.date)}
-                        </td>
-
-                        {/* Freight */}
-                        <td className="p-3.5 font-mono font-bold text-emerald-400">
-                          ₹{Number(trip.revenue || 0).toLocaleString("en-IN")}
-                        </td>
-
-                        {/* POD Status */}
-                        <td className="p-3.5">
-                          {podSt === "Not Required" ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700">
-                              Not Required
-                            </span>
-                          ) : (
-                            <span className={"inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (
-                              podSt === "Verified"
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                : podSt === "Uploaded"
-                                ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
-                                : "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                            )}>
-                              {podSt === "Verified" ? "✓ Verified POD" : podSt === "Uploaded" ? "⌛ POD Uploaded" : "⚠ POD Pending"}
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="p-3.5 pr-5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => {
-                                setViewingLr(trip);
-                                setLrCopyType("Transporter Copy");
-                                setPreviewScale(0.75);
-                              }}
-                              className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shadow cursor-pointer transition"
-                              title="Print Official A4 Bilty"
-                            >
-                              <PrinterIcon className="w-3.5 h-3.5" />
-                              <span>Print LR</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleShareWhatsApp(trip)}
-                              className="p-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-lg cursor-pointer transition"
-                              title="Share on WhatsApp"
-                            >
-                              <ShareIcon className="w-3.5 h-3.5" />
-                            </button>
-
-                            {(() => {
-                              const actualFile = getActualPodFile(trip);
-                              return actualFile ? (
-                                <button
-                                  onClick={() => setViewingPodDoc({
-                                    url: pb.files.getUrl(trip, actualFile),
-                                    tripId: trip.trip_id || trip.id,
-                                    truck: trip.truck_number,
-                                    client: clientName
-                                  })}
-                                  className="p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition"
-                                  title="View Signed POD"
-                                >
-                                  <EyeIcon className="w-3.5 h-3.5" />
-                                </button>
-                              ) : isReq ? (
-                              <label
-                                htmlFor={"upload-lr-" + trip.id}
-                                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg cursor-pointer transition"
-                                title="Upload POD File"
-                              >
-                                <UploadIcon className="w-3.5 h-3.5" />
-                                <input
-                                  type="file"
-                                  id={"upload-lr-" + trip.id}
-                                  className="hidden"
-                                  multiple
-                                  accept="image/*,application/pdf"
-                                  onChange={(e) => handleUploadPod(e, trip.id, false)}
-                                />
-                              </label>
-                            ) : null;
-                            })()}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            /* TAB 2: PROOF OF DELIVERY (POD) TABLE - STRICTLY FOR REQUIRED POD CLIENTS */
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800">
-                    <th className="p-3.5 pl-5">Trip & LR Ref</th>
-                    <th className="p-3.5">Client & Requirement</th>
-                    <th className="p-3.5">Vehicle & Driver</th>
-                    <th className="p-3.5">Delivery Route</th>
-                    <th className="p-3.5">Trip Date</th>
-                    <th className="p-3.5">POD Document</th>
-                    <th className="p-3.5">Status</th>
-                    <th className="p-3.5 pr-5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                  {filteredTrips.map((trip) => {
-                    const lrNum = getLrNumber(trip);
-                    const podSt = getPodStatus(trip);
-                    const clObj = getClientForTrip(trip);
-                    const clientName = getClientName(trip);
-                    const actualPodFile = getActualPodFile(trip);
-                    const hasFile = !!actualPodFile;
-                    const hasLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
-                    const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
-
-                    return (
-                      <tr key={trip.id} className="hover:bg-slate-800/40 transition">
-                        {/* Trip & LR */}
-                        <td className="p-3.5 pl-5">
-                          <p className="font-bold text-white font-mono">{trip.trip_id || trip.id?.slice(0, 10) || "TRIP"}</p>
-                          <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 mt-1 inline-block">
-                            {lrNum}
-                          </span>
-                        </td>
-
-                        {/* Client */}
-                        <td className="p-3.5">
-                          <p className="font-semibold text-slate-100">{clientName}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            {isReq ? (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                Mandated POD
-                              </span>
-                            ) : (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] text-slate-500 bg-slate-800 border border-slate-700">
-                                Optional
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Vehicle & Driver */}
-                        <td className="p-3.5">
-                          <p className="font-mono font-bold text-slate-200">{trip.truck_number || "TG12U2637"}</p>
-                          <p className="text-[11px] text-slate-400">{trip.driver_name || "Assigned Driver"}</p>
-                        </td>
-
-                        {/* Route */}
-                        <td className="p-3.5 text-slate-300">
-                          {formatRoute(trip)}
-                        </td>
-
-                        {/* Date */}
-                        <td className="p-3.5 text-slate-300 font-mono">
-                          {formatTripDate(trip.date)}
-                        </td>
-
-                        {/* POD Document Preview */}
-                        <td className="p-3.5">
-                          {hasFile ? (
-                            <button
-                              onClick={() => setViewingPodDoc({
-                                url: pb.files.getUrl(trip, actualPodFile),
-                                tripId: trip.trip_id || trip.id,
-                                truck: trip.truck_number,
-                                client: clientName
-                              })}
-                              className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold cursor-pointer transition"
-                            >
-                              <EyeIcon className="w-3.5 h-3.5" />
-                              <span>View Signed File</span>
-                            </button>
-                          ) : hasLink ? (
-                            <a
-                              href={trip.pod_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-400 underline text-xs font-mono"
-                            >
-                              External POD Link ↗
-                            </a>
-                          ) : (
-                            <label
-                              htmlFor={"pod-upload-cell-" + trip.id}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold cursor-pointer transition"
-                              title="Upload Signed POD Photo"
-                            >
-                              <UploadIcon className="w-3.5 h-3.5" />
-                              <span>{uploadingTripId === trip.id ? "Uploading..." : "Upload POD"}</span>
-                              <input
-                                type="file"
-                                id={"pod-upload-cell-" + trip.id}
-                                className="hidden"
-                                multiple
-                                accept="image/*,application/pdf"
-                                onChange={(e) => handleUploadPod(e, trip.id, false)}
-                              />
-                            </label>
-                          )}
-                        </td>
-
-                        {/* Status */}
-                        <td className="p-3.5">
-                          <span className={"inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (
-                            podSt === "Verified"
-                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                              : podSt === "Uploaded"
-                              ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
-                              : podSt === "Not Required"
-                              ? "bg-slate-800 text-slate-400 border-slate-700"
-                              : "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                          )}>
-                            {podSt === "Verified" ? "✓ Verified" : podSt === "Uploaded" ? "⌛ Uploaded (Review)" : podSt === "Not Required" ? "Not Required" : "⚠ Pending POD"}
-                          </span>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="p-3.5 pr-5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {/* Upload Button */}
-                            <label
-                              htmlFor={"pod-upload-" + trip.id}
-                              className={"px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer " + (
-                                uploadingTripId === trip.id
-                                  ? "bg-slate-700 text-slate-400"
-                                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
-                              )}
-                              title="Upload Signed POD Photo"
-                            >
-                              <UploadIcon className="w-3.5 h-3.5" />
-                              <span>{uploadingTripId === trip.id ? "Uploading..." : hasFile ? "Replace" : "Upload POD"}</span>
-                              <input
-                                type="file"
-                                id={"pod-upload-" + trip.id}
-                                className="hidden"
-                                multiple
-                                accept="image/*,application/pdf"
-                                onChange={(e) => handleUploadPod(e, trip.id, false)}
-                              />
-                            </label>
-
-                            {/* Verify Toggle */}
-                            {(hasFile || hasLink) && (
-                              <button
-                                onClick={() => handleTogglePodVerify(trip)}
-                                className={"px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer " + (
-                                  podSt === "Verified"
-                                    ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30"
-                                    : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                )}
-                                title={podSt === "Verified" ? "Mark as Pending Review" : "Mark as Officially Verified"}
-                              >
-                                {podSt === "Verified" ? "✓ Verified" : "Verify POD"}
-                              </button>
-                            )}
-
-                            {/* Quick Print LR from POD */}
-                            <button
-                              onClick={() => {
-                                setViewingLr(trip);
-                                setLrCopyType("Transporter Copy");
-                                setPreviewScale(0.75);
-                              }}
-                              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer transition"
-                              title="Print Linked LR / Bilty"
-                            >
-                              <PrinterIcon className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* MODAL 1: OFFICIAL A4 PRINTABLE LORRY RECEIPT MODAL (WITH ZOOM / FIT TO SCREEN & UPGRADED DESIGN) */}
-      {viewingLr && (() => {
-        const consignor = getConsignor(viewingLr);
-        const consignee = getConsignee(viewingLr);
-        const vehicle = getVehicleAndCrew(viewingLr);
-        const routeInfo = parseRoute(viewingLr);
-        const goods = getGoodsManifest(viewingLr);
-        const freight = getFreightCharges(viewingLr);
-
-        return (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-1 sm:p-3 overflow-y-auto animate-in fade-in duration-200">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
-              {/* Action Bar with Integrated Zoom / Fit Controls & Edit Action */}
-              <div className="p-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
-                {/* Left: LR Number & Copy Badges */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-3 py-1 font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs">
-                    {getLrNumber(viewingLr)}
-                  </span>
-                  <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]">
-                    {["Transporter Copy", "Consignor Copy", "Consignee Copy", "Driver Copy"].map(copy => (
-                      <button
-                        key={copy}
-                        onClick={() => setLrCopyType(copy)}
-                        className={"px-2.5 py-1 rounded-md font-semibold cursor-pointer transition " + (
-                          lrCopyType === copy ? "bg-amber-500 text-slate-950 font-bold shadow" : "text-slate-400 hover:text-white"
-                        )}
-                      >
-                        {copy.replace(" Copy", "")}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Middle: ZOOM / FIT CONTROLS */}
-                <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
-                  <span className="text-slate-400 text-[11px] font-semibold mr-1">Preview Zoom:</span>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewScale(s => Math.max(0.4, Number((s - 0.1).toFixed(2))))}
-                    className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition"
-                    title="Zoom Out"
-                  >
-                    -
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewScale(0.72)}
-                    className={"px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 0.72 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white")}
-                    title="Fit whole document on screen without browser zoom"
-                  >
-                    Fit Screen
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewScale(1.0)}
-                    className={"px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 1.0 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white")}
-                    title="100% Actual Size"
-                  >
-                    100%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewScale(s => Math.min(1.5, Number((s + 0.1).toFixed(2))))}
-                    className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition"
-                    title="Zoom In"
-                  >
-                    +
-                  </button>
-                  <span className="text-amber-400 font-mono text-[11px] ml-1 font-bold">{Math.round(previewScale * 100)}%</span>
-                </div>
-
-                {/* Right: Edit, Print, WhatsApp & Close */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleOpenEditConsignment(viewingLr)}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-blue-500/20 cursor-pointer transition"
-                    title="Edit Consignee, Invoice #, E-Way Bill #, Weight & Packages"
-                  >
-                    <FileTextIcon className="w-3.5 h-3.5" />
-                    <span>Edit LR Details</span>
-                  </button>
-                  <button
-                    onClick={handlePrintLrIframe}
-                    className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer transition"
-                  >
-                    <PrinterIcon className="w-4 h-4" />
-                    <span>Print A4 / PDF</span>
-                  </button>
-                  <button
-                    onClick={() => handleShareWhatsApp(viewingLr)}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition"
-                  >
-                    <ShareIcon className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">WhatsApp</span>
-                  </button>
-                  <button
-                    onClick={() => setViewingLr(null)}
-                    className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
-                  >
-                    <CloseIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Printable A4 Container with Scaled Viewport Preview */}
-              <div className="p-3 sm:p-5 overflow-auto flex-1 flex justify-center items-start bg-slate-950/90 min-h-[450px]">
-                <div
-                  style={{
-                    transform: "scale(" + previewScale + ")",
-                    transformOrigin: "top center",
-                    transition: "transform 0.15s ease-out",
-                    marginBottom: previewScale < 1 ? ("-" + Math.round((1 - previewScale) * 1160) + "px") : "20px"
-                  }}
-                >
-                  <div
-                    id="lr-printable-area"
-                    style={{
-                      width: "790px",
-                      backgroundColor: "#ffffff",
-                      color: "#0f172a",
-                      padding: "24px 28px",
-                      borderRadius: "4px",
-                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-                      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                      fontSize: "11px",
-                      lineHeight: 1.3,
-                      border: "2px solid #0f172a",
-                      position: "relative",
-                      overflow: "hidden"
-                    }}
-                  >
-                    {/* Background Copy Watermark */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%) rotate(-30deg)",
-                        pointerEvents: "none",
-                        opacity: 0.04,
-                        fontSize: "56px",
-                        fontWeight: 900,
-                        color: lrCopyType.includes("Transporter") ? "#b45309" : lrCopyType.includes("Consignor") ? "#1d4ed8" : lrCopyType.includes("Consignee") ? "#047857" : "#6d28d9",
-                        whiteSpace: "nowrap",
-                        userSelect: "none",
-                        zIndex: 0
-                      }}
-                    >
-                      {lrCopyType.toUpperCase()}
-                    </div>
-
-                    {/* Header with Company Logo & Full Company Settings Details */}
-                    <div style={{ borderBottom: "3px double #0f172a", paddingBottom: "12px", marginBottom: "12px", position: "relative", zIndex: 1 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-                        {/* Left: Official Company Logo & Branding */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1 }}>
-                          <img
-                            src={companySettings.logo_url || "/logo.png"}
-                            onError={(e) => { e.target.src = "/logo.png"; }}
-                            alt="Logo"
-                            style={{
-                              height: "64px",
-                              width: "auto",
-                              maxWidth: "80px",
-                              objectFit: "contain",
-                              border: "1px solid #e2e8f0",
-                              borderRadius: "6px",
-                              padding: "2px",
-                              backgroundColor: "#ffffff"
-                            }}
-                          />
-                          <div>
-                            <h1 style={{ fontSize: "22px", fontWeight: 900, letterSpacing: "-0.5px", color: "#0f172a", margin: 0, textTransform: "uppercase" }}>
-                              {companySettings.company_name}
-                            </h1>
-                            <p style={{ fontSize: "10px", fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: "1.5px", margin: "2px 0 4px" }}>
-                              {companySettings.tagline || "Goods Transport Operators & Fleet Contractors"}
-                            </p>
-                            <p style={{ fontSize: "9px", color: "#334155", margin: 0, lineHeight: 1.35, maxWidth: "420px" }}>
-                              {companySettings.company_address}
-                            </p>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "9px", color: "#475569", fontWeight: 600, marginTop: "4px" }}>
-                              <span>📞 <b>{companySettings.company_phone}</b></span>
-                              <span>•</span>
-                              <span>✉️ {companySettings.company_email}</span>
-                              <span>•</span>
-                              <span>🌐 {companySettings.company_website}</span>
-                            </div>
-                            {/* Statutory Identifier Badges */}
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
-                              <span style={{ backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" }}>
-                                GSTIN: <b>{companySettings.company_gstin}</b>
-                              </span>
-                              <span style={{ backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" }}>
-                                PAN: <b>{companySettings.pan_number || companySettings.company_pan}</b>
-                              </span>
-                              <span style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#92400e" }}>
-                                MSME: <b>{companySettings.msme_number}</b>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right: Document Identity & Copy Badge */}
-                        <div style={{ textAlign: "right", minWidth: "210px" }}>
-                          <div style={{ border: "2px solid #0f172a", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 10px", borderRadius: "4px", textAlign: "center" }}>
-                            <span style={{ fontSize: "14px", fontWeight: 900, letterSpacing: "1px", textTransform: "uppercase", display: "block" }}>
-                              LORRY RECEIPT
-                            </span>
-                            <span style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "1px", color: "#94a3b8", textTransform: "uppercase" }}>
-                              GOODS CONSIGNMENT NOTE
-                            </span>
-                          </div>
-                          {/* Copy Type Badge with Dynamic Styling */}
-                          <div style={{
-                            backgroundColor: lrCopyType.includes("Transporter") ? "#fef3c7" : lrCopyType.includes("Consignor") ? "#eff6ff" : lrCopyType.includes("Consignee") ? "#ecfdf5" : "#f5f3ff",
-                            border: "1px solid " + (lrCopyType.includes("Transporter") ? "#f59e0b" : lrCopyType.includes("Consignor") ? "#3b82f6" : lrCopyType.includes("Consignee") ? "#10b981" : "#8b5cf6"),
-                            color: lrCopyType.includes("Transporter") ? "#92400e" : lrCopyType.includes("Consignor") ? "#1e40af" : lrCopyType.includes("Consignee") ? "#065f46" : "#5b21b6",
-                            borderRadius: "4px",
-                            padding: "3px 8px",
-                            marginTop: "5px",
-                            textAlign: "center"
-                          }}>
-                            <span style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "1px" }}>
-                              {lrCopyType.toUpperCase()}
-                            </span>
-                          </div>
-                          <p style={{ fontSize: "8px", color: "#64748b", margin: "4px 0 0", fontStyle: "italic" }}>
-                            Carriage by Road Act 2007 Registered
-                          </p>
-                          <p style={{ fontSize: "8px", fontWeight: 700, color: "#0f172a", margin: "2px 0 0" }}>
-                            IBA APPROVED: HYD/2026/JBC • ISO 9001
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Identification Strip (LR #, Booking Date, E-Way Bill, Trip ID) */}
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(4, 1fr)",
-                      gap: "8px",
-                      backgroundColor: "#f8fafc",
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "4px",
-                      padding: "8px 10px",
-                      marginBottom: "10px",
-                      fontSize: "10px",
-                      position: "relative",
-                      zIndex: 1
-                    }}>
-                      <div>
-                        <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>LR / BILTY NUMBER:</span>
-                        <span style={{ fontFamily: "monospace", fontWeight: 900, fontSize: "13px", color: "#b45309" }}>{getLrNumber(viewingLr)}</span>
-                        {/* Barcode Graphic */}
-                        <div style={{ fontFamily: "monospace", fontSize: "10px", letterSpacing: "3px", fontWeight: 900, color: "#334155", lineHeight: 1 }}>
-                          ||| | |||| || |||
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>BOOKING DATE:</span>
-                        <span style={{ fontWeight: 700, fontSize: "11px", color: "#0f172a" }}>{formatTripDate(viewingLr.date)}</span>
-                        <span style={{ color: "#64748b", fontSize: "8.5px", display: "block" }}>Scheduled Dispatch</span>
-                      </div>
-                      <div>
-                        <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>E-WAY BILL NO:</span>
-                        <span style={{ fontFamily: "monospace", fontWeight: 800, fontSize: "10.5px", color: "#0f172a" }}>{goods.ewayBill}</span>
-                        <span style={{ color: "#059669", fontWeight: 700, fontSize: "8px", display: "block" }}>✓ In-Transit Verified</span>
-                      </div>
-                      <div>
-                        <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>DISPATCH MANIFEST ID:</span>
-                        <span style={{ fontFamily: "monospace", fontWeight: 800, fontSize: "11px", color: "#0f172a" }}>{viewingLr.trip_id || viewingLr.id}</span>
-                        <span style={{ color: "#64748b", fontSize: "8.5px", display: "block" }}>Fleet Container Cargo</span>
-                      </div>
-                    </div>
-
-                    {/* Consignor, Consignee & Vehicle Details (3-Columns) */}
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
-                      gap: "10px",
-                      marginBottom: "10px",
-                      fontSize: "9.5px",
-                      position: "relative",
-                      zIndex: 1
-                    }}>
-                      {/* Vehicle & Crew Particulars */}
-                      <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#f8fafc" }}>
-                        <p style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" }}>
-                          VEHICLE & CREW DETAILS
-                        </p>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                          <span style={{ backgroundColor: "#fef08a", border: "1px solid #ca8a04", color: "#713f12", fontWeight: 900, fontFamily: "monospace", fontSize: "11px", padding: "2px 6px", borderRadius: "3px" }}>
-                            {vehicle.truckNo}
-                          </span>
-                          <span style={{ fontSize: "8.5px", color: "#475569", fontWeight: 600 }}>{vehicle.truckSize}</span>
-                        </div>
-                        <div style={{ marginTop: "6px", paddingTop: "4px", borderTop: "1px dashed #e2e8f0" }}>
-                          <span style={{ color: "#64748b", fontSize: "8.5px", fontWeight: 700, display: "block" }}>ASSIGNED DRIVER:</span>
-                          <span style={{ fontWeight: 800, color: "#0f172a" }}>{vehicle.driverName}</span>
-                          <span style={{ fontFamily: "monospace", color: "#334155", display: "block", fontSize: "9px" }}>📞 {vehicle.driverPhone}</span>
-                          <span style={{ fontSize: "8px", color: "#475569", fontWeight: 600 }}>{vehicle.licenseNo}</span>
-                        </div>
-                      </div>
-
-                      {/* Consignor (Sender) */}
-                      <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" }}>
-                        <p style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" }}>
-                          CONSIGNOR (SHIPPER / SENDER)
-                        </p>
-                        <p style={{ fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" }}>
-                          {consignor.name}
-                        </p>
-                        <p style={{ color: "#475569", margin: "0 0 4px", lineHeight: 1.3 }}>
-                          {consignor.address}
-                        </p>
-                        <p style={{ fontFamily: "monospace", color: "#334155", margin: 0 }}>
-                          GSTIN: <b>{consignor.gstin}</b>
-                        </p>
-                        <p style={{ color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" }}>
-                          {consignor.stateCode}
-                        </p>
-                      </div>
-
-                      {/* Consignee (Receiver) */}
-                      <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" }}>
-                        <p style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" }}>
-                          CONSIGNEE (DELIVERY RECEIVER)
-                        </p>
-                        <p style={{ fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" }}>
-                          {consignee.name}
-                        </p>
-                        <p style={{ color: "#475569", margin: "0 0 4px", lineHeight: 1.3 }}>
-                          {consignee.address}
-                        </p>
-                        <p style={{ fontFamily: "monospace", color: "#334155", margin: 0 }}>
-                          GSTIN: <b>{consignee.gstin}</b>
-                        </p>
-                        <p style={{ color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" }}>
-                          Delivery Contact: <b style={{ color: "#0f172a" }}>{consignee.phone}</b>
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Transit Route Visual Strip */}
-                    <div style={{
-                      backgroundColor: "#f8fafc",
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "4px",
-                      padding: "6px 12px",
-                      marginBottom: "10px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      fontSize: "9.5px",
-                      position: "relative",
-                      zIndex: 1
-                    }}>
-                      <div>
-                        <span style={{ color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" }}>ORIGIN & LOADING POINT:</span>
-                        <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "11px" }}>{routeInfo.origin}</span>
-                      </div>
-                      <div style={{ textAlign: "center", padding: "0 16px" }}>
-                        <span style={{ color: "#b45309", fontWeight: 900, fontSize: "13px" }}>➔ ➔ 🚚 ➔ ➔</span>
-                        <span style={{ display: "block", fontSize: "8px", color: "#64748b", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>
-                          EXPRESS HIGHWAY FREIGHT TRANSIT {viewingLr.kms ? (" (" + viewingLr.kms + " KM)") : ""}
-                        </span>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <span style={{ color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" }}>DESTINATION & UNLOADING DOCK:</span>
-                        <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "11px" }}>{routeInfo.destination}</span>
-                      </div>
-                    </div>
-
-                    {/* Consignment Goods Manifest Table */}
-                    <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 }}>
-                      <thead>
-                        <tr>
-                          <th style={{ width: "24px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>#</th>
-                          <th style={{ width: "110px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Packages & Type</th>
-                          <th style={{ textAlign: "left", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 8px", border: "1px solid #334155" }}>Description of Goods (Said to Contain)</th>
-                          <th style={{ width: "110px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Invoice / Challan</th>
-                          <th style={{ width: "90px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Actual Wt</th>
-                          <th style={{ width: "90px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Charged Wt</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr style={{ backgroundColor: "#ffffff" }}>
-                          <td style={{ textAlign: "center", border: "1px solid #cbd5e1", padding: "6px" }}>1</td>
-                          <td style={{ textAlign: "center", fontWeight: 700, border: "1px solid #cbd5e1", padding: "6px", color: "#0f172a" }}>
-                            {goods.packages}
-                          </td>
-                          <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px" }}>
-                            <span style={{ fontWeight: 800, color: "#0f172a" }}>{goods.description}</span>
-                            <span style={{ display: "block", fontSize: "8.5px", color: "#64748b" }}>Said to Contain • Transport Operator Risk Exempt • Carriage by Road Act 2007</span>
-                          </td>
-                          <td style={{ textAlign: "center", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px", fontWeight: 700 }}>
-                            {goods.invoiceNo}
-                          </td>
-                          <td style={{ textAlign: "right", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px" }}>{goods.actualWeight}</td>
-                          <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 800, color: "#0f172a", border: "1px solid #cbd5e1", padding: "6px" }}>{goods.chargedWeight}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-
-                    {/* Freight Charges & Payment Terms / Banking Panel */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "10px", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 }}>
-                      {/* Left: Payment, Statutory GST & Bank Coordinates */}
-                      <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#ffffff" }}>
-                        <span style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", display: "block", marginBottom: "4px", fontSize: "9px" }}>
-                          PAYMENT, GST & BANKING REMITTANCE:
-                        </span>
-                        <div style={{ lineHeight: 1.45, color: "#334155" }}>
-                          <p style={{ margin: "0 0 2px" }}>• Freight Payment: <b style={{ color: "#0f172a" }}>{freight.paymentTerms}</b></p>
-                          <p style={{ margin: "0 0 2px" }}>• GST Notification: <b style={{ color: "#0f172a" }}>Reverse Charge Mechanism (RCM) under Sec 9(3) CGST Act 2017</b></p>
-                          <div style={{ marginTop: "4px", paddingTop: "4px", borderTop: "1px dashed #cbd5e1", fontSize: "9px" }}>
-                            <span style={{ color: "#64748b", fontWeight: 700, display: "block" }}>OFFICIAL BANK ACCOUNT COORDINATES:</span>
-                            <span style={{ color: "#0f172a" }}>Bank: <b>{companySettings.bank_name}</b> • A/C No: <b style={{ fontFamily: "monospace" }}>{companySettings.account_number}</b></span>
-                            <span style={{ display: "block", color: "#0f172a" }}>IFSC: <b style={{ fontFamily: "monospace" }}>{companySettings.ifsc_code}</b> • Branch: <b>{companySettings.branch_name}</b></span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: Freight Charges Breakdown */}
-                      <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#f8fafc" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                          <span style={{ color: "#475569" }}>Basic Freight:</span>
-                          <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>₹{freight.basic.toLocaleString("en-IN")}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" }}>
-                          <span style={{ color: "#475569" }}>Hamali / Handling Charges:</span>
-                          <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#0f172a" }}>₹{freight.hamali.toLocaleString("en-IN")}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" }}>
-                          <span style={{ color: "#475569" }}>Less Advance Received:</span>
-                          <span style={{ fontFamily: "monospace", fontWeight: 600, color: freight.advance > 0 ? "#059669" : "#64748b" }}>
-                            {freight.advance > 0 ? "-₹" + freight.advance.toLocaleString("en-IN") : "₹0.00"}
-                          </span>
-                        </div>
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          padding: "5px 0",
-                          marginTop: "4px",
-                          borderTop: "2px solid #0f172a",
-                          borderBottom: "1px solid #0f172a",
-                          fontSize: "11px",
-                          fontWeight: 900
-                        }}>
-                          <span style={{ color: "#0f172a" }}>Net Consignment Payable:</span>
-                          <span style={{ fontFamily: "monospace", color: "#b45309" }}>₹{freight.balance.toLocaleString("en-IN")}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Statutory Terms of Carriage Declaration */}
-                    <div style={{
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "4px",
-                      padding: "6px 8px",
-                      marginBottom: "10px",
-                      backgroundColor: "#f8fafc",
-                      fontSize: "8px",
-                      lineHeight: 1.35,
-                      color: "#475569",
-                      position: "relative",
-                      zIndex: 1
-                    }}>
-                      <p style={{ fontWeight: 800, color: "#1e293b", margin: "0 0 2px", textTransform: "uppercase" }}>
-                        Carriage Terms & Conditions (Carriage by Road Act 2007):
-                      </p>
-                      <p style={{ margin: 0 }}>
-                        1. Consignment is accepted subject to standard carrier terms. Goods carried at Owner's risk unless covered under comprehensive transit insurance.
-                        2. Transporter shall not be responsible for en-route highway delays caused by force majeure, road blockades or statutory RTO/GST inspections.
-                        3. Unloading demurrage charges @ ₹500/day applicable after 24 hours of vehicle arrival at receiver's terminal.
-                      </p>
-                    </div>
-
-                    {/* Signatures & Seal Block */}
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1.2fr",
-                      gap: "12px",
-                      paddingTop: "6px",
-                      borderTop: "1px solid #cbd5e1",
-                      fontSize: "9px",
-                      textAlign: "center",
-                      position: "relative",
-                      zIndex: 1
-                    }}>
-                      <div style={{ paddingTop: "24px", borderTop: "1px solid #94a3b8" }}>
-                        <p style={{ fontWeight: 800, color: "#0f172a", margin: 0 }}>CONSIGNOR SIGNATURE</p>
-                        <p style={{ fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" }}>Shipper Verification & Handover</p>
-                      </div>
-                      <div style={{ paddingTop: "24px", borderTop: "1px solid #94a3b8" }}>
-                        <p style={{ fontWeight: 800, color: "#0f172a", margin: 0 }}>DRIVER SIGNATURE</p>
-                        <p style={{ fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" }}>Vehicle Custody & Goods Receipt</p>
-                      </div>
-                      <div style={{
-                        paddingTop: "4px",
-                        border: "1.5px solid #0f172a",
-                        backgroundColor: "#fef3c7",
-                        borderRadius: "4px",
-                        padding: "6px 8px"
-                      }}>
-                        <p style={{ fontWeight: 900, color: "#78350f", margin: 0, fontSize: "9px", textTransform: "uppercase" }}>
-                          FOR {companySettings.company_name}
-                        </p>
-                        <div style={{ margin: "4px 0", fontSize: "11px", fontWeight: 900, color: "#0f172a", fontStyle: "italic", fontFamily: "serif" }}>
-                          {companySettings.signatory_name || "Vinod Kumar Rathod"}
-                        </div>
-                        <p style={{ fontSize: "7.5px", fontWeight: 800, color: "#92400e", margin: 0, textTransform: "uppercase" }}>
-                          {companySettings.signatory_title || "Managing Director"} • AUTHORISED SIGNATORY
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* MODAL: EDIT LR CONSIGNMENT DETAILS (IN-MODAL QUICK ACTION) */}
-      {editLrModalTrip && (
-        <div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                  <FileTextIcon className="w-4 h-4 text-blue-400" />
-                  <span>Edit LR Consignment Details</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5 font-mono">
-                  Trip: {editLrModalTrip.trip_id || editLrModalTrip.id} • Truck: {editLrModalTrip.truck_number}
-                </p>
-              </div>
-              <button
-                onClick={() => setEditLrModalTrip(null)}
-                className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
-              >
-                <CloseIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
-              {/* LR Number & Invoice Number */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">LR / Bilty Number</label>
-                  <input
-                    type="text"
-                    value={lrEditForm.lr_number}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, lr_number: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. JBC/26-27/363"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Invoice / Delivery Challan #</label>
-                  <input
-                    type="text"
-                    value={lrEditForm.invoice_number}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, invoice_number: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. INV-88210 / DC-441"
-                  />
-                </div>
-              </div>
-
-              {/* E-Way Bill Number */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1">GST E-Way Bill Number</label>
-                <input
-                  type="text"
-                  value={lrEditForm.eway_bill_number}
-                  onChange={(e) => setLrEditForm({ ...lrEditForm, eway_bill_number: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
-                  placeholder="e.g. 2310-9981-4412"
-                />
-              </div>
-
-              {/* Consignee Name & Phone */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Consignee (Delivery Receiver Name)</label>
-                  <input
-                    type="text"
-                    value={lrEditForm.consignee_name}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, consignee_name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. Delhivery Regional Hub"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Consignee Contact / Dock Master</label>
-                  <input
-                    type="text"
-                    value={lrEditForm.consignee_phone}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, consignee_phone: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. +91 98480 12345"
-                  />
-                </div>
-              </div>
-
-              {/* Consignee Address & GSTIN */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Consignee Delivery Terminal Address</label>
-                  <input
-                    type="text"
-                    value={lrEditForm.consignee_address}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, consignee_address: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. Plot 4, Logistics Park, Gulbarga"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Consignee GSTIN (Optional)</label>
-                  <input
-                    type="text"
-                    value={lrEditForm.consignee_gstin}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, consignee_gstin: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. 29AABCS5678B1Z2"
-                  />
-                </div>
-              </div>
-
-              {/* Packages & Cargo Description */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Packages Count</label>
-                  <input
-                    type="number"
-                    value={lrEditForm.packages_count}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, packages_count: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. 120"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Packaging Type</label>
-                  <select
-                    value={lrEditForm.package_type}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, package_type: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="Boxes">Boxes</option>
-                    <option value="Cartons">Cartons</option>
-                    <option value="Pallets">Pallets</option>
-                    <option value="Bags">Bags</option>
-                    <option value="Drums">Drums</option>
-                    <option value="FTL Container Load">FTL Container Load</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Description of Goods</label>
-                  <input
-                    type="text"
-                    value={lrEditForm.goods_description}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, goods_description: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. FMCG Goods / Spares"
-                  />
-                </div>
-              </div>
-
-              {/* Weights & Hamali */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Actual Weight (Kg)</label>
-                  <input
-                    type="number"
-                    value={lrEditForm.actual_weight}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, actual_weight: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. 7200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Charged Weight (Kg)</label>
-                  <input
-                    type="number"
-                    value={lrEditForm.charged_weight}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, charged_weight: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. 7500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Hamali / Extra (₹)</label>
-                  <input
-                    type="number"
-                    value={lrEditForm.hamali_charges}
-                    onChange={(e) => setLrEditForm({ ...lrEditForm, hamali_charges: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. 500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-2.5">
-              <button
-                onClick={() => setEditLrModalTrip(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveConsignmentDetails}
-                disabled={savingLrEdit}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/20 transition cursor-pointer disabled:opacity-50"
-              >
-                {savingLrEdit ? "Saving..." : "Save & Update LR"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {viewingPodDoc && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                  <FileCheckIcon className="w-4 h-4 text-emerald-400" />
-                  <span>Proof of Delivery Document</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Trip: {viewingPodDoc.tripId} • Truck: {viewingPodDoc.truck} • Client: {viewingPodDoc.client}
-                </p>
-              </div>
-              <button
-                onClick={() => setViewingPodDoc(null)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
-              >
-                <CloseIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[300px]">
-              {viewingPodDoc.url.toLowerCase().endsWith(".pdf") ? (
-                <iframe
-                  src={viewingPodDoc.url}
-                  className="w-full h-[550px] rounded-xl border border-slate-800"
-                  title="POD PDF Document"
-                />
-              ) : (
-                <img
-                  src={viewingPodDoc.url}
-                  alt="Signed POD"
-                  className="max-h-[550px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
-                />
-              )}
-            </div>
-
-            <div className="p-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-end gap-2">
-              <a
-                href={viewingPodDoc.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <DownloadIcon className="w-3.5 h-3.5" />
-                <span>Download File</span>
-              </a>
-              <Button
-                variant="outline"
-                onClick={() => setViewingPodDoc(null)}
-                className="rounded-xl border-slate-700 text-slate-300"
-              >
-                Close Preview
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: CREATE / ISSUE NEW LR MODAL */}
-      {isCreatingLr && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-white text-base flex items-center gap-2">
-                  <FileTextIcon className="w-5 h-5 text-amber-400" />
-                  <span>Issue New Lorry Receipt / Consignment Note</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Generate official transporter consignment note (LR / Bilty) with automated tracking
-                </p>
-              </div>
-              <button
-                onClick={() => setIsCreatingLr(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
-              >
-                <CloseIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitCreateLr} className="p-5 space-y-4 overflow-y-auto text-xs">
-              {/* Trip selector option */}
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                <label className="font-bold text-slate-300 block">
-                  Link to Existing Trip Log (Optional - auto-fills details):
-                </label>
-                <select
-                  value={createForm.selectedTripId}
-                  onChange={(e) => handleSelectTripForLr(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl p-2.5 outline-none font-mono text-xs focus:border-amber-500 cursor-pointer"
-                >
-                  <option value="">-- Choose active trip from fleet register (or create standalone) --</option>
-                  {trips.slice(0, 30).map(t => (
-                    <option key={t.id} value={t.id}>
-                      {t.trip_id || t.id.slice(0, 8)} • {t.truck_number || "Truck"} • {getClientName(t)} • {formatRoute(t)} ({formatTripDate(t.date)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">LR Number *</label>
-                  <Input
-                    required
-                    value={createForm.lrNumber}
-                    onChange={(e) => setCreateForm({...createForm, lrNumber: e.target.value})}
-                    placeholder="e.g. JBC/26-27/1001"
-                    className="bg-slate-950 border-slate-800 text-amber-400 font-mono font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">E-Way Bill Number</label>
-                  <Input
-                    value={createForm.ewayBill}
-                    onChange={(e) => setCreateForm({...createForm, ewayBill: e.target.value})}
-                    placeholder="e.g. 3412-8901-4521"
-                    className="bg-slate-950 border-slate-800 text-slate-100 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Client / Bill-To Party *</label>
-                  <select
-                    value={createForm.clientId}
-                    onChange={(e) => {
-                      const selId = e.target.value;
-                      const cl = clientMap[selId];
-                      const name = cl ? ((cl.company_name && cl.company_name !== '-') ? cl.company_name : cl.client_name || cl.name) : "";
-                      setCreateForm({
-                        ...createForm,
-                        clientId: selId,
-                        clientName: name,
-                        consignorName: name || createForm.consignorName
-                      });
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none text-xs focus:border-amber-500 cursor-pointer"
-                  >
-                    <option value="">-- Select Client from Master --</option>
-                    {clientList.map(c => {
-                      const name = (c.company_name && c.company_name.trim() !== '-') ? c.company_name : c.client_name || c.name || "Client";
-                      return (
-                        <option key={c.id} value={c.id}>
-                          {name} {clientRequiresPod(c) ? "★ (POD Required)" : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Truck Number *</label>
-                  <Input
-                    required
-                    value={createForm.truckNumber}
-                    onChange={(e) => setCreateForm({...createForm, truckNumber: e.target.value})}
-                    placeholder="e.g. TG12U2637"
-                    className="bg-slate-950 border-slate-800 text-slate-100 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Driver Name</label>
-                  <Input
-                    value={createForm.driverName}
-                    onChange={(e) => setCreateForm({...createForm, driverName: e.target.value})}
-                    placeholder="e.g. Suresh Edlai"
-                    className="bg-slate-950 border-slate-800 text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Driver Phone</label>
-                  <Input
-                    value={createForm.driverPhone}
-                    onChange={(e) => setCreateForm({...createForm, driverPhone: e.target.value})}
-                    placeholder="e.g. +91 98480 12345"
-                    className="bg-slate-950 border-slate-800 text-slate-100 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Origin City / Depot *</label>
-                  <Input
-                    required
-                    value={createForm.origin}
-                    onChange={(e) => setCreateForm({...createForm, origin: e.target.value})}
-                    placeholder="e.g. Hyderabad"
-                    className="bg-slate-950 border-slate-800 text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Destination City / Terminal *</label>
-                  <Input
-                    required
-                    value={createForm.destination}
-                    onChange={(e) => setCreateForm({...createForm, destination: e.target.value})}
-                    placeholder="e.g. Warangal"
-                    className="bg-slate-950 border-slate-800 text-slate-100"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Consignor (Shipper Name)</label>
-                  <Input
-                    value={createForm.consignorName}
-                    onChange={(e) => setCreateForm({...createForm, consignorName: e.target.value})}
-                    placeholder="e.g. ITC Limited"
-                    className="bg-slate-950 border-slate-800 text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Consignee (Receiver Name)</label>
-                  <Input
-                    value={createForm.consigneeName}
-                    onChange={(e) => setCreateForm({...createForm, consigneeName: e.target.value})}
-                    placeholder="e.g. Consignee Logistics Ltd"
-                    className="bg-slate-950 border-slate-800 text-slate-100"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Total Freight (₹) *</label>
-                  <Input
-                    required
-                    type="number"
-                    value={createForm.freight}
-                    onChange={(e) => setCreateForm({...createForm, freight: e.target.value})}
-                    placeholder="12500"
-                    className="bg-slate-950 border-slate-800 text-emerald-400 font-mono font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Total Packages</label>
-                  <Input
-                    value={createForm.packagesCount}
-                    onChange={(e) => setCreateForm({...createForm, packagesCount: e.target.value})}
-                    placeholder="10"
-                    className="bg-slate-950 border-slate-800 text-slate-100 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-400 block mb-1">Weight (Kg)</label>
-                  <Input
-                    value={createForm.weightKg}
-                    onChange={(e) => setCreateForm({...createForm, weightKg: e.target.value})}
-                    placeholder="4500"
-                    className="bg-slate-950 border-slate-800 text-slate-100 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-400 block mb-1">Goods Description</label>
-                <Input
-                  value={createForm.goodsDescription}
-                  onChange={(e) => setCreateForm({...createForm, goodsDescription: e.target.value})}
-                  placeholder="e.g. Industrial Materials, Tobacco, FMCG Products"
-                  className="bg-slate-950 border-slate-800 text-slate-100"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreatingLr(false)}
-                  className="rounded-xl border-slate-700 text-slate-300"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold cursor-pointer"
-                >
-                  Create &amp; Issue LR
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 4: QUICK EDIT LR NUMBER MODAL */}
-      {editLrTrip && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <h3 className="font-bold text-white text-base">Edit Lorry Receipt (LR) #</h3>
-            <p className="text-xs text-slate-400">
-              Trip: <span className="font-mono text-slate-200">{editLrTrip.trip_id || editLrTrip.id}</span> • Truck: <span className="font-mono text-slate-200">{editLrTrip.truck_number}</span>
-            </p>
-            <div>
-              <label className="text-xs text-slate-400 block mb-1.5 font-medium">New LR Number:</label>
-              <Input
-                value={newLrNumber}
-                onChange={(e) => setNewLrNumber(e.target.value)}
-                placeholder="e.g. JBC/26-27/1234"
-                className="bg-slate-950 border-slate-700 font-mono text-amber-400 font-bold"
-              />
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setEditLrTrip(null)}
-                className="rounded-xl border-slate-700 text-slate-300"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSaveLrNumber}
-                className="rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold cursor-pointer"
-              >
-                Save LR Number
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+  const verifiedPodCount = podTripsList.filter((t) => getPodStatus(t) === "Verified").length;
+  const uploadedPodCount = podTripsList.filter((t) => getPodStatus(t) === "Uploaded").length;
+  const pendingPodCount = podTripsList.filter((t) => getPodStatus(t) === "Pending").length;
+  const inTransitCount = trips.filter((t) => t.status === "In-Transit" || t.trip_status === "In-Transit" || !t.status).length;
+  return /* @__PURE__ */ React.createElement("div", { className: "p-3 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-5 animate-in fade-in duration-300" }, /* @__PURE__ */ React.createElement(Helmet, null, /* @__PURE__ */ React.createElement("title", null, "Lorry Receipts & POD Hub | Jai Bhavani Cargo")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 p-4 sm:p-6 rounded-3xl border border-slate-800 shadow-xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement(
+  "img",
+  {
+    src: companySettings.logo_url || "/logo.png",
+    onError: (e) => {
+      e.target.src = "/logo.png";
+    },
+    alt: "Jai Bhavani Cargo",
+    className: "w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-2xl bg-white/5 p-1.5 border border-slate-700/80 shadow-inner"
+  }
+), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider" }, "Operations & Documentation"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] sm:text-xs font-semibold" }, "Live & Synced")), /* @__PURE__ */ React.createElement("h1", { className: "text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2 sm:gap-3" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-6 h-6 sm:w-7 sm:h-7 text-amber-400 shrink-0" }), "Lorry Receipts & POD Hub"), /* @__PURE__ */ React.createElement("p", { className: "text-slate-400 text-xs sm:text-sm mt-0.5" }, companySettings.company_name, " \u2022 Proof of Delivery ledger & official executive Bilties"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 w-full sm:w-auto justify-end flex-wrap" }, /* @__PURE__ */ React.createElement(
+  Button,
+  {
+    onClick: loadData,
+    variant: "outline",
+    className: "rounded-xl border-slate-700 hover:bg-slate-800 text-slate-200 cursor-pointer text-xs h-10 px-3.5"
+  },
+  /* @__PURE__ */ React.createElement(RefreshIcon, { className: "w-3.5 h-3.5 mr-1.5" }),
+  "Refresh"
+), /* @__PURE__ */ React.createElement(
+  Button,
+  {
+    onClick: handleOpenCreateLr,
+    className: "rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/20 cursor-pointer text-xs h-10 px-4"
+  },
+  /* @__PURE__ */ React.createElement(PlusIcon, { className: "w-3.5 h-3.5 mr-1.5" }),
+  "Issue New LR / Bilty"
+))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 w-full sm:w-fit" }, /* @__PURE__ */ React.createElement(
+  "button",
+  {
+    type: "button",
+    onClick: () => {
+      setActiveTab("pod");
+      setClientFilter("pod_required");
+    },
+    className: "flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer " + (activeTab === "pod" ? "bg-blue-600 text-white shadow-md font-extrabold" : "text-slate-400 hover:text-white hover:bg-slate-800/60")
+  },
+  /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 shrink-0" }),
+  /* @__PURE__ */ React.createElement("span", null, "POD Management Hub"),
+  /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[11px] font-mono " + (activeTab === "pod" ? "bg-white text-blue-900 font-bold" : "bg-slate-800 text-slate-300") }, podTripsList.length, " Trips")
+), /* @__PURE__ */ React.createElement(
+  "button",
+  {
+    type: "button",
+    onClick: () => {
+      setActiveTab("lr");
+      setClientFilter("all");
+    },
+    className: "flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer " + (activeTab === "lr" ? "bg-amber-500 text-slate-950 shadow-md font-extrabold" : "text-slate-400 hover:text-white hover:bg-slate-800/60")
+  },
+  /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-4 h-4 shrink-0" }),
+  /* @__PURE__ */ React.createElement("span", null, "Lorry Receipts (LR / Bilty)"),
+  /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[11px] font-mono " + (activeTab === "lr" ? "bg-slate-950 text-amber-400 font-bold" : "bg-slate-800 text-slate-300") }, trips.length)
+)), activeTab === "pod" ? /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap bg-slate-900/90 p-2 sm:p-2.5 rounded-2xl border border-slate-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-slate-400 font-bold uppercase px-2 shrink-0" }, "\u{1F4E6} Courier Status:"), (() => {
+  const pCount = trips.filter((t) => isTripPodRequired(t) && !t.pod_courier_awb && t.pod_hardcopy_status !== "Delivered to Client").length;
+  const cCount = trips.filter((t) => t.pod_courier_awb && t.pod_hardcopy_status !== "Delivered to Client").length;
+  const dCount = trips.filter((t) => t.pod_hardcopy_status === "Delivered to Client").length;
+  return [
+    { id: "all", label: "All Shipments (" + trips.length + ")" },
+    { id: "pending", label: "\u{1F6A8} Pending Courier (" + pCount + ")", isAlert: true },
+    { id: "couriered", label: "\u{1F69A} In-Transit (" + cCount + ")" },
+    { id: "delivered", label: "\u2713 Delivered (" + dCount + ")" }
+  ];
+})().map((f) => /* @__PURE__ */ React.createElement(
+  "button",
+  {
+    key: f.id,
+    type: "button",
+    onClick: () => setCourierFilter(f.id),
+    className: "px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer " + (courierFilter === f.id ? f.isAlert ? "bg-rose-500 text-white shadow-md font-extrabold" : "bg-blue-600 text-white shadow-md font-extrabold" : "bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700")
+  },
+  f.label
+))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-br from-blue-950/40 via-slate-900 to-slate-950 border border-blue-500/20 p-3.5 sm:p-4 rounded-2xl relative overflow-hidden" }, /* @__PURE__ */ React.createElement("p", { className: "text-blue-400 text-[11px] font-bold uppercase tracking-wider" }, "Required POD Trips"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white mt-1 font-mono" }, podTripsList.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1 truncate" }, "Clients requiring POD (", podClientsCount, " clients)")), /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-950 border border-amber-500/20 p-3.5 sm:p-4 rounded-2xl relative overflow-hidden" }, /* @__PURE__ */ React.createElement("p", { className: "text-amber-400 text-[11px] font-bold uppercase tracking-wider" }, "POD Pending Review"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono" }, pendingPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1 truncate" }, "Awaiting receiver signed paper")), /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-br from-cyan-950/30 via-slate-900 to-slate-950 border border-cyan-500/20 p-3.5 sm:p-4 rounded-2xl relative overflow-hidden" }, /* @__PURE__ */ React.createElement("p", { className: "text-cyan-400 text-[11px] font-bold uppercase tracking-wider" }, "POD Uploaded"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-cyan-400 mt-1 font-mono" }, uploadedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1 truncate" }, "Uploaded & awaiting verify")), /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-950 border border-emerald-500/20 p-3.5 sm:p-4 rounded-2xl relative overflow-hidden" }, /* @__PURE__ */ React.createElement("p", { className: "text-emerald-400 text-[11px] font-bold uppercase tracking-wider" }, "POD Verified"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono" }, verifiedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-1 truncate" }, "Officially signed & cleared")))) : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900/80 border border-slate-800 p-3.5 sm:p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-slate-400 text-[11px] font-bold uppercase tracking-wider" }, "Total Consignments"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-white mt-1 font-mono" }, trips.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Complete fleet dispatch register")), /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-950 border border-amber-500/20 p-3.5 sm:p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-amber-400 text-[11px] font-bold uppercase tracking-wider" }, "In-Transit / Live"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-amber-400 mt-1 font-mono" }, inTransitCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Dispatched on highway")), /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-br from-blue-950/30 via-slate-900 to-slate-950 border border-blue-500/20 p-3.5 sm:p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-blue-400 text-[11px] font-bold uppercase tracking-wider" }, "POD Required LRs"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-blue-400 mt-1 font-mono" }, podTripsList.length), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Mandated by consignor/client")), /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-950 border border-emerald-500/20 p-3.5 sm:p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-emerald-400 text-[11px] font-bold uppercase tracking-wider" }, "POD Verified"), /* @__PURE__ */ React.createElement("p", { className: "text-2xl sm:text-3xl font-black text-emerald-400 mt-1 font-mono" }, verifiedPodCount), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-500 mt-1" }, "Delivery fully acknowledged"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-slate-900/90 p-3 sm:p-4 rounded-2xl border border-slate-800" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 w-full" }, /* @__PURE__ */ React.createElement(SearchIcon, { className: "absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" }), /* @__PURE__ */ React.createElement(
+  Input,
+  {
+    placeholder: activeTab === "lr" ? "Search by LR #, Trip ID, Truck #, Client, Route..." : "Search POD by Trip ID, Truck #, Client, Route...",
+    value: search,
+    onChange: (e) => setSearch(e.target.value),
+    className: "pl-10 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500 rounded-xl h-11 text-xs"
+  }
+)), /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-auto" }, /* @__PURE__ */ React.createElement(
+  "select",
+  {
+    value: clientFilter,
+    onChange: (e) => setClientFilter(e.target.value),
+    className: "bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 font-medium cursor-pointer h-11 w-full outline-none focus:border-amber-500"
+  },
+  /* @__PURE__ */ React.createElement("option", { value: "pod_required" }, "\u26A1 POD-Required Clients Only (", podClientsCount, ")"),
+  /* @__PURE__ */ React.createElement("option", { value: "all" }, "\u{1F3E2} All Clients (Full Ledger)"),
+  /* @__PURE__ */ React.createElement("optgroup", { label: "Filter by Specific Client" }, clientList.map((c) => {
+    const name = c.company_name && c.company_name.trim() !== "-" ? c.company_name : c.client_name || c.name || "Client";
+    const isReq = clientRequiresPod(c);
+    return /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, name, " ", isReq ? "\u2605 (POD Required)" : "");
+  }))
+)), /* @__PURE__ */ React.createElement("div", { className: "w-full md:w-auto" }, /* @__PURE__ */ React.createElement(
+  "select",
+  {
+    value: statusFilter,
+    onChange: (e) => setStatusFilter(e.target.value),
+    className: "bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 font-medium cursor-pointer h-11 w-full outline-none focus:border-amber-500"
+  },
+  /* @__PURE__ */ React.createElement("option", { value: "all" }, "All Statuses"),
+  /* @__PURE__ */ React.createElement("option", { value: "pod_pending" }, "\u26A0\uFE0F POD Pending"),
+  /* @__PURE__ */ React.createElement("option", { value: "pod_uploaded" }, "\u231B POD Uploaded"),
+  /* @__PURE__ */ React.createElement("option", { value: "pod_verified" }, "\u2713 POD Verified"),
+  /* @__PURE__ */ React.createElement("option", { value: "in_transit" }, "In-Transit Only"),
+  /* @__PURE__ */ React.createElement("option", { value: "completed" }, "Completed / Delivered")
+))), /* @__PURE__ */ React.createElement(Card, { className: "border border-slate-800 bg-slate-900/60 rounded-3xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ React.createElement(CardContent, { className: "p-0" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "py-20 text-center text-slate-400" }, /* @__PURE__ */ React.createElement(RefreshIcon, { className: "w-8 h-8 animate-spin mx-auto text-amber-500 mb-3" }), /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-sm" }, "Loading records from server...")) : filteredTrips.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-16 text-center text-slate-400 p-4" }, /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-12 h-12 mx-auto text-slate-600 mb-2 opacity-50" }), /* @__PURE__ */ React.createElement("p", { className: "text-base font-bold text-slate-300" }, "No matching consignments found"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-500 mt-1 max-w-md mx-auto" }, activeTab === "pod" ? "Showing trips for clients who require POD. Try changing the client or status filter above." : "Try adjusting your search query or client filter."), activeTab === "pod" && clientFilter === "pod_required" && /* @__PURE__ */ React.createElement(
+  "button",
+  {
+    type: "button",
+    onClick: () => setClientFilter("all"),
+    className: "mt-3 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer transition"
+  },
+  "View All Clients (Including Non-POD)"
+)) : activeTab === "lr" ? (
+  /* =========================================================================
+     TAB 1: LORRY RECEIPTS (LR / BILTY)
+     ========================================================================= */
+  /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "hidden md:block overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left text-xs border-collapse" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { className: "bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pl-5" }, "LR / Bilty #"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Trip & Truck"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Client & Route"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Booking Date"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "Freight"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5" }, "POD & Courier Status"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pr-5 text-right" }, "Actions"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-slate-800/60 text-slate-200" }, filteredTrips.map((trip) => {
+    const lrNum = getLrNumber(trip);
+    const podSt = getPodStatus(trip);
+    const clObj = getClientForTrip(trip);
+    const clientName = getClientName(trip);
+    const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
+    const route = formatRoute(trip);
+    const cInfo = getPodCourierInfo(trip, isReq);
+    return /* @__PURE__ */ React.createElement("tr", { key: trip.id, className: "hover:bg-slate-800/40 transition" }, /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pl-5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg" }, lrNum), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setEditLrTrip(trip);
+          setNewLrNumber(lrNum);
+        },
+        className: "text-slate-500 hover:text-slate-300 text-[10px] underline cursor-pointer",
+        title: "Edit LR Number"
+      },
+      "Edit"
+    )), trip.eway_bill_number && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500 font-mono mt-0.5" }, "E-Way: ", trip.eway_bill_number)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(TruckIcon, { className: "w-3.5 h-3.5 text-slate-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-mono" }, trip.truck_number || "TG12U2637")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 font-mono" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), trip.driver_name && /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-500" }, trip.driver_name)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-100" }, clientName), isReq && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "POD Req")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400 mt-0.5" }, route)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300 font-mono" }, formatTripDate(trip.date)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 font-mono font-bold text-emerald-400" }, "\u20B9", Number(trip.revenue || 0).toLocaleString("en-IN")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("div", null, podSt === "Not Required" ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700" }, "Not Required") : /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified POD" : podSt === "Uploaded" ? "\u231B POD Uploaded" : "\u26A0\uFE0F POD Pending")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.2 rounded-md text-[9px] border " + cInfo.badgeClass }, cInfo.badgeText), cInfo.trackingUrl && /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: cInfo.trackingUrl,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-[9px] text-blue-400 hover:underline font-mono"
+      },
+      "Track \u2197"
+    )))), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleOpenCourierModal(trip),
+        className: "px-2 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition " + (isReq ? "bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30" : "bg-slate-800/40 hover:bg-slate-800/80 text-slate-400 border border-slate-700/50"),
+        title: isReq ? "Log physical POD courier details" : "Optional courier details"
+      },
+      "\u{1F69A} ",
+      trip.pod_courier_awb ? "Edit Courier" : "Courier"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setViewingLr(trip);
+          setLrCopyType("Transporter Copy");
+          setPreviewScale(0.75);
+        },
+        className: "px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shadow cursor-pointer transition",
+        title: "Print Official A4 Bilty"
+      },
+      /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", null, "Print LR")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleShareWhatsApp(trip),
+        className: "p-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-lg cursor-pointer transition",
+        title: "Share on WhatsApp"
+      },
+      /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-3.5 h-3.5" })
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setEditLrModalTrip(trip),
+        className: "p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg cursor-pointer transition text-[11px] font-semibold",
+        title: "Edit Consignee & Consignment Details"
+      },
+      "\u270F\uFE0F"
+    ))));
+  })))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden divide-y divide-slate-800/80" }, filteredTrips.map((trip) => {
+    const lrNum = getLrNumber(trip);
+    const podSt = getPodStatus(trip);
+    const clObj = getClientForTrip(trip);
+    const clientName = getClientName(trip);
+    const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
+    const route = formatRoute(trip);
+    const cInfo = getPodCourierInfo(trip, isReq);
+    return /* @__PURE__ */ React.createElement("div", { key: trip.id, className: "p-4 space-y-3 bg-slate-900/60 hover:bg-slate-900/90 transition-colors" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-xs text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-lg" }, lrNum), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs text-slate-400" }, trip.trip_id || trip.id?.slice(0, 8))), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-emerald-400 text-sm" }, "\u20B9", Number(trip.revenue || 0).toLocaleString("en-IN"))), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-white text-sm truncate" }, clientName), isReq && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0" }, "POD Req")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-xs text-slate-300" }, /* @__PURE__ */ React.createElement("span", { className: "text-slate-400" }, "Route:"), /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-slate-200" }, route)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60 font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(TruckIcon, { className: "w-3.5 h-3.5 text-slate-500" }), trip.truck_number || "TG12U2637", " ", trip.driver_name ? "\u2022 " + trip.driver_name : ""), /* @__PURE__ */ React.createElement("span", null, formatTripDate(trip.date)))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 bg-slate-950/50 px-3 py-2 rounded-xl border border-slate-800/50 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] border " + cInfo.badgeClass }, cInfo.badgeText), cInfo.trackingUrl && /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: cInfo.trackingUrl,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-[10px] text-blue-400 font-mono font-bold hover:underline"
+      },
+      "Track \u2197"
+    )), /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "Uploaded" : "Pending")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 pt-1" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setViewingLr(trip);
+          setLrCopyType("Transporter Copy");
+          setPreviewScale(0.75);
+        },
+        className: "h-10 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, "Print LR / Bilty")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleShareWhatsApp(trip),
+        className: "h-10 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, "Share WhatsApp")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleOpenCourierModal(trip),
+        className: "h-10 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F69A} ", trip.pod_courier_awb ? "Edit Courier" : "Courier POD")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setEditLrModalTrip(trip),
+        className: "h-10 px-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u270F\uFE0F Edit Details")
+    )));
+  })))
+) : (
+  /* =========================================================================
+     TAB 2: PROOF OF DELIVERY (POD) MANAGEMENT HUB
+     ========================================================================= */
+  /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "hidden md:block overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left text-xs border-collapse" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { className: "bg-slate-950/80 text-slate-400 uppercase font-bold text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pl-5 w-[220px]" }, "Consignment & Bilty"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 w-[280px]" }, "Client & Route"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 w-[230px]" }, "Digital POD (Soft Copy)"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 w-[250px]" }, "Physical Courier Tracking"), /* @__PURE__ */ React.createElement("th", { className: "p-3.5 pr-5 text-right w-[180px]" }, "Bilty Actions"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-slate-800/60 text-slate-200" }, filteredTrips.map((trip) => {
+    const lrNum = getLrNumber(trip);
+    const podSt = getPodStatus(trip);
+    const clObj = getClientForTrip(trip);
+    const clientName = getClientName(trip);
+    const podFiles = getPodFiles(trip);
+    const hasFile = podFiles.length > 0;
+    const hasLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
+    const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
+    const cInfo = getPodCourierInfo(trip, isReq);
+    return /* @__PURE__ */ React.createElement("tr", { key: trip.id, className: "hover:bg-slate-800/40 transition" }, /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pl-5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg text-xs" }, lrNum), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setEditLrTrip(trip);
+          setNewLrNumber(lrNum);
+        },
+        className: "text-slate-500 hover:text-slate-300 text-[10px] underline cursor-pointer",
+        title: "Edit LR Number"
+      },
+      "Edit"
+    )), /* @__PURE__ */ React.createElement("p", { className: "font-mono font-bold text-white text-xs mt-1" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-400 font-mono mt-0.5" }, formatTripDate(trip.date))), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-slate-100 text-sm" }, clientName), isReq ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "Mandated POD") : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] text-slate-500 bg-slate-800 border border-slate-700" }, "Optional")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-300 font-medium mt-1" }, formatRoute(trip)), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-1" }, /* @__PURE__ */ React.createElement(TruckIcon, { className: "w-3 h-3 text-slate-500" }), trip.truck_number || "TG12U2637", " ", trip.driver_name ? "\u2022 " + trip.driver_name : "")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "\u231B Uploaded" : "\u26A0\uFE0F Pending POD"), (hasFile || hasLink) && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleTogglePodVerify(trip),
+        className: "px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer " + (podSt === "Verified" ? "text-emerald-400 hover:underline" : "bg-emerald-600 hover:bg-emerald-500 text-white"),
+        title: podSt === "Verified" ? "Mark as Pending Review" : "Mark as Officially Verified"
+      },
+      podSt === "Verified" ? "Mark Pending" : "\u2713 Verify"
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, hasFile ? /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => openPodViewer(trip),
+        className: "inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold cursor-pointer transition"
+      },
+      /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", null, podFiles.length > 1 ? "View (" + podFiles.length + ") Files" : "View Signed POD")
+    ) : hasLink ? /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: trip.pod_link,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-blue-400 underline text-xs font-mono"
+      },
+      "External Link \u2197"
+    ) : null, /* @__PURE__ */ React.createElement(
+      "label",
+      {
+        htmlFor: "pod-upload-" + trip.id,
+        className: "inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer transition",
+        title: "Upload or Add Pages"
+      },
+      /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", null, uploadingTripId === trip.id ? "Uploading..." : hasFile ? "+ Add" : "Upload POD"),
+      /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "file",
+          id: "pod-upload-" + trip.id,
+          className: "hidden",
+          multiple: true,
+          accept: "image/*,application/pdf",
+          onChange: (e) => handleUploadPod(e, trip.id, false)
+        }
+      )
+    )))), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border " + cInfo.badgeClass }, cInfo.badgeText), cInfo.trackingUrl && /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: cInfo.trackingUrl,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-[10px] text-blue-400 hover:underline font-mono font-bold",
+        title: "Open live courier tracking"
+      },
+      "Track Live \u2197"
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleOpenCourierModal(trip),
+        className: "px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition " + (isReq ? "bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30" : "bg-slate-800/40 hover:bg-slate-800/80 text-slate-400 border border-slate-700/50"),
+        title: isReq ? "Log physical POD courier details" : "Optional courier details"
+      },
+      "\u{1F69A} ",
+      trip.pod_courier_awb ? "Edit Courier" : "Courier POD"
+    ), trip.pod_courier_awb && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleSendCourierWhatsApp(trip),
+        className: "p-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center justify-center cursor-pointer transition",
+        title: "Send WhatsApp courier dispatch update to client"
+      },
+      "\u{1F4F2}"
+    )))), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pr-5 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setViewingLr(trip);
+          setLrCopyType("Transporter Copy");
+          setPreviewScale(0.75);
+        },
+        className: "px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shadow cursor-pointer transition",
+        title: "Print Linked A4 Bilty"
+      },
+      /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", null, "Print LR")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleShareWhatsApp(trip),
+        className: "p-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-lg cursor-pointer transition",
+        title: "Share on WhatsApp"
+      },
+      /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-3.5 h-3.5" })
+    ))));
+  })))), /* @__PURE__ */ React.createElement("div", { className: "block md:hidden divide-y divide-slate-800/80" }, filteredTrips.map((trip) => {
+    const lrNum = getLrNumber(trip);
+    const podSt = getPodStatus(trip);
+    const clObj = getClientForTrip(trip);
+    const clientName = getClientName(trip);
+    const podFiles = getPodFiles(trip);
+    const hasFile = podFiles.length > 0;
+    const hasLink = !!(trip.pod_link && typeof trip.pod_link === "string" && trip.pod_link.trim() !== "");
+    const isReq = clientRequiresPod(clObj) || isTripPodRequired(trip);
+    const cInfo = getPodCourierInfo(trip, isReq);
+    return /* @__PURE__ */ React.createElement("div", { key: trip.id, className: "p-4 space-y-3 bg-slate-900/60 hover:bg-slate-900/90 transition-colors" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-xs text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-lg" }, lrNum), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs text-slate-400 font-semibold" }, trip.trip_id || trip.id?.slice(0, 8))), /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border " + (podSt === "Verified" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : podSt === "Uploaded" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, podSt === "Verified" ? "\u2713 Verified" : podSt === "Uploaded" ? "\u231B Uploaded" : "\u26A0\uFE0F Pending POD")), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-white text-sm truncate" }, clientName), isReq ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0" }, "Mandated POD") : /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] text-slate-400 bg-slate-800 border border-slate-700 shrink-0" }, "Optional")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-xs text-slate-300" }, /* @__PURE__ */ React.createElement("span", { className: "text-slate-400" }, "Route:"), /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-slate-200" }, formatRoute(trip))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60 font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(TruckIcon, { className: "w-3.5 h-3.5 text-slate-500" }), trip.truck_number || "TG12U2637", " ", trip.driver_name ? "\u2022 " + trip.driver_name : ""), /* @__PURE__ */ React.createElement("span", null, formatTripDate(trip.date)))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 bg-slate-950/50 px-3 py-2 rounded-xl border border-slate-800/50 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border " + cInfo.badgeClass }, cInfo.badgeText), cInfo.trackingUrl && /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: cInfo.trackingUrl,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-[10px] text-blue-400 font-mono font-bold hover:underline"
+      },
+      "Track Live \u2197"
+    )), trip.pod_courier_awb && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleSendCourierWhatsApp(trip),
+        className: "p-1 px-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shrink-0",
+        title: "Send WhatsApp courier dispatch update"
+      },
+      "\u{1F4F2} WhatsApp"
+    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 pt-1" }, hasFile ? /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => openPodViewer(trip),
+        className: "h-10 px-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, "View POD (", podFiles.length, ")")
+    ) : hasLink ? /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: trip.pod_link,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "h-10 px-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "External Link \u2197")
+    ) : /* @__PURE__ */ React.createElement(
+      "label",
+      {
+        htmlFor: "mobile-pod-upload-" + trip.id,
+        className: "h-10 px-3 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, uploadingTripId === trip.id ? "Uploading..." : "Upload POD"),
+      /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "file",
+          id: "mobile-pod-upload-" + trip.id,
+          className: "hidden",
+          multiple: true,
+          accept: "image/*,application/pdf",
+          onChange: (e) => handleUploadPod(e, trip.id, false)
+        }
+      )
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleOpenCourierModal(trip),
+        className: "h-10 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1F69A} ", trip.pod_courier_awb ? "Edit Courier" : "Courier POD")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setViewingLr(trip);
+          setLrCopyType("Transporter Copy");
+          setPreviewScale(0.75);
+        },
+        className: "h-10 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, "Print LR / Bilty")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleShareWhatsApp(trip),
+        className: "h-10 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, "Share LR")
+    )));
+  })))
+))), viewingLr && (() => {
+    const consignor = getConsignor(viewingLr);
+    const consignee = getConsignee(viewingLr);
+    const vehicle = getVehicleAndCrew(viewingLr);
+    const routeInfo = parseRoute(viewingLr);
+    const goods = getGoodsManifest(viewingLr);
+    const freight = getFreightCharges(viewingLr);
+    return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-1 sm:p-3 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl max-h-[96vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1 font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs" }, getLrNumber(viewingLr)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]" }, ["Transporter Copy", "Consignor Copy", "Consignee Copy", "Driver Copy"].map((copy) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: copy,
+        onClick: () => setLrCopyType(copy),
+        className: "px-2.5 py-1 rounded-md font-semibold cursor-pointer transition " + (lrCopyType === copy ? "bg-amber-500 text-slate-950 font-bold shadow" : "text-slate-400 hover:text-white")
+      },
+      copy.replace(" Copy", "")
+    )))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-slate-400 text-[11px] font-semibold mr-1" }, "Preview Zoom:"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale((s) => Math.max(0.4, Number((s - 0.1).toFixed(2)))),
+        className: "w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition",
+        title: "Zoom Out"
+      },
+      "-"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale(0.72),
+        className: "px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 0.72 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white"),
+        title: "Fit whole document on screen without browser zoom"
+      },
+      "Fit Screen"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale(1),
+        className: "px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 1 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white"),
+        title: "100% Actual Size"
+      },
+      "100%"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale((s) => Math.min(1.5, Number((s + 0.1).toFixed(2)))),
+        className: "w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition",
+        title: "Zoom In"
+      },
+      "+"
+    ), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-mono text-[11px] ml-1 font-bold" }, Math.round(previewScale * 100), "%")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => handleOpenEditConsignment(viewingLr),
+        className: "px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-blue-500/20 cursor-pointer transition",
+        title: "Edit Consignee, Invoice #, E-Way Bill #, Weight & Packages"
+      },
+      /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", null, "Edit LR Details")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: handlePrintLrIframe,
+        className: "px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer transition"
+      },
+      /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, "Print A4 / PDF")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => handleShareWhatsApp(viewingLr),
+        className: "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition"
+      },
+      /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "WhatsApp")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setViewingLr(null),
+        className: "p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
+    ))), /* @__PURE__ */ React.createElement("div", { className: "p-3 sm:p-5 overflow-auto flex-1 flex justify-center items-start bg-slate-950/90 min-h-[450px]" }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          transform: "scale(" + previewScale + ")",
+          transformOrigin: "top center",
+          transition: "transform 0.15s ease-out",
+          marginBottom: previewScale < 1 ? "-" + Math.round((1 - previewScale) * 1160) + "px" : "20px"
+        }
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          id: "lr-printable-area",
+          style: {
+            width: "790px",
+            backgroundColor: "#ffffff",
+            color: "#0f172a",
+            padding: "24px 28px",
+            borderRadius: "4px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+            fontSize: "11px",
+            lineHeight: 1.3,
+            border: "2px solid #0f172a",
+            position: "relative",
+            overflow: "hidden"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%) rotate(-30deg)",
+              pointerEvents: "none",
+              opacity: 0.04,
+              fontSize: "56px",
+              fontWeight: 900,
+              color: lrCopyType.includes("Transporter") ? "#b45309" : lrCopyType.includes("Consignor") ? "#1d4ed8" : lrCopyType.includes("Consignee") ? "#047857" : "#6d28d9",
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              zIndex: 0
+            }
+          },
+          lrCopyType.toUpperCase()
+        ),
+        /* @__PURE__ */ React.createElement("div", { style: { borderBottom: "3px double #0f172a", paddingBottom: "12px", marginBottom: "12px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: "14px", flex: 1 } }, /* @__PURE__ */ React.createElement(
+          "img",
+          {
+            src: companySettings.logo_url || "/logo.png",
+            onError: (e) => {
+              e.target.src = "/logo.png";
+            },
+            alt: "Logo",
+            style: {
+              height: "64px",
+              width: "auto",
+              maxWidth: "80px",
+              objectFit: "contain",
+              border: "1px solid #e2e8f0",
+              borderRadius: "6px",
+              padding: "2px",
+              backgroundColor: "#ffffff"
+            }
+          }
+        ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontSize: "22px", fontWeight: 900, letterSpacing: "-0.5px", color: "#0f172a", margin: 0, textTransform: "uppercase" } }, companySettings.company_name), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "10px", fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: "1.5px", margin: "2px 0 4px" } }, companySettings.tagline || "Goods Transport Operators & Fleet Contractors"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "9px", color: "#334155", margin: 0, lineHeight: 1.35, maxWidth: "420px" } }, companySettings.company_address), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "9px", color: "#475569", fontWeight: 600, marginTop: "4px" } }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4DE} ", /* @__PURE__ */ React.createElement("b", null, companySettings.company_phone)), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "\u2709\uFE0F ", companySettings.company_email), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "\u{1F310} ", companySettings.company_website)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" } }, /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, companySettings.company_gstin)), /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" } }, "PAN: ", /* @__PURE__ */ React.createElement("b", null, companySettings.pan_number || companySettings.company_pan)), /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#fef3c7", border: "1px solid #fde68a", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#92400e" } }, "MSME: ", /* @__PURE__ */ React.createElement("b", null, companySettings.msme_number))))), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: "210px" } }, /* @__PURE__ */ React.createElement("div", { style: { border: "2px solid #0f172a", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 10px", borderRadius: "4px", textAlign: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: "14px", fontWeight: 900, letterSpacing: "1px", textTransform: "uppercase", display: "block" } }, "LORRY RECEIPT"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8.5px", fontWeight: 700, letterSpacing: "1px", color: "#94a3b8", textTransform: "uppercase" } }, "GOODS CONSIGNMENT NOTE")), /* @__PURE__ */ React.createElement("div", { style: {
+          backgroundColor: lrCopyType.includes("Transporter") ? "#fef3c7" : lrCopyType.includes("Consignor") ? "#eff6ff" : lrCopyType.includes("Consignee") ? "#ecfdf5" : "#f5f3ff",
+          border: "1px solid " + (lrCopyType.includes("Transporter") ? "#f59e0b" : lrCopyType.includes("Consignor") ? "#3b82f6" : lrCopyType.includes("Consignee") ? "#10b981" : "#8b5cf6"),
+          color: lrCopyType.includes("Transporter") ? "#92400e" : lrCopyType.includes("Consignor") ? "#1e40af" : lrCopyType.includes("Consignee") ? "#065f46" : "#5b21b6",
+          borderRadius: "4px",
+          padding: "3px 8px",
+          marginTop: "5px",
+          textAlign: "center"
+        } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "1px" } }, lrCopyType.toUpperCase())), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "8px", color: "#64748b", margin: "4px 0 0", fontStyle: "italic" } }, "Carriage by Road Act 2007 Registered"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "8px", fontWeight: 700, color: "#0f172a", margin: "2px 0 0" } }, "IBA APPROVED: HYD/2026/JBC \u2022 ISO 9001")))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "8px",
+          backgroundColor: "#f8fafc",
+          border: "1px solid #cbd5e1",
+          borderRadius: "4px",
+          padding: "8px 10px",
+          marginBottom: "10px",
+          fontSize: "10px",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "LR / BILTY NUMBER:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 900, fontSize: "13px", color: "#b45309" } }, getLrNumber(viewingLr)), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "monospace", fontSize: "10px", letterSpacing: "3px", fontWeight: 900, color: "#334155", lineHeight: 1 } }, "||| | |||| || |||")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "BOOKING DATE:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, fontSize: "11px", color: "#0f172a" } }, formatTripDate(viewingLr.date)), /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", display: "block" } }, "Scheduled Dispatch")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "E-WAY BILL NO:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 800, fontSize: "10.5px", color: "#0f172a" } }, goods.ewayBill), /* @__PURE__ */ React.createElement("span", { style: { color: "#059669", fontWeight: 700, fontSize: "8px", display: "block" } }, "\u2713 In-Transit Verified")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "DISPATCH MANIFEST ID:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 800, fontSize: "11px", color: "#0f172a" } }, viewingLr.trip_id || viewingLr.id), /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", display: "block" } }, "Fleet Container Cargo"))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "10px",
+          marginBottom: "10px",
+          fontSize: "9.5px",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#f8fafc" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "VEHICLE & CREW DETAILS"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" } }, /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#fef08a", border: "1px solid #ca8a04", color: "#713f12", fontWeight: 900, fontFamily: "monospace", fontSize: "11px", padding: "2px 6px", borderRadius: "3px" } }, vehicle.truckNo), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8.5px", color: "#475569", fontWeight: 600 } }, vehicle.truckSize)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "6px", paddingTop: "4px", borderTop: "1px dashed #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", fontWeight: 700, display: "block" } }, "ASSIGNED DRIVER:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, vehicle.driverName), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#334155", display: "block", fontSize: "9px" } }, "\u{1F4DE} ", vehicle.driverPhone), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8px", color: "#475569", fontWeight: 600 } }, vehicle.licenseNo))), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "CONSIGNOR (SHIPPER / SENDER)"), /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" } }, consignor.name), /* @__PURE__ */ React.createElement("p", { style: { color: "#475569", margin: "0 0 4px", lineHeight: 1.3 } }, consignor.address), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "monospace", color: "#334155", margin: 0 } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, consignor.gstin)), /* @__PURE__ */ React.createElement("p", { style: { color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" } }, consignor.stateCode)), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "CONSIGNEE (DELIVERY RECEIVER)"), /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" } }, consignee.name), /* @__PURE__ */ React.createElement("p", { style: { color: "#475569", margin: "0 0 4px", lineHeight: 1.3 } }, consignee.address), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "monospace", color: "#334155", margin: 0 } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, consignee.gstin)), /* @__PURE__ */ React.createElement("p", { style: { color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" } }, "Delivery Contact: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, consignee.phone)))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          backgroundColor: "#f8fafc",
+          border: "1px solid #cbd5e1",
+          borderRadius: "4px",
+          padding: "6px 12px",
+          marginBottom: "10px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: "9.5px",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" } }, "ORIGIN & LOADING POINT:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a", fontSize: "11px" } }, routeInfo.origin)), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "0 16px" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#b45309", fontWeight: 900, fontSize: "13px" } }, "\u2794 \u2794 \u{1F69A} \u2794 \u2794"), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: "8px", color: "#64748b", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" } }, "EXPRESS HIGHWAY FREIGHT TRANSIT ", viewingLr.kms ? " (" + viewingLr.kms + " KM)" : "")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" } }, "DESTINATION & UNLOADING DOCK:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a", fontSize: "11px" } }, routeInfo.destination))),
+        /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { width: "24px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "#"), /* @__PURE__ */ React.createElement("th", { style: { width: "110px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Packages & Type"), /* @__PURE__ */ React.createElement("th", { style: { textAlign: "left", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 8px", border: "1px solid #334155" } }, "Description of Goods (Said to Contain)"), /* @__PURE__ */ React.createElement("th", { style: { width: "110px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Invoice / Challan"), /* @__PURE__ */ React.createElement("th", { style: { width: "90px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Actual Wt"), /* @__PURE__ */ React.createElement("th", { style: { width: "90px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Charged Wt"))), /* @__PURE__ */ React.createElement("tbody", null, /* @__PURE__ */ React.createElement("tr", { style: { backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", border: "1px solid #cbd5e1", padding: "6px" } }, "1"), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", fontWeight: 700, border: "1px solid #cbd5e1", padding: "6px", color: "#0f172a" } }, goods.packages), /* @__PURE__ */ React.createElement("td", { style: { border: "1px solid #cbd5e1", padding: "6px 8px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, goods.description), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: "8.5px", color: "#64748b" } }, "Said to Contain \u2022 Transport Operator Risk Exempt \u2022 Carriage by Road Act 2007")), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px", fontWeight: 700 } }, goods.invoiceNo), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px" } }, goods.actualWeight), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right", fontFamily: "monospace", fontWeight: 800, color: "#0f172a", border: "1px solid #cbd5e1", padding: "6px" } }, goods.chargedWeight)))),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "10px", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", display: "block", marginBottom: "4px", fontSize: "9px" } }, "PAYMENT, GST & BANKING REMITTANCE:"), /* @__PURE__ */ React.createElement("div", { style: { lineHeight: 1.45, color: "#334155" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "\u2022 Freight Payment: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, freight.paymentTerms)), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "\u2022 GST Notification: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, "Reverse Charge Mechanism (RCM) under Sec 9(3) CGST Act 2017")), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "4px", paddingTop: "4px", borderTop: "1px dashed #cbd5e1", fontSize: "9px" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, display: "block" } }, "OFFICIAL BANK ACCOUNT COORDINATES:"), /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Bank: ", /* @__PURE__ */ React.createElement("b", null, companySettings.bank_name), " \u2022 A/C No: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.account_number)), /* @__PURE__ */ React.createElement("span", { style: { display: "block", color: "#0f172a" } }, "IFSC: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.ifsc_code), " \u2022 Branch: ", /* @__PURE__ */ React.createElement("b", null, companySettings.branch_name))))), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#f8fafc" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Basic Freight:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 700, color: "#0f172a" } }, "\u20B9", freight.basic.toLocaleString("en-IN"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Hamali / Handling Charges:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 600, color: "#0f172a" } }, "\u20B9", freight.hamali.toLocaleString("en-IN"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Less Advance Received:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 600, color: freight.advance > 0 ? "#059669" : "#64748b" } }, freight.advance > 0 ? "-\u20B9" + freight.advance.toLocaleString("en-IN") : "\u20B90.00")), /* @__PURE__ */ React.createElement("div", { style: {
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "5px 0",
+          marginTop: "4px",
+          borderTop: "2px solid #0f172a",
+          borderBottom: "1px solid #0f172a",
+          fontSize: "11px",
+          fontWeight: 900
+        } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Net Consignment Payable:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#b45309" } }, "\u20B9", freight.balance.toLocaleString("en-IN"))))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          border: "1px solid #cbd5e1",
+          borderRadius: "4px",
+          padding: "6px 8px",
+          marginBottom: "10px",
+          backgroundColor: "#f8fafc",
+          fontSize: "8px",
+          lineHeight: 1.35,
+          color: "#475569",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#1e293b", margin: "0 0 2px", textTransform: "uppercase" } }, "Carriage Terms & Conditions (Carriage by Road Act 2007):"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0 } }, "1. Consignment is accepted subject to standard carrier terms. Goods carried at Owner's risk unless covered under comprehensive transit insurance. 2. Transporter shall not be responsible for en-route highway delays caused by force majeure, road blockades or statutory RTO/GST inspections. 3. Unloading demurrage charges @ \u20B9500/day applicable after 24 hours of vehicle arrival at receiver's terminal.")),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1.2fr",
+          gap: "12px",
+          paddingTop: "6px",
+          borderTop: "1px solid #cbd5e1",
+          fontSize: "9px",
+          textAlign: "center",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", { style: { paddingTop: "24px", borderTop: "1px solid #94a3b8" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", margin: 0 } }, "CONSIGNOR SIGNATURE"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" } }, "Shipper Verification & Handover")), /* @__PURE__ */ React.createElement("div", { style: { paddingTop: "24px", borderTop: "1px solid #94a3b8" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", margin: 0 } }, "DRIVER SIGNATURE"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" } }, "Vehicle Custody & Goods Receipt")), /* @__PURE__ */ React.createElement("div", { style: {
+          paddingTop: "4px",
+          border: "1.5px solid #0f172a",
+          backgroundColor: "#fef3c7",
+          borderRadius: "4px",
+          padding: "6px 8px"
+        } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, color: "#78350f", margin: 0, fontSize: "9px", textTransform: "uppercase" } }, "FOR ", companySettings.company_name), /* @__PURE__ */ React.createElement("div", { style: { margin: "4px 0", fontSize: "11px", fontWeight: 900, color: "#0f172a", fontStyle: "italic", fontFamily: "serif" } }, companySettings.signatory_name || "Vinod Kumar Rathod"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", fontWeight: 800, color: "#92400e", margin: 0, textTransform: "uppercase" } }, companySettings.signatory_title || "Managing Director", " \u2022 AUTHORISED SIGNATORY")))
+      )
+    ))));
+  })(), editLrModalTrip && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-4 h-4 text-blue-400" }), /* @__PURE__ */ React.createElement("span", null, "Edit LR Consignment Details")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5 font-mono" }, "Trip: ", editLrModalTrip.trip_id || editLrModalTrip.id, " \u2022 Truck: ", editLrModalTrip.truck_number)), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setEditLrModalTrip(null),
+      className: "p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
+    },
+    /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
+  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-6 overflow-y-auto space-y-4 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "LR / Bilty Number"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.lr_number,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, lr_number: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. JBC/26-27/363"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Invoice / Delivery Challan #"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.invoice_number,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, invoice_number: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. INV-88210 / DC-441"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "GST E-Way Bill Number"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.eway_bill_number,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, eway_bill_number: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 2310-9981-4412"
+    }
+  )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee (Delivery Receiver Name)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_name,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_name: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. Delhivery Regional Hub"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee Contact / Dock Master"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_phone,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_phone: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. +91 98480 12345"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee Delivery Terminal Address"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_address,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_address: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. Plot 4, Logistics Park, Gulbarga"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee GSTIN (Optional)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_gstin,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_gstin: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 29AABCS5678B1Z2"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Packages Count"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.packages_count,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, packages_count: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 120"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Packaging Type"), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: lrEditForm.package_type,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, package_type: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "Boxes" }, "Boxes"),
+    /* @__PURE__ */ React.createElement("option", { value: "Cartons" }, "Cartons"),
+    /* @__PURE__ */ React.createElement("option", { value: "Pallets" }, "Pallets"),
+    /* @__PURE__ */ React.createElement("option", { value: "Bags" }, "Bags"),
+    /* @__PURE__ */ React.createElement("option", { value: "Drums" }, "Drums"),
+    /* @__PURE__ */ React.createElement("option", { value: "FTL Container Load" }, "FTL Container Load")
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Description of Goods"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.goods_description,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, goods_description: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. FMCG Goods / Spares"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Actual Weight (Kg)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.actual_weight,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, actual_weight: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 7200"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Charged Weight (Kg)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.charged_weight,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, charged_weight: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 7500"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Hamali / Extra (\u20B9)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.hamali_charges,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, hamali_charges: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 500"
+    }
+  )))), /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-2.5" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setEditLrModalTrip(null),
+      className: "px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
+    },
+    "Cancel"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: handleSaveConsignmentDetails,
+      disabled: savingLrEdit,
+      className: "px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/20 transition cursor-pointer disabled:opacity-50"
+    },
+    savingLrEdit ? "Saving..." : "Save & Update LR"
+  )))), viewingPodDoc && (() => {
+  const docFiles = (viewingPodDoc.files && viewingPodDoc.files.length > 0)
+    ? viewingPodDoc.files
+    : (viewingPodDoc.url ? [viewingPodDoc.url] : []);
+  const activeIdx = Math.max(0, Math.min(viewingPodDoc.activeIndex || 0, Math.max(0, docFiles.length - 1)));
+  const currentFile = docFiles[activeIdx] || null;
+  const isCurrentUrl = currentFile && (currentFile.startsWith("http://") || currentFile.startsWith("https://") || currentFile.startsWith("blob:"));
+  const currentFileUrl = isCurrentUrl ? currentFile : (currentFile && viewingPodDoc.trip ? pb.files.getUrl(viewingPodDoc.trip, currentFile) : viewingPodDoc.url);
+  const isPdf = currentFileUrl && currentFileUrl.toLowerCase().split("?")[0].endsWith(".pdf");
+
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200" },
+    /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" },
+      /* Header */
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" },
+        /* @__PURE__ */ React.createElement("div", null,
+          /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" },
+            /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 text-emerald-400" }),
+            /* @__PURE__ */ React.createElement("span", null, "Proof of Delivery Document"),
+            docFiles.length > 1 ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "Page " + (activeIdx + 1) + " of " + docFiles.length) : null
+          ),
+          /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" },
+            "Trip: ", viewingPodDoc.tripId, " \u2022 Truck: ", viewingPodDoc.truck, " \u2022 Client: ", viewingPodDoc.client
+          )
+        ),
+        /* @__PURE__ */ React.createElement("button", {
+          onClick: () => setViewingPodDoc(null),
+          className: "p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
+        }, /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" }))
+      ),
+
+      /* Preview Content Area */
+      /* @__PURE__ */ React.createElement("div", { className: "relative p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[320px]" },
+        (!currentFileUrl || currentFileUrl.endsWith("/")) ? (
+          /* @__PURE__ */ React.createElement("div", { className: "text-center p-8 text-slate-400" },
+            /* @__PURE__ */ React.createElement("p", { className: "font-bold text-amber-400 text-sm" }, "No Document Uploaded"),
+            /* @__PURE__ */ React.createElement("p", { className: "text-xs mt-1 mb-4" }, "This shipment has not had a signed POD file uploaded yet."),
+            viewingPodDoc.trip ? /* @__PURE__ */ React.createElement("label", {
+              className: "px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs cursor-pointer inline-flex items-center gap-1.5 transition shadow"
+            },
+              /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-4 h-4" }),
+              /* @__PURE__ */ React.createElement("span", null, uploadingTripId === viewingPodDoc.trip.id ? "Compressing & Uploading..." : "Upload POD Pages"),
+              /* @__PURE__ */ React.createElement("input", {
+                type: "file",
+                multiple: true,
+                accept: "image/*,application/pdf",
+                className: "hidden",
+                onChange: (e) => handleUploadPod(e, viewingPodDoc.trip.id, false)
+              })
+            ) : null
+          )
+        ) : isPdf ? (
+          /* @__PURE__ */ React.createElement("iframe", {
+            src: currentFileUrl,
+            className: "w-full h-[520px] rounded-xl border border-slate-800",
+            title: "POD PDF Document"
+          })
+        ) : (
+          /* @__PURE__ */ React.createElement("img", {
+            src: currentFileUrl,
+            alt: "Signed POD",
+            className: "max-h-[520px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
+          })
+        ),
+
+        /* Previous / Next Overlay Navigation Buttons */
+        docFiles.length > 1 ? /* @__PURE__ */ React.createElement(React.Fragment, null,
+          /* @__PURE__ */ React.createElement("button", {
+            onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: Math.max(0, activeIdx - 1) }),
+            disabled: activeIdx === 0,
+            className: "absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer transition text-xs font-bold",
+            title: "Previous Page"
+          }, "\u25C0"),
+          /* @__PURE__ */ React.createElement("button", {
+            onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: Math.min(docFiles.length - 1, activeIdx + 1) }),
+            disabled: activeIdx === docFiles.length - 1,
+            className: "absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 shadow-xl disabled:opacity-20 cursor-pointer transition text-xs font-bold",
+            title: "Next Page"
+          }, "\u25B6")
+        ) : null
+      ),
+
+      /* Multi-page Thumbnail Bar (if docFiles.length > 1) */
+      docFiles.length > 1 ? /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-slate-950 border-t border-slate-800 flex items-center gap-2 overflow-x-auto" },
+        docFiles.map((file, idx) => {
+          const thumbIsActive = idx === activeIdx;
+          const thumbIsPdf = file && file.toLowerCase().endsWith(".pdf");
+          return /* @__PURE__ */ React.createElement("button", {
+            key: idx,
+            onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: idx }),
+            className: "px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer border " + (
+              thumbIsActive
+                ? "bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400/40"
+                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+            ),
+            title: "View Page " + (idx + 1)
+          },
+            /* @__PURE__ */ React.createElement("span", null, "Page " + (idx + 1)),
+            thumbIsPdf ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-rose-400 uppercase font-mono" }, "PDF") : null
+          );
+        })
+      ) : null,
+
+      /* Footer Actions */
+      /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-2 flex-wrap" },
+        /* Left: Delete & Attach More */
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+          (viewingPodDoc.trip && currentFile && !isCurrentUrl) ? /* @__PURE__ */ React.createElement("button", {
+            onClick: () => handleDeletePodPage(viewingPodDoc.trip, currentFile),
+            className: "px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold rounded-xl text-xs flex items-center gap-1 transition cursor-pointer",
+            title: "Delete current page"
+          },
+            /* @__PURE__ */ React.createElement("span", null, "\uD83D\uDDD1"),
+            /* @__PURE__ */ React.createElement("span", null, "Delete Page")
+          ) : null,
+          viewingPodDoc.trip ? /* @__PURE__ */ React.createElement("label", {
+            className: "px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer",
+            title: "Attach more pages (auto-compressed)"
+          },
+            /* @__PURE__ */ React.createElement(UploadIcon, { className: "w-3.5 h-3.5" }),
+            /* @__PURE__ */ React.createElement("span", null, uploadingTripId === viewingPodDoc.trip.id ? "Compressing & Attaching..." : "+ Attach More"),
+            /* @__PURE__ */ React.createElement("input", {
+              type: "file",
+              multiple: true,
+              accept: "image/*,application/pdf",
+              className: "hidden",
+              onChange: (e) => handleUploadPod(e, viewingPodDoc.trip.id, false)
+            })
+          ) : null
+        ),
+
+        /* Right: Download & Close */
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+          currentFileUrl ? /* @__PURE__ */ React.createElement("a", {
+            href: currentFileUrl,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            download: true,
+            className: "px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+          },
+            /* @__PURE__ */ React.createElement(DownloadIcon, { className: "w-3.5 h-3.5" }),
+            /* @__PURE__ */ React.createElement("span", null, docFiles.length > 1 ? ("Download Page " + (activeIdx + 1)) : "Download File")
+          ) : null,
+          /* @__PURE__ */ React.createElement(Button, {
+            variant: "outline",
+            onClick: () => setViewingPodDoc(null),
+            className: "rounded-xl border-slate-700 text-slate-300"
+          }, "Close Preview")
+        )
+      )
+    )
   );
+})(), isCreatingLr && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-5 h-5 text-amber-400" }), /* @__PURE__ */ React.createElement("span", null, "Issue New Lorry Receipt / Consignment Note")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Generate official transporter consignment note (LR / Bilty) with automated tracking")), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setIsCreatingLr(false),
+      className: "p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
+    },
+    /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
+  )), /* @__PURE__ */ React.createElement("form", { onSubmit: handleSubmitCreateLr, className: "p-5 space-y-4 overflow-y-auto text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2" }, /* @__PURE__ */ React.createElement("label", { className: "font-bold text-slate-300 block" }, "Link to Existing Trip Log (Optional - auto-fills details):"), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: createForm.selectedTripId,
+      onChange: (e) => handleSelectTripForLr(e.target.value),
+      className: "w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl p-2.5 outline-none font-mono text-xs focus:border-amber-500 cursor-pointer"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Choose active trip from fleet register (or create standalone) --"),
+    trips.slice(0, 30).map((t) => /* @__PURE__ */ React.createElement("option", { key: t.id, value: t.id }, t.trip_id || t.id.slice(0, 8), " \u2022 ", t.truck_number || "Truck", " \u2022 ", getClientName(t), " \u2022 ", formatRoute(t), " (", formatTripDate(t.date), ")"))
+  )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "LR Number *"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      required: true,
+      value: createForm.lrNumber,
+      onChange: (e) => setCreateForm({ ...createForm, lrNumber: e.target.value }),
+      placeholder: "e.g. JBC/26-27/1001",
+      className: "bg-slate-950 border-slate-800 text-amber-400 font-mono font-bold"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "E-Way Bill Number"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.ewayBill,
+      onChange: (e) => setCreateForm({ ...createForm, ewayBill: e.target.value }),
+      placeholder: "e.g. 3412-8901-4521",
+      className: "bg-slate-950 border-slate-800 text-slate-100 font-mono"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Client / Bill-To Party *"), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: createForm.clientId,
+      onChange: (e) => {
+        const selId = e.target.value;
+        const cl = clientMap[selId];
+        const name = cl ? cl.company_name && cl.company_name !== "-" ? cl.company_name : cl.client_name || cl.name : "";
+        setCreateForm({
+          ...createForm,
+          clientId: selId,
+          clientName: name,
+          consignorName: name || createForm.consignorName
+        });
+      },
+      className: "w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none text-xs focus:border-amber-500 cursor-pointer"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Select Client from Master --"),
+    clientList.map((c) => {
+      const name = c.company_name && c.company_name.trim() !== "-" ? c.company_name : c.client_name || c.name || "Client";
+      return /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, name, " ", clientRequiresPod(c) ? "\u2605 (POD Required)" : "");
+    })
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Truck Number *"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      required: true,
+      value: createForm.truckNumber,
+      onChange: (e) => setCreateForm({ ...createForm, truckNumber: e.target.value }),
+      placeholder: "e.g. TG12U2637",
+      className: "bg-slate-950 border-slate-800 text-slate-100 font-mono"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Driver Name"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.driverName,
+      onChange: (e) => setCreateForm({ ...createForm, driverName: e.target.value }),
+      placeholder: "e.g. Suresh Edlai",
+      className: "bg-slate-950 border-slate-800 text-slate-100"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Driver Phone"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.driverPhone,
+      onChange: (e) => setCreateForm({ ...createForm, driverPhone: e.target.value }),
+      placeholder: "e.g. +91 98480 12345",
+      className: "bg-slate-950 border-slate-800 text-slate-100 font-mono"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Origin City / Depot *"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      required: true,
+      value: createForm.origin,
+      onChange: (e) => setCreateForm({ ...createForm, origin: e.target.value }),
+      placeholder: "e.g. Hyderabad",
+      className: "bg-slate-950 border-slate-800 text-slate-100"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Destination City / Terminal *"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      required: true,
+      value: createForm.destination,
+      onChange: (e) => setCreateForm({ ...createForm, destination: e.target.value }),
+      placeholder: "e.g. Warangal",
+      className: "bg-slate-950 border-slate-800 text-slate-100"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Consignor (Shipper Name)"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.consignorName,
+      onChange: (e) => setCreateForm({ ...createForm, consignorName: e.target.value }),
+      placeholder: "e.g. ITC Limited",
+      className: "bg-slate-950 border-slate-800 text-slate-100"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Consignee (Receiver Name)"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.consigneeName,
+      onChange: (e) => setCreateForm({ ...createForm, consigneeName: e.target.value }),
+      placeholder: "e.g. Consignee Logistics Ltd",
+      className: "bg-slate-950 border-slate-800 text-slate-100"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3.5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Total Freight (\u20B9) *"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      required: true,
+      type: "number",
+      value: createForm.freight,
+      onChange: (e) => setCreateForm({ ...createForm, freight: e.target.value }),
+      placeholder: "12500",
+      className: "bg-slate-950 border-slate-800 text-emerald-400 font-mono font-bold"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Total Packages"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.packagesCount,
+      onChange: (e) => setCreateForm({ ...createForm, packagesCount: e.target.value }),
+      placeholder: "10",
+      className: "bg-slate-950 border-slate-800 text-slate-100 font-mono"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Weight (Kg)"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.weightKg,
+      onChange: (e) => setCreateForm({ ...createForm, weightKg: e.target.value }),
+      placeholder: "4500",
+      className: "bg-slate-950 border-slate-800 text-slate-100 font-mono"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "font-semibold text-slate-400 block mb-1" }, "Goods Description"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: createForm.goodsDescription,
+      onChange: (e) => setCreateForm({ ...createForm, goodsDescription: e.target.value }),
+      placeholder: "e.g. Industrial Materials, Tobacco, FMCG Products",
+      className: "bg-slate-950 border-slate-800 text-slate-100"
+    }
+  )), /* @__PURE__ */ React.createElement("div", { className: "pt-3 border-t border-slate-800 flex items-center justify-end gap-2" }, /* @__PURE__ */ React.createElement(
+    Button,
+    {
+      type: "button",
+      variant: "outline",
+      onClick: () => setIsCreatingLr(false),
+      className: "rounded-xl border-slate-700 text-slate-300"
+    },
+    "Cancel"
+  ), /* @__PURE__ */ React.createElement(
+    Button,
+    {
+      type: "submit",
+      className: "rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold cursor-pointer"
+    },
+    "Create & Issue LR"
+  ))))), courierModalTrip && /* @__PURE__ */ React.createElement("div", {
+  className: "fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4",
+  style: { zIndex: 99999 }
+}, /* @__PURE__ */ React.createElement("div", {
+  className: "bg-[#0b141a] border border-blue-500/30 rounded-3xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl text-slate-100 font-sans"
+},
+  /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3" },
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" },
+      /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center text-lg" }, "🚚"),
+      /* @__PURE__ */ React.createElement("div", null,
+        /* @__PURE__ */ React.createElement("h3", { className: "font-black text-white text-base" }, "Log POD Courier Dispatch"),
+        /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" },
+          "Trip: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-amber-400" }, courierModalTrip.trip_id || courierModalTrip.id?.slice(0, 8)),
+          " • Truck: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, courierModalTrip.truck_number),
+          " • Client: ", /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-emerald-400" }, getClientName(courierModalTrip))
+        )
+      )
+    ),
+    /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      onClick: () => setCourierModalTrip(null),
+      className: "w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm font-bold cursor-pointer"
+    }, "✕")
+  ),
+  
+  (() => {
+    const req = isTripPodRequired(courierModalTrip);
+    const cName = getClientName(courierModalTrip);
+    return req
+      ? React.createElement("div", { className: "p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2 font-medium" },
+          "⚠️ POD Required: Client '", cName, "' requires physical hard-copy POD. Log courier docket below."
+        )
+      : React.createElement("div", { className: "p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 text-xs flex items-center gap-2" },
+          "ℹ️ POD Optional: Client '", cName, "' has 'POD Required' turned OFF. Physical couriering is not mandatory."
+        );
+  })(),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" },
+    /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Courier Company:"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5" },
+      ["DTDC", "Trackon", "Professional", "BlueDart", "Delhivery", "Speed Post", "Hand Delivery"].map(p =>
+        /* @__PURE__ */ React.createElement("button", {
+          key: p,
+          type: "button",
+          onClick: () => setCourierForm({ ...courierForm, partner: p }),
+          className: "px-2.5 py-1 rounded-xl text-xs font-bold transition cursor-pointer " + (courierForm.partner === p ? "bg-blue-600 text-white shadow-md scale-105" : "bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800")
+        }, p)
+      )
+    )
+  ),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" },
+    /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Docket / AWB Tracking Number:"),
+    /* @__PURE__ */ React.createElement("input", {
+      type: "text",
+      value: courierForm.awb,
+      onChange: (e) => setCourierForm({ ...courierForm, awb: e.target.value }),
+      placeholder: "e.g. D123456789 / 76543210",
+      className: "w-full h-9 px-3 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+    }),
+    courierForm.awb.trim() ? /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-blue-400 font-mono" },
+      "Live tracking link will be generated automatically for " + courierForm.partner
+    ) : null
+  ),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
+    /* @__PURE__ */ React.createElement("div", { className: "space-y-1" },
+      /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Dispatch Date:"),
+      /* @__PURE__ */ React.createElement("input", {
+        type: "date",
+        value: courierForm.date,
+        onChange: (e) => setCourierForm({ ...courierForm, date: e.target.value }),
+        className: "w-full h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-mono focus:outline-none"
+      })
+    ),
+    /* @__PURE__ */ React.createElement("div", { className: "space-y-1" },
+      /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Billing Desk / Attention:"),
+      /* @__PURE__ */ React.createElement("input", {
+        type: "text",
+        value: courierForm.recipient,
+        onChange: (e) => setCourierForm({ ...courierForm, recipient: e.target.value }),
+        placeholder: "e.g. Regional Billing Desk",
+        className: "w-full h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none"
+      })
+    )
+  ),
+  
+  /* @__PURE__ */ React.createElement("label", { className: "flex items-center gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer text-xs" },
+    /* @__PURE__ */ React.createElement("input", {
+      type: "checkbox",
+      checked: courierForm.isDelivered,
+      onChange: (e) => setCourierForm({ ...courierForm, isDelivered: e.target.checked }),
+      className: "rounded border-slate-700 text-emerald-500 focus:ring-0"
+    }),
+    /* @__PURE__ */ React.createElement("span", { className: "text-slate-200 font-medium" }, "Mark as officially received/acknowledged by client billing desk")
+  ),
+  
+  /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 pt-2 border-t border-slate-800" },
+    /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      onClick: () => handleSendCourierWhatsApp(courierModalTrip, courierForm),
+      disabled: !courierForm.awb.trim(),
+      className: "px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+    }, "📲 WhatsApp Client Notice"),
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+      /* @__PURE__ */ React.createElement("button", {
+        type: "button",
+        onClick: () => setCourierModalTrip(null),
+        className: "px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-bold text-slate-300 cursor-pointer"
+      }, "Cancel"),
+      /* @__PURE__ */ React.createElement("button", {
+        type: "button",
+        onClick: handleSaveCourier,
+        disabled: savingCourier,
+        className: "px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md shadow-blue-600/30 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+      }, savingCourier ? "Saving..." : "💾 Save Courier Details")
+    )
+  )
+)),
+editLrTrip && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl" }, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base" }, "Edit Lorry Receipt (LR) #"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400" }, "Trip: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, editLrTrip.trip_id || editLrTrip.id), " \u2022 Truck: ", /* @__PURE__ */ React.createElement("span", { className: "font-mono text-slate-200" }, editLrTrip.truck_number)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "text-xs text-slate-400 block mb-1.5 font-medium" }, "New LR Number:"), /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      value: newLrNumber,
+      onChange: (e) => setNewLrNumber(e.target.value),
+      placeholder: "e.g. JBC/26-27/1234",
+      className: "bg-slate-950 border-slate-700 font-mono text-amber-400 font-bold"
+    }
+  )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-2 pt-2" }, /* @__PURE__ */ React.createElement(
+    Button,
+    {
+      variant: "outline",
+      onClick: () => setEditLrTrip(null),
+      className: "rounded-xl border-slate-700 text-slate-300"
+    },
+    "Cancel"
+  ), /* @__PURE__ */ React.createElement(
+    Button,
+    {
+      onClick: handleSaveLrNumber,
+      className: "rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold cursor-pointer"
+    },
+    "Save LR Number"
+  )))));
 }
-
 export { LorryReceiptsPodHubPage as default };
