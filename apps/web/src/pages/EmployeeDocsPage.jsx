@@ -48,11 +48,20 @@ const ROLE_TABS = [
 ];
 
 const DOC_TYPE_COLORS = {
+  'Aadhaar Card':        { bg: 'bg-orange-500/15',  text: 'text-orange-400',  border: 'border-orange-500/25'  },
+  'Aadhar':              { bg: 'bg-orange-500/15',  text: 'text-orange-400',  border: 'border-orange-500/25'  },
+  'PAN Card':            { bg: 'bg-indigo-500/15',  text: 'text-indigo-400',  border: 'border-indigo-500/25'  },
+  'PAN':                 { bg: 'bg-indigo-500/15',  text: 'text-indigo-400',  border: 'border-indigo-500/25'  },
+  'Bank Passbook':       { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/25' },
+  'Cancelled Cheque':    { bg: 'bg-teal-500/15',    text: 'text-teal-400',    border: 'border-teal-500/25'    },
+  'Driving License':     { bg: 'bg-blue-500/15',    text: 'text-blue-400',    border: 'border-blue-500/25'    },
   'License':             { bg: 'bg-blue-500/15',    text: 'text-blue-400',    border: 'border-blue-500/25'    },
-  'Certification':       { bg: 'bg-violet-500/15',  text: 'text-violet-400',  border: 'border-violet-500/25'  },
-  'ID Proof':            { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/25'   },
+  'Voter ID':            { bg: 'bg-purple-500/15',  text: 'text-purple-400',  border: 'border-purple-500/25'  },
   'Passport':            { bg: 'bg-cyan-500/15',    text: 'text-cyan-400',    border: 'border-cyan-500/25'    },
   'Bank Details':        { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/25' },
+  'Police Verification': { bg: 'bg-yellow-500/15',  text: 'text-yellow-400',  border: 'border-yellow-500/25'  },
+  'Certification':       { bg: 'bg-violet-500/15',  text: 'text-violet-400',  border: 'border-violet-500/25'  },
+  'ID Proof':            { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/25'   },
   'Employment Contract': { bg: 'bg-orange-500/15',  text: 'text-orange-400',  border: 'border-orange-500/25'  },
   'Medical Certificate': { bg: 'bg-rose-500/15',    text: 'text-rose-400',    border: 'border-rose-500/25'    },
   'Insurance':           { bg: 'bg-teal-500/15',    text: 'text-teal-400',    border: 'border-teal-500/25'    },
@@ -61,8 +70,22 @@ const DOC_TYPE_COLORS = {
 const getDocTypeColor = (type) => DOC_TYPE_COLORS[type] || DOC_TYPE_COLORS['Other'];
 
 const DOC_TYPES = [
-  'License','Certification','ID Proof','Passport','Bank Details',
-  'Employment Contract','Medical Certificate','Insurance','Other'
+  'Aadhaar Card',
+  'PAN Card',
+  'Bank Passbook',
+  'Cancelled Cheque',
+  'Driving License',
+  'License',
+  'Voter ID',
+  'Passport',
+  'Bank Details',
+  'Police Verification',
+  'Certification',
+  'ID Proof',
+  'Employment Contract',
+  'Medical Certificate',
+  'Insurance',
+  'Other'
 ];
 
 /* ─── Helpers ───────────────────────────────────────────────────────────────── */
@@ -517,14 +540,19 @@ export default function EmployeeDocsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.employee_id || !formData.document_type || !formData.expiry_date)
+    const isNonExpiring = ['Aadhaar Card', 'Aadhar', 'PAN Card', 'PAN', 'Bank Passbook', 'Cancelled Cheque', 'Bank Details'].includes(formData.document_type);
+    const effectiveExpiry = formData.expiry_date || (isNonExpiring ? '2099-12-31' : '');
+
+    if (!formData.employee_id || !formData.document_type || (!formData.expiry_date && !isNonExpiring))
       return toast.error('Please fill required fields (Employee, Type, Expiry Date)');
     setIsSubmitting(true);
     try {
       const data = new FormData();
       Object.keys(formData).forEach(key => {
-        if (formData[key]) {
-          if (key === 'issue_date' || key === 'expiry_date') data.append(key, new Date(formData[key]).toISOString());
+        if (key === 'expiry_date') {
+          data.append(key, new Date(effectiveExpiry).toISOString());
+        } else if (formData[key]) {
+          if (key === 'issue_date') data.append(key, new Date(formData[key]).toISOString());
           else data.append(key, formData[key]);
         }
       });
@@ -993,7 +1021,11 @@ export default function EmployeeDocsPage() {
                 <Input id="iss_date" type="date" className="rounded-xl dark:[color-scheme:dark]" value={formData.issue_date} onChange={e => setFormData(p => ({ ...p, issue_date: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="exp_date">Expiry Date *</Label>
+                <Label htmlFor="exp_date">
+                  {['Aadhaar Card', 'Aadhar', 'PAN Card', 'PAN', 'Bank Passbook', 'Cancelled Cheque', 'Bank Details'].includes(formData.document_type) 
+                    ? 'Expiry Date (Optional / Lifetime)' 
+                    : 'Expiry Date *'}
+                </Label>
                 <Input id="exp_date" type="date" className="rounded-xl dark:[color-scheme:dark]" value={formData.expiry_date} onChange={e => setFormData(p => ({ ...p, expiry_date: e.target.value }))} />
               </div>
             </div>

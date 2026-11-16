@@ -1212,9 +1212,17 @@ const EmployeeDatabasePage = () => {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent className="rounded-lg">
-                                    <SelectItem value="ID Proof">ID Proof (Aadhaar / Passport)</SelectItem>
-                                    <SelectItem value="License">Driving License</SelectItem>
+                                    <SelectItem value="Aadhaar Card">Aadhaar Card</SelectItem>
+                                    <SelectItem value="PAN Card">PAN Card</SelectItem>
+                                    <SelectItem value="Bank Passbook">Bank Passbook</SelectItem>
+                                    <SelectItem value="Cancelled Cheque">Cancelled Cheque</SelectItem>
+                                    <SelectItem value="Driving License">Driving License</SelectItem>
+                                    <SelectItem value="License">License</SelectItem>
+                                    <SelectItem value="Voter ID">Voter ID</SelectItem>
+                                    <SelectItem value="Passport">Passport</SelectItem>
                                     <SelectItem value="Bank Details">Bank Account Details</SelectItem>
+                                    <SelectItem value="Police Verification">Police Verification</SelectItem>
+                                    <SelectItem value="ID Proof">ID Proof (Aadhaar / Passport)</SelectItem>
                                     <SelectItem value="Employment Contract">Employment Contract</SelectItem>
                                     <SelectItem value="Medical Certificate">Medical Certificate</SelectItem>
                                     <SelectItem value="Insurance">Insurance Policy</SelectItem>
