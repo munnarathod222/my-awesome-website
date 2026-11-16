@@ -23,6 +23,25 @@ import SendMailDialog from '@/components/SendMailDialog.jsx';
 import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
 import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
 
+export function getTruckDocFiles(doc) {
+  if (!doc) return [];
+  const list = [];
+  if (Array.isArray(doc.files)) {
+    doc.files.forEach(f => { if (f && typeof f === 'string' && f.trim()) list.push(f.trim()); });
+  } else if (typeof doc.files === 'string' && doc.files.trim()) {
+    list.push(doc.files.trim());
+  }
+  if (Array.isArray(doc.file)) {
+    doc.file.forEach(f => { if (f && typeof f === 'string' && f.trim()) list.push(f.trim()); });
+  } else if (typeof doc.file === 'string' && doc.file.trim()) {
+    list.push(doc.file.trim());
+  }
+  if (typeof doc.back_file === 'string' && doc.back_file.trim()) {
+    list.push(doc.back_file.trim());
+  }
+  return Array.from(new Set(list)).slice(0, 5);
+}
+
 const TruckDocsPage = () => {
   const [searchParams] = useSearchParams();
   const truckIdParam = searchParams.get('truckId');
@@ -181,11 +200,10 @@ const TruckDocsPage = () => {
     notes: '',
     status: 'Active'
   });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [frontFile, setFrontFile] = useState(null);
-  const [backFile, setBackFile] = useState(null);
+  const [newFiles, setNewFiles] = useState([]);
+  const [existingFiles, setExistingFiles] = useState([]);
 
-  const docTypes = ['RC', 'Insurance', 'Permit', 'License', 'Fitness Certificate', 'Pollution Certificate', 'Other'];
+  const docTypes = ['RC', 'Insurance', 'Permit', 'License', 'Fitness Certificate', 'Pollution Certificate', 'Road Tax', 'Other'];
 
   const fetchData = async () => {
     setLoading(true);
@@ -261,11 +279,12 @@ const TruckDocsPage = () => {
         notes: doc.notes || '',
         status: doc.status || 'Active'
       });
+      setExistingFiles(getTruckDocFiles(doc));
     } else {
       setEditingDoc(null);
       setFormData({
-        truck_id: '',
-        document_type: '',
+        truck_id: selectedTruckFolder || '',
+        document_type: 'RC',
         document_number: '',
         helpline_number: '',
         issue_date: '',
@@ -273,19 +292,42 @@ const TruckDocsPage = () => {
         notes: '',
         status: 'Active'
       });
+      setExistingFiles([]);
     }
-    setSelectedFile(null);
-    setFrontFile(null);
-    setBackFile(null);
+    setNewFiles([]);
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingDoc(null);
-    setSelectedFile(null);
-    setFrontFile(null);
-    setBackFile(null);
+    setNewFiles([]);
+    setExistingFiles([]);
+  };
+
+  const handleAddFiles = (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
+    const currentTotal = existingFiles.length + newFiles.length;
+    const remainingSlots = 5 - currentTotal;
+    if (remainingSlots <= 0) {
+      toast.error('Maximum 5 files allowed per document.');
+      return;
+    }
+    const filesToAdd = selected.slice(0, remainingSlots);
+    if (selected.length > remainingSlots) {
+      toast.warning(`Only ${remainingSlots} more file(s) can be attached (maximum 5 files allowed).`);
+    }
+    setNewFiles(prev => [...prev, ...filesToAdd]);
+    e.target.value = '';
+  };
+
+  const handleRemoveNewFile = (index) => {
+    setNewFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveExistingFile = (index) => {
+    setExistingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -306,15 +348,24 @@ const TruckDocsPage = () => {
           }
         }
       });
-      if (frontFile && backFile) {
-        data.append('file', frontFile);
-        data.append('back_file', backFile);
-      } else if (frontFile) {
-        data.append('file', frontFile);
-      } else if (backFile) {
-        data.append('back_file', backFile);
-      } else if (selectedFile) {
-        data.append('file', selectedFile);
+
+      // Append up to 5 attached files
+      // 1. Existing kept files
+      existingFiles.forEach(f => {
+        data.append('files', f);
+      });
+      // 2. New uploaded files
+      newFiles.forEach(f => {
+        data.append('files', f);
+      });
+
+      // Backward compatibility for components expecting 'file' and 'back_file'
+      const allFiles = [...existingFiles, ...newFiles];
+      if (allFiles.length > 0) {
+        data.append('file', allFiles[0]);
+      }
+      if (allFiles.length > 1) {
+        data.append('back_file', allFiles[1]);
       }
 
       if (editingDoc) {
@@ -476,7 +527,8 @@ const TruckDocsPage = () => {
   // Document File Card Component (Sub-view files grid)
   const DocumentFileCard = ({ doc }) => {
     const stat = getStatusInfo(doc.expiry_date);
-    const hasFile = Boolean(doc.file || doc.files || doc.back_file || doc.back_page);
+    const docFiles = getTruckDocFiles(doc);
+    const hasFile = docFiles.length > 0;
 
     return (
       <Card className="overflow-hidden border border-border/50 bg-card rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col p-5 space-y-4">
@@ -515,8 +567,8 @@ const TruckDocsPage = () => {
         <div className="pt-3 border-t border-border/40 flex justify-between items-center gap-2 mt-auto">
           <div className="flex gap-1">
             {hasFile && (
-              <Button variant="outline" size="sm" className="h-8 rounded-xl px-2 text-primary border-primary/20 hover:bg-primary/5 shadow-none" onClick={() => setPreviewDoc(doc)}>
-                <Eye className="w-3.5 h-3.5 mr-1" /> View
+              <Button variant="outline" size="sm" className="h-8 rounded-xl px-2 text-primary border-primary/20 hover:bg-primary/5 shadow-none text-xs font-semibold" onClick={() => setPreviewDoc(doc)}>
+                <Eye className="w-3.5 h-3.5 mr-1" /> View ({docFiles.length} {docFiles.length === 1 ? 'Doc' : 'Docs'})
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-secondary rounded-lg text-blue-400" onClick={() => triggerEmailDoc(doc)} title="Email Document">
@@ -777,8 +829,8 @@ const TruckDocsPage = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              {doc.file && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setPreviewDoc(doc)}>
+                              {getTruckDocFiles(doc).length > 0 && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setPreviewDoc(doc)} title={`View ${getTruckDocFiles(doc).length} document file(s)`}>
                                   <Eye className="w-4 h-4" />
                                 </Button>
                               )}
@@ -1004,42 +1056,114 @@ const TruckDocsPage = () => {
               </div>
             </div>
 
-            <div className="space-y-2 p-3 bg-slate-900/60 rounded-2xl border border-slate-800">
-              <Label className="text-xs font-bold text-slate-200">Upload Document Pages (Front Page & Back Page)</Label>
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1">
-                  <Label htmlFor="file_front_truck" className="text-[11px] font-bold text-emerald-400">
-                    📄 Front Page (Front Side) *
+            <div className="space-y-3 p-3.5 bg-slate-900/70 rounded-2xl border border-slate-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-primary" />
+                    Document Attachments (Up to 5 Files)
                   </Label>
-                  <Input 
-                    id="file_front_truck"
-                    type="file" 
-                    accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
-                    onChange={(e) => setFrontFile(e.target.files[0])}
-                    className="text-xs"
-                  />
-                  {frontFile && <p className="text-[10px] text-emerald-400 truncate">Selected: {frontFile.name}</p>}
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Attach front, back, tax challans, receipts, or endorsements (Max 5 files).
+                  </p>
                 </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="file_back_truck" className="text-[11px] font-bold text-amber-400">
-                    📄 Back Page (Back Side)
-                  </Label>
-                  <Input 
-                    id="file_back_truck"
-                    type="file" 
-                    accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
-                    onChange={(e) => setBackFile(e.target.files[0])}
-                    className="text-xs"
-                  />
-                  {backFile && <p className="text-[10px] text-amber-400 truncate">Selected: {backFile.name}</p>}
-                </div>
+                <Badge variant="outline" className={`font-mono text-[10px] font-bold ${
+                  (existingFiles.length + newFiles.length) >= 5 
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                    : 'bg-primary/10 text-primary border-primary/20'
+                }`}>
+                  {existingFiles.length + newFiles.length} / 5 Files
+                </Badge>
               </div>
-              {editingDoc?.file && !frontFile && !selectedFile && (
-                <p className="text-[10px] text-slate-400 pt-1">Current Front: {editingDoc.file}</p>
+
+              {/* List of Attached Files */}
+              {(existingFiles.length > 0 || newFiles.length > 0) && (
+                <div className="space-y-1.5 pt-1">
+                  {/* Existing Files from PB */}
+                  {existingFiles.map((file, idx) => (
+                    <div key={`existing-${idx}`} className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold shrink-0">
+                          Doc {idx + 1}
+                        </span>
+                        <span className="text-slate-300 truncate font-mono text-[11px]">{file}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a 
+                          href={editingDoc ? pb.files.getUrl(editingDoc, file) : '#'} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-2 py-1 text-[10px] text-primary hover:underline font-bold"
+                        >
+                          View ↗
+                        </a>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 text-destructive hover:bg-destructive/10 rounded-lg"
+                          onClick={() => handleRemoveExistingFile(idx)}
+                          title="Remove this document"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Newly selected files */}
+                  {newFiles.map((file, idx) => (
+                    <div key={`new-${idx}`} className="flex items-center justify-between p-2 rounded-xl bg-slate-950/80 border border-primary/30 text-xs">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="px-2 py-0.5 rounded-md bg-primary/20 text-primary font-mono text-[10px] font-bold shrink-0">
+                          Doc {existingFiles.length + idx + 1} (New)
+                        </span>
+                        <span className="text-slate-200 truncate font-mono text-[11px]">{file.name}</span>
+                        <span className="text-[10px] text-slate-500">({(file.size / 1024).toFixed(0)} KB)</span>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10 rounded-lg shrink-0"
+                        onClick={() => handleRemoveNewFile(idx)}
+                        title="Remove file"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               )}
-              {editingDoc?.back_file && !backFile && (
-                <p className="text-[10px] text-amber-400/80 pt-1">Current Back: {editingDoc.back_file}</p>
+
+              {/* Upload Drop Zone / Button (if under 5 files) */}
+              {(existingFiles.length + newFiles.length) < 5 ? (
+                <div className="pt-1">
+                  <label 
+                    htmlFor="multi_doc_upload_input"
+                    className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-slate-700 hover:border-primary/50 bg-slate-950/40 hover:bg-slate-950/80 rounded-2xl cursor-pointer transition text-center group"
+                  >
+                    <UploadCloud className="w-5 h-5 text-slate-400 group-hover:text-primary transition mb-1" />
+                    <span className="text-xs font-bold text-slate-300 group-hover:text-white">
+                      + Add Documents / Pages ({5 - (existingFiles.length + newFiles.length)} remaining)
+                    </span>
+                    <span className="text-[10px] text-slate-500 mt-0.5">
+                      Select PDF or Images (Supports multi-select, up to 5 files max)
+                    </span>
+                    <input 
+                      id="multi_doc_upload_input"
+                      type="file" 
+                      multiple 
+                      accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleAddFiles}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <p className="text-[11px] text-amber-400/90 text-center font-medium bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
+                  ✓ Maximum 5 attachments limit reached for this document.
+                </p>
               )}
             </div>
 

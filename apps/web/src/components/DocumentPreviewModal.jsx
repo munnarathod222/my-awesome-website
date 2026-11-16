@@ -11,35 +11,44 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
 
   const helplineNum = document?.helpline_number || document?.insurance_helpline || document?.helpline || '';
 
-  // Extract all document files
+  // Extract all document files (supporting up to 5 attachments)
   const filesList = React.useMemo(() => {
     if (!document) return [];
 
-    // Prioritize clean Front and Back pair if both exist
-    const front = (typeof document.file === 'string' && document.file) || (Array.isArray(document.file) && document.file[0]);
-    const back = (typeof document.back_file === 'string' && document.back_file) || (typeof document.back_page === 'string' && document.back_page);
-    if (front && back && front !== back) {
-      return [front, back];
-    }
-
-    // If multiple attached files or files array
-    if (Array.isArray(document.files) && document.files.length > 0) {
-      return Array.from(new Set(document.files.filter(Boolean)));
-    }
-
-    if (Array.isArray(document.attached_files) && document.attached_files.length > 0) {
-      const att = document.attached_files.map(f => typeof f === 'string' ? f : (f?.file_url || f?.url)).filter(Boolean);
-      if (att.length > 0) return Array.from(new Set(att));
-    }
-
     const list = [];
-    if (front) list.push(front);
-    if (back && back !== front) list.push(back);
-    if (typeof document.file_url === 'string' && document.file_url) list.push(document.file_url);
-    if (typeof document.url === 'string' && document.url) list.push(document.url);
-    if (typeof document.files === 'string' && document.files) list.push(document.files);
 
-    return Array.from(new Set(list.filter(Boolean)));
+    // 1. If files array exists
+    if (Array.isArray(document.files)) {
+      list.push(...document.files);
+    } else if (typeof document.files === 'string' && document.files.trim()) {
+      list.push(document.files.trim());
+    }
+
+    // 2. If file field exists (array or single string)
+    if (Array.isArray(document.file)) {
+      list.push(...document.file);
+    } else if (typeof document.file === 'string' && document.file.trim()) {
+      list.push(document.file.trim());
+    }
+
+    // 3. If back_file exists
+    if (typeof document.back_file === 'string' && document.back_file.trim()) {
+      list.push(document.back_file.trim());
+    } else if (Array.isArray(document.back_file)) {
+      list.push(...document.back_file);
+    }
+
+    // 4. If attached_files exists
+    if (Array.isArray(document.attached_files)) {
+      const att = document.attached_files.map(f => typeof f === 'string' ? f : (f?.file_url || f?.url)).filter(Boolean);
+      list.push(...att);
+    }
+
+    if (typeof document.file_url === 'string' && document.file_url.trim()) list.push(document.file_url.trim());
+    if (typeof document.url === 'string' && document.url.trim()) list.push(document.url.trim());
+
+    // Deduplicate and support up to 5 files
+    return Array.from(new Set(list.filter(f => f && typeof f === 'string' && f.trim() !== ''))).slice(0, 5);
   }, [document]);
 
   useEffect(() => {
