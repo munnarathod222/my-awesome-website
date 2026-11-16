@@ -1624,7 +1624,17 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
   const [selectedCity, setSelectedCity] = useState("all");
   const [filterEmergencyOnly, setFilterEmergencyOnly] = useState(false);
   const [filterPreferredOnly, setFilterPreferredOnly] = useState(false);
-  const [viewMode, setViewMode] = useState(() => (typeof window !== "undefined" && window.innerWidth < 768 ? "grid" : "table"));
+  const [viewMode, setViewMode] = useState(() => (typeof window !== "undefined" && window.innerWidth < 1024 ? "grid" : "table"));
+  h.useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        setViewMode("grid");
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkAction, setBulkAction] = useState("");
   const [bulkParam, setBulkParam] = useState("");
@@ -1768,8 +1778,8 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       }
     }
   };
-  return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-    /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2", children: MAIN_GROUPS_CONFIG.map((g) => {
+  return /* @__PURE__ */ jsxs("div", { className: "space-y-4 w-full max-w-full overflow-hidden min-w-0", children: [
+    /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none w-full max-w-full sm:grid sm:grid-cols-4 lg:grid-cols-8 shrink-0", children: MAIN_GROUPS_CONFIG.map((g) => {
       const isActive = selectedGroup === g.title;
       const count = groupCounts[g.title] || 0;
       return /* @__PURE__ */ jsxs(
@@ -1815,7 +1825,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none text-xs w-full sm:flex-wrap shrink-0", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none text-xs w-full max-w-full flex-nowrap shrink-0", children: [
           /* @__PURE__ */ jsxs(
             "select",
             {
@@ -2131,7 +2141,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       }) })
     ] }) }) }) : (
       /* GRID CARD VIEW */
-      /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5", children: filteredContacts.map((contact) => {
+      /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 w-full min-w-0", children: filteredContacts.map((contact) => {
         const isSelected = selectedIds.includes(contact.id);
         const brands = safeParseArray(contact.truck_brands);
         const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
@@ -2158,7 +2168,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
                     /* @__PURE__ */ jsx(
                       "h4",
                       {
-                        className: "font-bold text-sm text-foreground truncate cursor-pointer hover:text-primary",
+                        className: "font-bold text-sm sm:text-base text-foreground break-words leading-snug cursor-pointer hover:text-primary",
                         onClick: () => onOpenDetail(contact),
                         children: contact.company_name
                       }
