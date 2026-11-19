@@ -150,6 +150,308 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
     );
   }, [driverBleed.driverList, driverSearch]);
 
+  // 🖨️ PRINT SETTLEMENT MEMO FOR DRIVER
+  const printDriverSettlement = (d) => {
+    if (!d) return;
+    const w = window.open("", "_blank", "width=850,height=900");
+    if (!w) {
+      R.error("Pop-up blocked. Please allow pop-ups to print settlement memo.");
+      return;
+    }
+    const todayStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const memoRef = "JBC/THEFT/" + (d.truck_number || "TRK").replace(/\s+/g, "") + "/" + Date.now().toString().slice(-6);
+
+    const rowsHtml = (d.incidents || []).map((inc, i) => `
+      <tr>
+        <td style="text-align:center;">${i + 1}</td>
+        <td>${inc.incident_date ? inc.incident_date.split("T")[0] : "—"}</td>
+        <td style="font-weight:bold;">${inc.truck_number || d.truck_number}</td>
+        <td>${inc.petrol_pump_name || "Fuel Station"}</td>
+        <td style="text-align:right; font-family:monospace;">${inc.billed_liters || 0} L</td>
+        <td style="text-align:right; font-family:monospace;">${inc.sensor_liters || 0} L</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">-${inc.stolen_liters || 0} L</td>
+        <td style="text-align:right; font-family:monospace;">₹${inc.fuel_rate || 94.5}</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">₹${Number(inc.bleeding_amount || 0).toLocaleString("en-IN")}</td>
+        <td style="text-align:center; font-size:10px;">${inc.status || "Reported"}</td>
+        <td style="font-size:10px; font-style:italic;">${inc.notes || "—"}</td>
+      </tr>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fuel Theft Settlement Memo - ${d.driver_name}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 12px; font-size: 11px; line-height: 1.35; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .company-title { font-size: 18px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; color: #0f172a; }
+    .company-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+    .memo-badge { display: inline-block; background: #be123c; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; }
+    .ref-box { text-align: right; font-size: 10px; color: #64748b; font-family: monospace; }
+    .ref-title { font-weight: bold; font-size: 11px; color: #0f172a; }
+    
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; }
+    .meta-item { display: flex; justify-content: space-between; font-size: 11px; }
+    .meta-label { color: #64748b; }
+    .meta-val { font-weight: bold; color: #0f172a; }
+
+    .kpi-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+    .kpi-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center; background: #ffffff; }
+    .kpi-box.bleed { background: #fff1f2; border-color: #fecdd3; }
+    .kpi-box.rec { background: #f0fdf4; border-color: #bbf7d0; }
+    .kpi-title { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+    .kpi-val { font-size: 15px; font-weight: 900; margin-top: 2px; font-family: monospace; }
+    .kpi-box.bleed .kpi-val { color: #be123c; }
+    .kpi-box.rec .kpi-val { color: #16a34a; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10px; }
+    th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; font-size: 9px; text-transform: uppercase; font-weight: bold; }
+    td { border: 1px solid #cbd5e1; padding: 5px 6px; }
+
+    .clause-box { background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #be123c; border-radius: 4px; padding: 8px 10px; margin-bottom: 20px; font-size: 10px; text-align: justify; line-height: 1.4; }
+    
+    .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; margin-top: 25px; page-break-inside: avoid; }
+    .sig-box { border-top: 1px dashed #475569; padding-top: 6px; }
+    .sig-title { font-weight: bold; font-size: 10px; color: #0f172a; }
+    .sig-sub { font-size: 9px; color: #64748b; margin-top: 2px; }
+
+    .print-actions { margin-bottom: 12px; display: flex; gap: 8px; }
+    .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid #0f172a; background: #0f172a; color: #fff; cursor: pointer; font-size: 11px; font-weight: bold; }
+    .btn-secondary { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions no-print">
+    <button class="btn" onclick="window.print()">🖨️ Print Document</button>
+    <button class="btn btn-secondary" onclick="window.close()">✕ Close Window</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <h1 class="company-title">JAI BHAVANI CARGO</h1>
+      <div class="company-sub">Fleet Operations & Fuel Telematics Audit Division • Tel: +91 96669 73085</div>
+      <div class="memo-badge">Driver Fuel Shortfall Settlement Statement</div>
+    </div>
+    <div class="ref-box">
+      <div class="ref-title">AUDIT MEMORANDUM</div>
+      <div>Ref: ${memoRef}</div>
+      <div>Date: ${todayStr}</div>
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div>
+      <div class="meta-item"><span class="meta-label">Driver Name:</span> <span class="meta-val">${d.driver_name}</span></div>
+      <div class="meta-item"><span class="meta-label">Assigned Truck:</span> <span class="meta-val">${d.truck_number}</span></div>
+    </div>
+    <div>
+      <div class="meta-item"><span class="meta-label">Audit Scope:</span> <span class="meta-val">${d.count} Disparity Incident(s)</span></div>
+      <div class="meta-item"><span class="meta-label">Generated By:</span> <span class="meta-val">Fleet Management Portal</span></div>
+    </div>
+  </div>
+
+  <div class="kpi-container">
+    <div class="kpi-box">
+      <div class="kpi-title">Pilfered Fuel</div>
+      <div class="kpi-val" style="color:#d97706;">${d.stolen_liters} L</div>
+    </div>
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Total Bleed Loss</div>
+      <div class="kpi-val">₹${d.total_bleed.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box rec">
+      <div class="kpi-title">Recouped via Advance</div>
+      <div class="kpi-val">₹${d.total_recovered.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Net Balance Due</div>
+      <div class="kpi-val">₹${d.net_unrecovered.toLocaleString("en-IN")}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:20px; text-align:center;">#</th>
+        <th>Date</th>
+        <th>Vehicle</th>
+        <th>Petrol Pump</th>
+        <th style="text-align:right;">Billed</th>
+        <th style="text-align:right;">Sensor</th>
+        <th style="text-align:right;">Shortfall</th>
+        <th style="text-align:right;">Rate</th>
+        <th style="text-align:right;">Loss (₹)</th>
+        <th style="text-align:center;">Status</th>
+        <th>Notes / Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+
+  <div class="clause-box">
+    <strong>DRIVER SETTLEMENT & RECOVERY ACKNOWLEDGMENT:</strong><br>
+    I, <strong>${d.driver_name}</strong>, assigned to Vehicle No. <strong>${d.truck_number}</strong>, hereby acknowledge the fuel intake shortfall of <strong>${d.stolen_liters} Liters</strong> recorded by the IoT fuel tank sensor during the fuel refill operations itemized above. I confirm and accept the net financial loss of <strong>₹${d.net_unrecovered.toLocaleString("en-IN")}</strong>, and I agree to have this amount settled and adjusted against my driver trip advance ledger and/or salary without dispute.
+  </div>
+
+  <div class="sig-grid">
+    <div class="sig-box">
+      <div class="sig-title">Driver Signature / Thumb Impression</div>
+      <div class="sig-sub">Name: ${d.driver_name}</div>
+      <div class="sig-sub">Date: ________________________</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-title">Fleet Manager / Authorized Signature</div>
+      <div class="sig-sub">For: JAI BHAVANI CARGO</div>
+      <div class="sig-sub">Date: ${todayStr}</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+  };
+
+  // 🖨️ PRINT FLEET THEFT REPORT
+  const printFleetTheftSummary = () => {
+    const w = window.open("", "_blank", "width=900,height=900");
+    if (!w) {
+      R.error("Pop-up blocked. Please allow pop-ups to print fleet report.");
+      return;
+    }
+    const todayStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const memoRef = "JBC/FLEET-AUDIT/" + Date.now().toString().slice(-6);
+
+    const driverRowsHtml = driverBleed.driverList.map((d, i) => `
+      <tr>
+        <td style="text-align:center; font-weight:bold;">#${i + 1}</td>
+        <td style="font-weight:bold;">${d.driver_name}</td>
+        <td style="font-family:monospace;">${d.truck_number}</td>
+        <td style="text-align:center;">${d.count}</td>
+        <td style="text-align:right; font-family:monospace; color:#d97706; font-weight:bold;">${d.stolen_liters} L</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">₹${d.total_bleed.toLocaleString("en-IN")}</td>
+        <td style="text-align:right; font-family:monospace; color:#16a34a;">₹${d.total_recovered.toLocaleString("en-IN")}</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">₹${d.net_unrecovered.toLocaleString("en-IN")}</td>
+        <td style="text-align:center; font-size:10px; font-weight:bold;">${d.risk_level.toUpperCase()}</td>
+      </tr>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Fuel Theft Audit Report</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 12px; font-size: 11px; line-height: 1.35; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .company-title { font-size: 18px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; color: #0f172a; }
+    .company-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+    .memo-badge { display: inline-block; background: #0f172a; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; }
+    
+    .kpi-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+    .kpi-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center; background: #ffffff; }
+    .kpi-box.bleed { background: #fff1f2; border-color: #fecdd3; }
+    .kpi-title { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+    .kpi-val { font-size: 15px; font-weight: 900; margin-top: 2px; font-family: monospace; }
+    .kpi-box.bleed .kpi-val { color: #be123c; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10px; }
+    th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; font-size: 9px; text-transform: uppercase; font-weight: bold; }
+    td { border: 1px solid #cbd5e1; padding: 5px 6px; }
+
+    .print-actions { margin-bottom: 12px; display: flex; gap: 8px; }
+    .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid #0f172a; background: #0f172a; color: #fff; cursor: pointer; font-size: 11px; font-weight: bold; }
+    .btn-secondary { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions no-print">
+    <button class="btn" onclick="window.print()">🖨️ Print Report</button>
+    <button class="btn btn-secondary" onclick="window.close()">✕ Close Window</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <h1 class="company-title">JAI BHAVANI CARGO</h1>
+      <div class="company-sub">Fleet Operations & Fuel Telematics Audit Division • Tel: +91 96669 73085</div>
+      <div class="memo-badge">Comprehensive Fleet Fuel Theft & Disparity Audit</div>
+    </div>
+    <div style="text-align:right; font-size:10px; color:#64748b; font-family:monospace;">
+      <div style="font-weight:bold; font-size:11px; color:#0f172a;">EXECUTIVE AUDIT</div>
+      <div>Ref: ${memoRef}</div>
+      <div>Date: ${todayStr}</div>
+    </div>
+  </div>
+
+  <div class="kpi-container">
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Total Fleet Bleed</div>
+      <div class="kpi-val">₹${driverBleed.totalBleed.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Total Liters Pilfered</div>
+      <div class="kpi-val" style="color:#d97706;">${driverBleed.totalShortL} L</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Recouped via Advances</div>
+      <div class="kpi-val" style="color:#16a34a;">₹${driverBleed.totalRec.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Net Unrecovered Loss</div>
+      <div class="kpi-val">₹${driverBleed.netUnrecovered.toLocaleString("en-IN")}</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:12px; margin-bottom:6px; color:#0f172a;">Driver Bleed & Shortfall Scorecard</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:25px; text-align:center;">Rank</th>
+        <th>Driver Name</th>
+        <th>Assigned Truck</th>
+        <th style="text-align:center;">Refills</th>
+        <th style="text-align:right;">Shortfall (L)</th>
+        <th style="text-align:right;">Total Bleed (₹)</th>
+        <th style="text-align:right;">Recouped (₹)</th>
+        <th style="text-align:right;">Net Due (₹)</th>
+        <th style="text-align:center;">Risk Level</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${driverRowsHtml || '<tr><td colspan="9" style="text-align:center; padding:15px; color:#64748b;">No theft records logged.</td></tr>'}
+    </tbody>
+  </table>
+
+  <div style="margin-top:30px; border-top:1px dashed #64748b; padding-top:8px; display:flex; justify-content:space-between; font-size:10px; color:#64748b;">
+    <div>Certified True Copy of Telematics Records • JAI BHAVANI CARGO</div>
+    <div>Authorized Signatory: ____________________________________</div>
+  </div>
+</body>
+</html>`;
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+  };
+
   // Existing Mileage Drop Calculation
   const A = 94.5;
   const G = n.useMemo(() => {
@@ -233,15 +535,24 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
               })
             ]
           }),
-          e.jsx("div", {
-            className: "w-full sm:w-auto",
-            children: e.jsxs(y, {
-              size: "sm",
-              variant: "outline",
-              onClick: () => { u?.(); fetchTheftReports(); R.info("Refreshed telematics and theft reports."); },
-              className: "w-full sm:w-auto h-9 rounded-xl border-slate-700 bg-slate-800 text-xs font-bold shadow-sm text-slate-200 hover:bg-slate-700",
-              children: [e.jsx(Lt, { className: "w-3.5 h-3.5 mr-1.5" }), " Refresh Telematics"]
-            })
+          e.jsxs("div", {
+            className: "flex flex-wrap items-center gap-2 w-full sm:w-auto",
+            children: [
+              e.jsxs(y, {
+                size: "sm",
+                variant: "outline",
+                onClick: printFleetTheftSummary,
+                className: "flex-1 sm:flex-initial h-9 rounded-xl border-slate-700 bg-slate-800 text-xs font-bold shadow-sm text-slate-200 hover:bg-slate-700",
+                children: [e.jsx("span", { className: "mr-1.5", children: "🖨️" }), " Print Fleet Audit"]
+              }),
+              e.jsxs(y, {
+                size: "sm",
+                variant: "outline",
+                onClick: () => { u?.(); fetchTheftReports(); R.info("Refreshed telematics and theft reports."); },
+                className: "flex-1 sm:flex-initial h-9 rounded-xl border-slate-700 bg-slate-800 text-xs font-bold shadow-sm text-slate-200 hover:bg-slate-700",
+                children: [e.jsx(Lt, { className: "w-3.5 h-3.5 mr-1.5" }), " Refresh Telematics"]
+              })
+            ]
           })
         ]
       }),
@@ -416,13 +727,25 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                       ]
                     }),
 
-                    // Mobile Action Button
-                    e.jsx(y, {
-                      size: "sm",
-                      variant: "outline",
-                      onClick: ev => { ev.stopPropagation(); setSelectedDriver(d); },
-                      className: "w-full h-8 rounded-xl border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold",
-                      children: "Audit Timeline & Proofs (" + d.count + ")"
+                    // Mobile Action Button Row with Print
+                    e.jsxs("div", {
+                      className: "flex items-center gap-2 pt-1",
+                      children: [
+                        e.jsx(y, {
+                          size: "sm",
+                          variant: "outline",
+                          onClick: ev => { ev.stopPropagation(); setSelectedDriver(d); },
+                          className: "flex-1 h-8 rounded-xl border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold",
+                          children: "Audit Timeline (" + d.count + ")"
+                        }),
+                        e.jsx(y, {
+                          size: "sm",
+                          variant: "outline",
+                          onClick: ev => { ev.stopPropagation(); printDriverSettlement(d); },
+                          className: "h-8 px-3 rounded-xl border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-bold",
+                          children: "🖨️ Print"
+                        })
+                      ]
                     })
                   ]
                 }))
@@ -496,12 +819,24 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                           e.jsx("td", {
                             className: "p-3 pr-5 text-right",
                             onClick: ev => ev.stopPropagation(),
-                            children: e.jsx(y, {
-                              size: "sm",
-                              variant: "outline",
-                              onClick: () => setSelectedDriver(d),
-                              className: "h-7 text-xs px-2.5 rounded-lg border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold",
-                              children: "Audit Timeline"
+                            children: e.jsxs("div", {
+                              className: "flex items-center justify-end gap-1.5",
+                              children: [
+                                e.jsx(y, {
+                                  size: "sm",
+                                  variant: "outline",
+                                  onClick: () => setSelectedDriver(d),
+                                  className: "h-7 text-xs px-2.5 rounded-lg border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold",
+                                  children: "Audit Timeline"
+                                }),
+                                e.jsx(y, {
+                                  size: "sm",
+                                  variant: "outline",
+                                  onClick: ev => { ev.stopPropagation(); printDriverSettlement(d); },
+                                  className: "h-7 text-xs px-2 rounded-lg border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 font-bold",
+                                  children: "🖨️ Print"
+                                })
+                              ]
                             })
                           })
                         ]
@@ -749,7 +1084,25 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                 })
               ]
             }),
-            e.jsx(y, { onClick: () => setSelectedDriver(null), className: "w-full h-10 rounded-xl bg-slate-800 text-white hover:bg-slate-700 text-xs font-bold", children: "Close Audit" })
+            // Bottom Action Bar: Print Settlement Memo & Close
+            e.jsxs("div", {
+              className: "flex flex-col sm:flex-row items-center gap-2 pt-2",
+              children: [
+                e.jsxs(y, {
+                  onClick: () => printDriverSettlement(selectedDriver),
+                  className: "w-full sm:w-auto flex-1 h-10 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2",
+                  children: [
+                    e.jsx("span", { className: "text-base", children: "🖨️" }),
+                    " Print Settlement Memo (₹" + selectedDriver.net_unrecovered.toLocaleString("en-IN") + " Due)"
+                  ]
+                }),
+                e.jsx(y, {
+                  onClick: () => setSelectedDriver(null),
+                  className: "w-full sm:w-auto h-10 px-5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 text-xs font-bold",
+                  children: "Close Audit"
+                })
+              ]
+            })
           ]
         })
       }) : null,
