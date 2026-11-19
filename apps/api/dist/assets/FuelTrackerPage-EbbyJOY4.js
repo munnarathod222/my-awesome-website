@@ -319,7 +319,7 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
           e.jsxs("div", {
             className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1",
             children: [
-              e.jsx(ee, {
+              e.jsx("input", {
                 placeholder: "Search bleeder by driver name, truck number...",
                 value: driverSearch,
                 onChange: e => setDriverSearch(e.target.value),
@@ -514,7 +514,7 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
             e.jsxs("div", {
               className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2",
               children: [
-                e.jsx(ee, {
+                e.jsx("input", {
                   placeholder: "Search truck number, driver...",
                   value: K,
                   onChange: e => P(e.target.value),
