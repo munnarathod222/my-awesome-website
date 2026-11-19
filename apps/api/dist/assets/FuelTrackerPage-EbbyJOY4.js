@@ -94,125 +94,124 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
         driver_name: rep.driver_name || "Driver",
         truck_number: rep.truck_number || "—",
         count: 0,
-        stolen_liters: 0,
         total_bleed: 0,
+        stolen_liters: 0,
         total_recovered: 0,
+        net_unrecovered: 0,
         incidents: []
       };
       exD.count += 1;
-      exD.stolen_liters += sL;
       exD.total_bleed += bAmt;
+      exD.stolen_liters = Math.round((exD.stolen_liters + sL) * 100) / 100;
       if (isRec) exD.total_recovered += bAmt;
+      exD.net_unrecovered = Math.max(0, exD.total_bleed - exD.total_recovered);
+      if (rep.truck_number) exD.truck_number = rep.truck_number;
       exD.incidents.push(rep);
-      if (rep.truck_number && rep.truck_number !== "—") exD.truck_number = rep.truck_number;
       dMap.set(dKey, exD);
 
-      const pName = (rep.petrol_pump_name || "").trim();
-      if (pName) {
-        const exP = sMap.get(pName) || { pump_name: pName, count: 0, stolen_liters: 0, total_loss: 0 };
-        exP.count += 1;
-        exP.stolen_liters += sL;
-        exP.total_loss += bAmt;
-        sMap.set(pName, exP);
+      const sKey = (rep.petrol_pump_name || "").trim();
+      if (sKey && sKey.toLowerCase() !== "none" && sKey.toLowerCase() !== "fuel station") {
+        const exS = sMap.get(sKey) || { pump_name: sKey, count: 0, total_loss: 0, stolen_liters: 0 };
+        exS.count += 1;
+        exS.total_loss += bAmt;
+        exS.stolen_liters = Math.round((exS.stolen_liters + sL) * 100) / 100;
+        sMap.set(sKey, exS);
       }
     });
 
-    const dList = Array.from(dMap.values()).map(d => ({
-      ...d,
-      stolen_liters: Math.round(d.stolen_liters * 10) / 10,
-      net_unrecovered: Math.max(0, d.total_bleed - d.total_recovered),
-      risk_level: d.total_bleed >= 5000 ? "critical" : d.total_bleed >= 2000 ? "moderate" : "watchlist"
-    })).sort((a, b) => b.total_bleed - a.total_bleed);
+    const driverList = Array.from(dMap.values()).map(d => {
+      let risk_level = "low";
+      if (d.total_bleed >= 5000 || d.stolen_liters >= 50 || d.count >= 3) risk_level = "critical";
+      else if (d.total_bleed >= 2000 || d.stolen_liters >= 20 || d.count >= 2) risk_level = "moderate";
+      return { ...d, risk_level };
+    }).sort((a, b) => b.net_unrecovered - a.net_unrecovered || b.total_bleed - a.total_bleed);
 
-    const sList = Array.from(sMap.values()).sort((a, b) => b.total_loss - a.total_loss);
+    const stationList = Array.from(sMap.values()).sort((a, b) => b.count - a.count || b.total_loss - a.total_loss);
 
     return {
       totalBleed,
-      totalShortL: Math.round(totalShortL * 10) / 10,
+      totalShortL: Math.round(totalShortL * 100) / 100,
       totalRec,
       netUnrecovered: Math.max(0, totalBleed - totalRec),
-      driverList: dList,
-      stationList: sList,
-      topBleeder: dList[0] || null,
-      totalIncidents: theftReports.length
+      totalIncidents: theftReports.length,
+      driverList,
+      stationList,
+      topBleeder: driverList[0] || null
     };
   }, [theftReports]);
 
+  // Filtered Driver Leaderboard
   const filteredDrivers = n.useMemo(() => {
-    if (!driverSearch) return driverBleed.driverList;
+    if (!driverSearch.trim()) return driverBleed.driverList;
     const q = driverSearch.toLowerCase();
     return driverBleed.driverList.filter(d => 
-      (d.driver_name || "").toLowerCase().includes(q) ||
-      (d.truck_number || "").toLowerCase().includes(q)
+      (d.driver_name && d.driver_name.toLowerCase().includes(q)) ||
+      (d.truck_number && d.truck_number.toLowerCase().includes(q))
     );
   }, [driverBleed.driverList, driverSearch]);
 
-  // Existing Mileage Anomaly Calculations
+  // Existing Mileage Drop Calculation
   const A = 94.5;
   const G = n.useMemo(() => {
     const r = [];
     return (O || []).forEach(a => {
-      const i = a.truck_id || a.vehicle_id || a.truck_number;
-      const m = Object.values(M).find(re => re.id === i || re.truck_number === i) || {};
-      const k = Number(a.expected_mileage || m.expected_mileage || 5.8);
-      const D = parseFloat(a.distance || a.kms || a.distance_driven || 0);
-      const $ = parseFloat(a.liters || a.fuel_amount || 0);
-      const J = D > 0 && $ > 0 ? D / $ : 0;
-      let l = 0, b = !1, Y = 0, V = 0;
-      k > 0 && J > 0 && J < k && (l = Math.round((k - J) / k * 100), l >= 10 && (b = !0, Y = Math.max(0, Math.round(($ - D / k) * 10) / 10), V = Math.round(Y * A)));
-      r.push({
-        ...a,
-        truck_number: a.truck_number || m.truck_number || a.vehicle_id || "Fleet Truck",
-        expected_mileage: k,
-        actual_mileage: J > 0 ? Math.round(J * 100) / 100 : "—",
-        raw_actual: J,
-        efficiency_drop_pct: l,
-        is_anomaly: b || a.is_anomaly,
-        excess_liters_lost: Y,
-        financial_loss_inr: V,
-        investigation_status: a.investigation_status || (b ? "Open" : "Normal")
-      });
-    }), r;
-  }, [O, M]);
-
-  const C = n.useMemo(() => G.filter(r => {
-    if (!r.is_anomaly && U !== "all_logs") return !1;
-    if (K) {
-      const a = K.toLowerCase(), i = (r.truck_number || "").toLowerCase(), m = (r.driver_name || "").toLowerCase();
-      if (!i.includes(a) && !m.includes(a)) return !1;
-    }
-    return !(U === "high" && r.efficiency_drop_pct < 20 || U === "moderate" && (r.efficiency_drop_pct < 10 || r.efficiency_drop_pct >= 20) || p !== "all" && r.investigation_status !== p);
-  }), [G, K, U, p]);
+      const i = a.truck_id || a.vehicle_id || a.truck_number,
+        m = Object.values(M).find(re => re.id === i || re.truck_number === i) || {},
+        k = Number(a.expected_mileage || m.expected_mileage || 5.8),
+        D = parseFloat(a.distance || a.kms || a.distance_driven || 0),
+        $ = parseFloat(a.liters || a.fuel_amount || 0),
+        J = D > 0 && $ > 0 ? D / $ : 0;
+      if (J > 0 && k > 0) {
+        const oe = (k - J) / k;
+        if (oe >= 0.1) {
+          const te = Math.max(0, $ - D / k),
+            de = te * A;
+          r.push({
+            id: a.id,
+            date: a.date,
+            truck_id: i,
+            truck_number: a.truck_number || m.truck_number || "Unknown Truck",
+            driver_name: a.driver_name || m.driver_name || "Fleet Driver",
+            actual_mileage: Number(J.toFixed(2)),
+            expected_mileage: k,
+            efficiency_drop_pct: Number((oe * 100).toFixed(1)),
+            distance_driven: D,
+            liters: $,
+            excess_liters_lost: Number(te.toFixed(1)),
+            financial_loss_inr: Math.round(de),
+            notes: a.notes || "",
+            raw_log: a
+          });
+        }
+      }
+    }), r.sort((a, i) => new Date(i.date || 0) - new Date(a.date || 0));
+  }, [O, M, A]);
 
   const L = n.useMemo(() => {
-    const r = G.filter(D => D.is_anomaly);
-    let a = 0, i = 0, m = 0, k = 0;
-    return r.forEach(D => {
-      a += D.excess_liters_lost || 0;
-      i += D.financial_loss_inr || 0;
-      D.investigation_status === "Resolved - Maintenance" || D.investigation_status === "Closed - No Theft" ? k++ : m++;
+    let r = 0, a = 0;
+    return G.forEach(i => {
+      r += i.excess_liters_lost || 0, a += i.financial_loss_inr || 0;
     }), {
-      totalAnomalies: r.length,
-      totalLitersLost: Math.round(a),
-      totalCostLost: Math.round(i),
-      openCount: m,
-      resolvedCount: k
+      totalAnomalies: G.length,
+      totalLitersLost: Math.round(r),
+      totalCostLost: Math.round(a)
     };
   }, [G]);
 
   const fmtInr = (amt) => "₹" + Number(amt || 0).toLocaleString("en-IN");
 
   return e.jsxs("div", {
-    className: "space-y-6",
+    className: "space-y-4 sm:space-y-6 pb-20 sm:pb-12 text-slate-100",
     children: [
-      // Top Header
+      // Top Header Card
       e.jsxs("div", {
-        className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur shadow-xl",
+        className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl",
         children: [
           e.jsxs("div", {
+            className: "space-y-1",
             children: [
               e.jsxs("div", {
-                className: "flex items-center gap-2 mb-1",
+                className: "flex flex-wrap items-center gap-2",
                 children: [
                   e.jsx(E, {
                     className: "bg-rose-500/20 text-rose-300 border-rose-500/30 text-[10px] font-mono font-bold",
@@ -235,26 +234,26 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
             ]
           }),
           e.jsx("div", {
-            className: "flex items-center gap-2 w-full sm:w-auto",
+            className: "w-full sm:w-auto",
             children: e.jsxs(y, {
               size: "sm",
               variant: "outline",
               onClick: () => { u?.(); fetchTheftReports(); R.info("Refreshed telematics and theft reports."); },
-              className: "w-full sm:w-auto rounded-xl border-slate-700 bg-slate-800 text-xs font-bold shadow-sm text-slate-200",
+              className: "w-full sm:w-auto h-9 rounded-xl border-slate-700 bg-slate-800 text-xs font-bold shadow-sm text-slate-200 hover:bg-slate-700",
               children: [e.jsx(Lt, { className: "w-3.5 h-3.5 mr-1.5" }), " Refresh Telematics"]
             })
           })
         ]
       }),
 
-      // Sub-Tab Switcher Pills
+      // Sub-Tab Switcher Pills (Horizontal swipe on mobile)
       e.jsxs("div", {
-        className: "flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900/80 border border-slate-800 w-full sm:w-auto self-start",
+        className: "flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900/80 border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar",
         children: [
           e.jsxs("button", {
             type: "button",
             onClick: () => setSubTab("sensor_bleed"),
-            className: "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all " + (subTab === "sensor_bleed" ? "bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg" : "text-slate-400 hover:text-white"),
+            className: "flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-all " + (subTab === "sensor_bleed" ? "bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg" : "text-slate-400 hover:text-white"),
             children: [
               "🩸 Driver Bleed & Sensor Scams",
               e.jsx(E, { className: "ml-1 bg-white/20 text-white font-mono text-[10px] px-1.5 py-0 border-none", children: driverBleed.totalIncidents })
@@ -263,7 +262,7 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
           e.jsxs("button", {
             type: "button",
             onClick: () => setSubTab("mileage_anomaly"),
-            className: "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all " + (subTab === "mileage_anomaly" ? "bg-slate-800 text-white shadow" : "text-slate-400 hover:text-white"),
+            className: "flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-all " + (subTab === "mileage_anomaly" ? "bg-slate-800 text-white shadow" : "text-slate-400 hover:text-white"),
             children: [
               "📉 Mileage Drop Sentinel",
               e.jsx(E, { className: "ml-1 bg-slate-700 text-slate-300 font-mono text-[10px] px-1.5 py-0 border-none", children: L.totalAnomalies })
@@ -274,42 +273,42 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
 
       // SUB-TAB 1: DRIVER BLEED & SENSOR THEFT
       subTab === "sensor_bleed" ? e.jsxs("div", {
-        className: "space-y-6",
+        className: "space-y-4 sm:space-y-6",
         children: [
-          // 4 KPI Cards
+          // 4 KPI Cards (Responsive 2x2 grid on mobile, 4-col on desktop)
           e.jsxs("div", {
-            className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4",
+            className: "grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4",
             children: [
               e.jsxs(N, {
                 className: "rounded-2xl border-rose-500/30 bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 p-3 sm:p-4 space-y-1 shadow-lg",
                 children: [
-                  e.jsx("span", { className: "text-[10px] font-mono text-rose-300 uppercase font-bold", children: "Total Fleet Bleed Loss" }),
-                  e.jsx("div", { className: "text-xl sm:text-2xl font-black text-rose-400 font-mono", children: fmtInr(driverBleed.totalBleed) }),
-                  e.jsx("p", { className: "text-[10px] text-slate-400 truncate", children: "Cumulative sensor shortfall" })
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-rose-300 uppercase font-bold", children: "Total Fleet Bleed" }),
+                  e.jsx("div", { className: "text-lg sm:text-2xl font-black text-rose-400 font-mono", children: fmtInr(driverBleed.totalBleed) }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-400 truncate", children: "Sensor shortfall loss" })
                 ]
               }),
               e.jsxs(N, {
                 className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
                 children: [
-                  e.jsx("span", { className: "text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Diesel Pilfered" }),
-                  e.jsx("div", { className: "text-xl sm:text-2xl font-black text-amber-400 font-mono", children: driverBleed.totalShortL.toLocaleString("en-IN") + " L" }),
-                  e.jsx("p", { className: "text-[10px] text-slate-400 truncate", children: "Billed liters minus sensor fill" })
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Diesel Pilfered" }),
+                  e.jsx("div", { className: "text-lg sm:text-2xl font-black text-amber-400 font-mono", children: driverBleed.totalShortL.toLocaleString("en-IN") + " L" }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-400 truncate", children: "Billed vs sensor fill" })
                 ]
               }),
               e.jsxs(N, {
                 className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
                 children: [
-                  e.jsx("span", { className: "text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Top Bleeding Driver" }),
-                  e.jsx("div", { className: "text-sm sm:text-base font-black text-white truncate", children: driverBleed.topBleeder ? driverBleed.topBleeder.driver_name : "No Bleeders" }),
-                  e.jsx("p", { className: "text-[10px] font-mono text-rose-400 font-bold", children: driverBleed.topBleeder ? "Bleeding " + fmtInr(driverBleed.topBleeder.total_bleed) + " (" + driverBleed.topBleeder.stolen_liters + "L)" : "Zero pilferage logged" })
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Top Bleeding Driver" }),
+                  e.jsx("div", { className: "text-xs sm:text-base font-black text-white truncate", children: driverBleed.topBleeder ? driverBleed.topBleeder.driver_name : "No Bleeders" }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] font-mono text-rose-400 font-bold truncate", children: driverBleed.topBleeder ? "Loss " + fmtInr(driverBleed.topBleeder.total_bleed) : "Zero pilferage" })
                 ]
               }),
               e.jsxs(N, {
                 className: "rounded-2xl border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 p-3 sm:p-4 space-y-1 shadow-lg",
                 children: [
-                  e.jsx("span", { className: "text-[10px] font-mono text-emerald-300 uppercase font-bold", children: "Recouped via Advance" }),
-                  e.jsx("div", { className: "text-xl sm:text-2xl font-black text-emerald-400 font-mono", children: fmtInr(driverBleed.totalRec) }),
-                  e.jsx("p", { className: "text-[10px] text-slate-400 truncate", children: fmtInr(driverBleed.netUnrecovered) + " unrecovered" })
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-emerald-300 uppercase font-bold", children: "Recouped via Advance" }),
+                  e.jsx("div", { className: "text-lg sm:text-2xl font-black text-emerald-400 font-mono", children: fmtInr(driverBleed.totalRec) }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-400 truncate", children: fmtInr(driverBleed.netUnrecovered) + " unrecovered" })
                 ]
               })
             ]
@@ -317,36 +316,121 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
 
           // Search Bar
           e.jsxs("div", {
-            className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1",
+            className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5",
             children: [
               e.jsx("input", {
                 placeholder: "Search bleeder by driver name, truck number...",
                 value: driverSearch,
                 onChange: e => setDriverSearch(e.target.value),
-                className: "h-9 text-xs rounded-xl bg-slate-900 border-slate-800 text-white max-w-md"
+                className: "w-full sm:w-80 h-10 px-3.5 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
               }),
-              e.jsxs("div", {
-                className: "text-xs text-slate-400",
+              e.jsxs("span", {
+                className: "text-xs text-slate-400 font-mono text-right",
                 children: ["Showing ", filteredDrivers.length, " driver(s) with recorded shortfalls"]
               })
             ]
           }),
 
-          // Leaderboard Card
+          // Driver Leaderboard Card (Responsive: Native Card View on Mobile, Full Table on Desktop)
           e.jsxs(N, {
-            className: "rounded-3xl border-slate-800 bg-slate-900/90 overflow-hidden shadow-2xl",
+            className: "rounded-3xl border-slate-800 bg-slate-900/90 overflow-hidden shadow-xl",
             children: [
               e.jsx("div", {
-                className: "p-4 sm:p-5 border-b border-slate-800 bg-slate-950/40",
+                className: "p-4 sm:p-5 border-b border-slate-800 bg-slate-900/60",
                 children: e.jsxs("div", {
                   children: [
-                    e.jsx("h3", { className: "text-base font-bold text-white", children: "Driver Bleed Leaderboard & Risk Scorecard" }),
-                    e.jsx("p", { className: "text-xs text-slate-400 mt-0.5", children: "Ranks drivers by total company rupees bled via fuel dispenser short-filling." })
+                    e.jsx("h3", { className: "text-sm sm:text-base font-bold text-white", children: "Driver Bleed Leaderboard & Risk Scorecard" }),
+                    e.jsx("p", { className: "text-xs text-slate-400 mt-0.5", children: "Ranks drivers by company rupees bled via fuel dispenser short-filling." })
                   ]
                 })
               }),
+
+              // 📱 Mobile Cards View (Hidden on md+, Visible on mobile)
               e.jsx("div", {
-                className: "overflow-x-auto",
+                className: "md:hidden p-3 space-y-3",
+                children: filteredDrivers.length === 0 ? e.jsx("div", {
+                  className: "text-center py-12 text-slate-500 text-xs",
+                  children: theftReports.length === 0 ? "No fuel sensor theft records yet. Use 'Report Scam' while logging a fuel refill to audit sensor shortfalls." : "No drivers match your search."
+                }) : filteredDrivers.map((d, idx) => e.jsxs("div", {
+                  key: d.driver_id || d.driver_name,
+                  onClick: () => setSelectedDriver(d),
+                  className: "p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/90 space-y-3 cursor-pointer hover:border-slate-700 active:scale-[0.99] transition-all shadow-md",
+                  children: [
+                    // Header: Rank, Driver, Truck, Risk
+                    e.jsxs("div", {
+                      className: "flex items-start justify-between gap-2",
+                      children: [
+                        e.jsxs("div", {
+                          className: "flex items-center gap-2.5",
+                          children: [
+                            e.jsx("span", {
+                              className: "inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black font-mono shrink-0 " + (idx === 0 ? "bg-rose-500/20 text-rose-300 border border-rose-500/40" : "bg-slate-800 text-slate-300"),
+                              children: "#" + (idx + 1)
+                            }),
+                            e.jsxs("div", {
+                              children: [
+                                e.jsx("div", { className: "font-bold text-white text-sm leading-tight", children: d.driver_name }),
+                                e.jsxs("div", { className: "text-[11px] text-slate-400 font-mono mt-0.5", children: ["Truck: ", d.truck_number] })
+                              ]
+                            })
+                          ]
+                        }),
+                        e.jsx("div", {
+                          children: d.risk_level === "critical"
+                            ? e.jsx(E, { className: "bg-rose-500/20 text-rose-300 border-rose-500/40 text-[10px] font-bold px-2 py-0.5", children: "🔴 Critical" })
+                            : d.risk_level === "moderate"
+                            ? e.jsx(E, { className: "bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-bold px-2 py-0.5", children: "🟡 Moderate" })
+                            : e.jsx(E, { className: "bg-blue-500/20 text-blue-300 border-blue-500/40 text-[10px] font-bold px-2 py-0.5", children: "🔵 Watchlist" })
+                        })
+                      ]
+                    }),
+
+                    // 3 Metric Tiles
+                    e.jsxs("div", {
+                      className: "grid grid-cols-3 gap-2 text-center text-xs font-mono pt-0.5",
+                      children: [
+                        e.jsxs("div", {
+                          className: "p-2 rounded-xl bg-slate-900 border border-slate-800",
+                          children: [
+                            e.jsx("span", { className: "text-[9px] text-slate-400 uppercase block font-sans", children: "Pilfered" }),
+                            e.jsxs("span", { className: "font-bold text-amber-400 text-xs", children: [d.stolen_liters.toLocaleString("en-IN"), " L"] }),
+                            e.jsxs("span", { className: "text-[9px] text-slate-500 block font-sans mt-0.5", children: [d.count, " refill(s)"] })
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "p-2 rounded-xl bg-rose-950/30 border border-rose-500/20",
+                          children: [
+                            e.jsx("span", { className: "text-[9px] text-rose-400/80 uppercase block font-sans font-bold", children: "Total Bleed" }),
+                            e.jsx("span", { className: "font-black text-rose-400 text-xs", children: fmtInr(d.total_bleed) }),
+                            e.jsx("span", { className: "text-[9px] text-rose-300/60 block font-sans mt-0.5", children: "Company loss" })
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "p-2 rounded-xl bg-emerald-950/20 border border-emerald-500/20",
+                          children: [
+                            e.jsx("span", { className: "text-[9px] text-emerald-400/80 uppercase block font-sans font-bold", children: "Recouped" }),
+                            e.jsx("span", { className: "font-black text-emerald-400 text-xs", children: fmtInr(d.total_recovered) }),
+                            e.jsx("span", { className: "text-[9px] text-emerald-300/60 block font-sans mt-0.5", children: d.net_unrecovered > 0 ? "Pending" : "Cleared" })
+                          ]
+                        })
+                      ]
+                    }),
+
+                    // Mobile Action Button
+                    e.jsx(y, {
+                      size: "sm",
+                      variant: "outline",
+                      onClick: ev => { ev.stopPropagation(); setSelectedDriver(d); },
+                      className: "w-full h-8 rounded-xl border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold",
+                      children: "Audit Timeline & Proofs (" + d.count + ")"
+                    })
+                  ]
+                }))
+              }),
+
+              // 🖥️ Desktop Table View (Hidden on mobile, Visible on md+)
+              e.jsx("div", {
+                className: "hidden md:block overflow-x-auto",
                 children: e.jsxs("table", {
                   className: "w-full text-left text-xs",
                   children: [
@@ -431,20 +515,20 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
 
           // Station Collusion Hotspots Card
           driverBleed.stationList.length > 0 ? e.jsxs(N, {
-            className: "rounded-3xl border-slate-800 bg-slate-900/80 p-5 space-y-3",
+            className: "rounded-3xl border-slate-800 bg-slate-900/80 p-4 sm:p-5 space-y-3",
             children: [
               e.jsxs("div", {
-                className: "border-b border-slate-800 pb-3",
+                className: "border-b border-slate-800 pb-2.5",
                 children: [
                   e.jsx("h3", { className: "text-sm font-bold text-white", children: "⛽ Petrol Pump Collusion Hotspots" }),
                   e.jsx("p", { className: "text-[11px] text-slate-400", children: "Petrol stations where trucks repeatedly report sensor shortfalls across multiple refills." })
                 ]
               }),
               e.jsx("div", {
-                className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3",
+                className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3",
                 children: driverBleed.stationList.map(st => e.jsxs("div", {
                   key: st.pump_name,
-                  className: "p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5",
+                  className: "p-3 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5",
                   children: [
                     e.jsxs("div", {
                       className: "flex items-center justify-between",
@@ -469,7 +553,7 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
       }) : (
         // SUB-TAB 2: MILEAGE DROP SENTINEL (EXISTING)
         e.jsxs("div", {
-          className: "space-y-6",
+          className: "space-y-4 sm:space-y-6",
           children: [
             // KPI Cards
             e.jsxs("div", {
@@ -496,125 +580,114 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                   children: [
                     e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Cost Loss" }),
                     e.jsx("div", { className: "text-xl sm:text-2xl font-black text-emerald-400 font-mono", children: fmtInr(L.totalCostLost) }),
-                    e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-500 truncate", children: "₹94.5/L diesel" })
+                    e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-500 truncate", children: "Lost fuel value" })
                   ]
                 }),
                 e.jsxs(N, {
                   className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
                   children: [
-                    e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Investigation" }),
-                    e.jsxs("div", { className: "text-xl sm:text-2xl font-black text-white font-mono flex items-center gap-1.5 flex-wrap", children: [e.jsxs("span", { className: "text-amber-400 text-base sm:text-2xl", children: [L.openCount, " Open"] }), e.jsx("span", { className: "text-slate-600", children: "/" }), e.jsxs("span", { className: "text-emerald-400 text-xs sm:text-base", children: [L.resolvedCount, " Done"] })] }),
-                    e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-500 truncate", children: "Supervisor actions" })
+                    e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Sentinel Status" }),
+                    e.jsx("div", { className: "text-base sm:text-lg font-black text-white truncate", children: L.totalAnomalies > 0 ? "Action Required" : "Optimal" }),
+                    e.jsx("p", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400", children: L.totalAnomalies + " flagged" })
                   ]
                 })
               ]
             }),
 
-            // Filter Toolbar
-            e.jsxs("div", {
-              className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2",
-              children: [
-                e.jsx("input", {
-                  placeholder: "Search truck number, driver...",
-                  value: K,
-                  onChange: e => P(e.target.value),
-                  className: "h-9 text-xs rounded-xl bg-slate-900 border-slate-800 text-white max-w-md"
-                })
-              ]
+            // Search Bar
+            e.jsx("input", {
+              placeholder: "Search truck number, driver...",
+              value: K,
+              onChange: e => P(e.target.value),
+              className: "w-full sm:w-72 h-10 px-3.5 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
             }),
 
-            // Table
-            e.jsx(N, {
+            // Mileage Drops List
+            e.jsxs(N, {
               className: "rounded-3xl border-slate-800 bg-slate-900/90 overflow-hidden shadow-xl",
-              children: e.jsx("div", {
-                className: "overflow-x-auto",
-                children: e.jsxs("table", {
-                  className: "w-full text-left text-xs",
-                  children: [
-                    e.jsx("thead", {
-                      className: "bg-slate-950/80 border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400",
-                      children: e.jsxs("tr", {
+              children: [
+                e.jsx("div", {
+                  className: "p-4 sm:p-5 border-b border-slate-800 bg-slate-900/60",
+                  children: e.jsxs("div", {
+                    children: [
+                      e.jsx("h3", { className: "text-sm sm:text-base font-bold text-white", children: "Mileage Drop Incidents (>10% Below Target)" }),
+                      e.jsx("p", { className: "text-xs text-slate-400 mt-0.5", children: "Trips where actual mileage plummeted vs the vehicle target mileage." })
+                    ]
+                  })
+                }),
+                e.jsx("div", {
+                  className: "p-3 sm:p-4 space-y-3",
+                  children: G.length === 0 ? e.jsx("div", {
+                    className: "text-center py-12 text-slate-500 text-xs",
+                    children: "No mileage drop anomalies detected. Fleet is operating within normal efficiency."
+                  }) : G.map(r => e.jsxs("div", {
+                    key: r.id,
+                    className: "p-3.5 sm:p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-2.5",
+                    children: [
+                      e.jsxs("div", {
+                        className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2",
                         children: [
-                          e.jsx("th", { className: "p-3 pl-5", children: "Date & Refill" }),
-                          e.jsx("th", { className: "p-3", children: "Truck / Driver" }),
-                          e.jsx("th", { className: "p-3 text-center", children: "Expected Mileage" }),
-                          e.jsx("th", { className: "p-3 text-center", children: "Actual Mileage" }),
-                          e.jsx("th", { className: "p-3 text-center", children: "Drop" }),
-                          e.jsx("th", { className: "p-3 text-right", children: "Est. Loss" }),
-                          e.jsx("th", { className: "p-3 text-center", children: "Status" }),
-                          e.jsx("th", { className: "p-3 pr-5 text-right", children: "Action" })
-                        ]
-                      })
-                    }),
-                    e.jsx("tbody", {
-                      className: "divide-y divide-slate-800/60",
-                      children: C.length === 0 ? e.jsx("tr", {
-                        children: e.jsx("td", { colSpan: 8, className: "text-center py-12 text-slate-500 text-xs", children: "No mileage anomalies detected." })
-                      }) : C.map(item => e.jsxs("tr", {
-                        key: item.id,
-                        className: "hover:bg-slate-800/40 transition-colors",
-                        children: [
-                          e.jsxs("td", {
-                            className: "p-3 pl-5 font-medium text-slate-300",
-                            children: [e.jsx("div", { children: item.date ? item.date.split("T")[0] : "—" }), e.jsxs("span", { className: "text-[10px] text-slate-500 font-mono", children: [item.liters || 0, " L"] })]
+                          e.jsxs("div", {
+                            className: "flex items-center gap-2",
+                            children: [
+                              e.jsx(E, { className: "bg-rose-500/20 text-rose-300 font-mono text-[10px]", children: r.date ? r.date.split("T")[0] : "—" }),
+                              e.jsx("span", { className: "font-mono font-bold text-white text-sm", children: r.truck_number }),
+                              e.jsxs("span", { className: "text-xs text-slate-400", children: ["• ", r.driver_name] })
+                            ]
                           }),
-                          e.jsxs("td", {
-                            className: "p-3",
-                            children: [e.jsx("div", { className: "font-mono font-bold text-white", children: item.truck_number }), e.jsx("span", { className: "text-[10px] text-slate-400", children: item.driver_name || "Driver" })]
-                          }),
-                          e.jsxs("td", { className: "p-3 text-center font-mono text-slate-300", children: [item.expected_mileage, " km/L"] }),
-                          e.jsxs("td", { className: "p-3 text-center font-mono font-bold text-rose-400", children: [item.actual_mileage, " km/L"] }),
-                          e.jsx("td", {
-                            className: "p-3 text-center",
-                            children: item.efficiency_drop_pct > 0 ? e.jsxs(E, { className: "bg-rose-500/20 text-rose-400 border-rose-500/40 text-xs font-mono font-bold", children: ["-", item.efficiency_drop_pct, "%"] }) : e.jsx(E, { variant: "outline", className: "text-emerald-400", children: "Optimal" })
-                          }),
-                          e.jsx("td", { className: "p-3 text-right font-mono font-bold text-emerald-400", children: fmtInr(item.financial_loss_inr) }),
-                          e.jsx("td", { className: "p-3 text-center", children: e.jsx(E, { variant: "outline", className: "text-[10px]", children: item.investigation_status || "Open" }) }),
-                          e.jsx("td", {
-                            className: "p-3 pr-5 text-right",
-                            children: e.jsx(y, {
-                              size: "sm",
-                              onClick: () => c(item),
-                              className: "h-7 text-xs bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-lg px-2.5",
-                              children: "Investigate"
-                            })
+                          e.jsx(y, {
+                            size: "sm",
+                            onClick: () => c(r),
+                            className: "h-8 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow",
+                            children: "Investigate Drop"
                           })
                         ]
-                      }))
-                    })
-                  ]
+                      }),
+                      e.jsxs("div", {
+                        className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono pt-1",
+                        children: [
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-slate-900 border border-slate-800", children: [e.jsx("span", { className: "text-[9px] text-slate-400 block font-sans", children: "Actual Mileage" }), r.actual_mileage, " km/L"] }),
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-slate-900 border border-slate-800", children: [e.jsx("span", { className: "text-[9px] text-slate-400 block font-sans", children: "Expected" }), r.expected_mileage, " km/L"] }),
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-rose-950/40 border border-rose-500/20 text-rose-400 font-bold", children: [e.jsx("span", { className: "text-[9px] text-rose-400/80 block font-sans", children: "Efficiency Drop" }), "-", r.efficiency_drop_pct, "%"] }),
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 font-black", children: [e.jsx("span", { className: "text-[9px] text-rose-300/80 block font-sans", children: "Loss Value" }), fmtInr(r.financial_loss_inr)] })
+                        ]
+                      })
+                    ]
+                  }))
                 })
-              })
+              ]
             })
           ]
         })
       ),
 
-      // Driver Audit Drilldown Modal
+      // Driver Audit Drilldown Modal (Mobile Drawer Sheet on phones, Center Modal on Desktops)
       selectedDriver ? e.jsx("div", {
-        className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in-50",
+        className: "fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in-50",
         children: e.jsxs("div", {
-          className: "bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto space-y-4 text-white shadow-2xl",
+          className: "bg-slate-950 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 max-w-2xl w-full max-h-[92vh] sm:max-h-[85vh] overflow-y-auto space-y-4 text-white shadow-2xl",
           children: [
+            // Modal Header
             e.jsxs("div", {
-              className: "flex items-center justify-between border-b border-slate-800 pb-3",
+              className: "flex items-start justify-between border-b border-slate-800 pb-3",
               children: [
                 e.jsxs("div", {
+                  className: "space-y-0.5",
                   children: [
-                    e.jsxs("h3", { className: "text-lg font-bold text-white flex items-center gap-2", children: [e.jsx(Ct, { className: "w-5 h-5 text-rose-400" }), "Fuel Theft Audit: ", selectedDriver.driver_name] }),
-                    e.jsxs("p", { className: "text-xs text-slate-400 mt-0.5", children: ["Truck: ", selectedDriver.truck_number, " • Total Shortfall: ", selectedDriver.stolen_liters, " L"] })
+                    e.jsxs("h3", { className: "text-base sm:text-lg font-bold text-white flex items-center gap-2", children: [e.jsx(Ct, { className: "w-5 h-5 text-rose-400 shrink-0" }), "Fuel Theft Audit: ", selectedDriver.driver_name] }),
+                    e.jsxs("p", { className: "text-xs text-slate-400", children: ["Truck: ", selectedDriver.truck_number, " • Total Shortfall: ", selectedDriver.stolen_liters, " L"] })
                   ]
                 }),
-                e.jsx(y, { size: "sm", variant: "ghost", onClick: () => setSelectedDriver(null), className: "text-slate-400 hover:text-white", children: "✕" })
+                e.jsx(y, { size: "sm", variant: "ghost", onClick: () => setSelectedDriver(null), className: "h-8 w-8 text-slate-400 hover:text-white p-0 rounded-full", children: "✕" })
               ]
             }),
             // Profile KPI Banner
             e.jsxs("div", {
-              className: "grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs",
+              className: "grid grid-cols-3 gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-center",
               children: [
-                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono", children: "Total Bleed" }), e.jsx("div", { className: "text-base font-black font-mono text-rose-400", children: fmtInr(selectedDriver.total_bleed) })] }),
-                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono", children: "Recouped" }), e.jsx("div", { className: "text-base font-black font-mono text-emerald-400", children: fmtInr(selectedDriver.total_recovered) })] }),
-                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono", children: "Net Loss" }), e.jsx("div", { className: "text-base font-black font-mono text-amber-400", children: fmtInr(selectedDriver.net_unrecovered) })] })
+                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono block", children: "Total Bleed" }), e.jsx("div", { className: "text-sm sm:text-base font-black font-mono text-rose-400 mt-0.5", children: fmtInr(selectedDriver.total_bleed) })] }),
+                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono block", children: "Recouped" }), e.jsx("div", { className: "text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5", children: fmtInr(selectedDriver.total_recovered) })] }),
+                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono block", children: "Net Loss" }), e.jsx("div", { className: "text-sm sm:text-base font-black font-mono text-amber-400 mt-0.5", children: fmtInr(selectedDriver.net_unrecovered) })] })
               ]
             }),
             // Incidents List
@@ -627,21 +700,21 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                   const proofFiles = inc.sensor_proof_file ? (Array.isArray(inc.sensor_proof_file) ? inc.sensor_proof_file : [inc.sensor_proof_file]) : [];
                   return e.jsxs("div", {
                     key: inc.id || i,
-                    className: "p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs",
+                    className: "p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs",
                     children: [
                       e.jsxs("div", {
-                        className: "flex items-center justify-between",
+                        className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2",
                         children: [
-                          e.jsxs("div", { className: "flex items-center gap-2", children: [e.jsx(E, { className: "bg-rose-500/20 text-rose-300 font-mono text-[10px]", children: inc.incident_date ? inc.incident_date.split("T")[0] : "—" }), e.jsx("span", { className: "font-mono font-bold text-white", children: inc.truck_number }), inc.petrol_pump_name ? e.jsxs("span", { className: "text-slate-400 text-[11px]", children: ["@ ", inc.petrol_pump_name] }) : null] }),
+                          e.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [e.jsx(E, { className: "bg-rose-500/20 text-rose-300 font-mono text-[10px]", children: inc.incident_date ? inc.incident_date.split("T")[0] : "—" }), e.jsx("span", { className: "font-mono font-bold text-white", children: inc.truck_number }), inc.petrol_pump_name ? e.jsxs("span", { className: "text-slate-400 text-[11px]", children: ["@ ", inc.petrol_pump_name] }) : null] }),
                           e.jsxs("div", {
-                            className: "flex items-center gap-2",
+                            className: "flex items-center gap-2 self-end sm:self-auto",
                             children: [
-                              e.jsx(E, { className: isRec ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300", children: inc.status || "Reported" }),
+                              e.jsx(E, { className: isRec ? "bg-emerald-500/20 text-emerald-300 text-[10px]" : "bg-amber-500/20 text-amber-300 text-[10px]", children: inc.status || "Reported" }),
                               !isRec ? e.jsxs(y, {
                                 size: "sm",
                                 disabled: isDeducting,
                                 onClick: () => handleQuickDeduct(inc),
-                                className: "h-6 text-[11px] bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg px-2",
+                                className: "h-7 text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg px-2.5",
                                 children: ["⚡ Deduct ", fmtInr(inc.bleeding_amount)]
                               }) : null
                             ]
@@ -649,17 +722,17 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                         ]
                       }),
                       e.jsxs("div", {
-                        className: "grid grid-cols-4 gap-2 text-[11px] font-mono",
+                        className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono",
                         children: [
-                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-slate-950", children: [e.jsx("span", { className: "text-[9px] text-slate-500 block", children: "BILLED" }), inc.billed_liters, " L"] }),
-                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-slate-950", children: [e.jsx("span", { className: "text-[9px] text-slate-500 block", children: "SENSOR" }), inc.sensor_liters, " L"] }),
-                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-rose-950/40 text-rose-400 font-bold", children: [e.jsx("span", { className: "text-[9px] text-rose-400/70 block", children: "SHORT" }), "-", inc.stolen_liters, " L"] }),
-                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-rose-950/50 text-rose-300 font-black", children: [e.jsx("span", { className: "text-[9px] text-rose-300/70 block", children: "LOSS" }), fmtInr(inc.bleeding_amount)] })
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-slate-950", children: [e.jsx("span", { className: "text-[9px] text-slate-500 block font-sans", children: "BILLED" }), inc.billed_liters, " L"] }),
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-slate-950", children: [e.jsx("span", { className: "text-[9px] text-slate-500 block font-sans", children: "SENSOR" }), inc.sensor_liters, " L"] }),
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-rose-950/40 text-rose-400 font-bold", children: [e.jsx("span", { className: "text-[9px] text-rose-400/70 block font-sans", children: "SHORT" }), "-", inc.stolen_liters, " L"] }),
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-rose-950/50 text-rose-300 font-black", children: [e.jsx("span", { className: "text-[9px] text-rose-300/70 block font-sans", children: "LOSS" }), fmtInr(inc.bleeding_amount)] })
                         ]
                       }),
                       inc.notes ? e.jsxs("p", { className: "text-[11px] text-slate-400 italic bg-slate-950/40 p-2 rounded-lg", children: ['"', inc.notes, '"'] }) : null,
                       proofFiles.length > 0 ? e.jsxs("div", {
-                        className: "flex items-center gap-2 pt-1",
+                        className: "flex flex-wrap items-center gap-2 pt-1",
                         children: [
                           e.jsx("span", { className: "text-[10px] text-slate-400", children: "Sensor Proofs:" }),
                           proofFiles.map((f, fi) => e.jsxs("button", {
@@ -676,14 +749,14 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                 })
               ]
             }),
-            e.jsx(y, { onClick: () => setSelectedDriver(null), className: "w-full rounded-xl bg-slate-800 text-white hover:bg-slate-700", children: "Close Audit" })
+            e.jsx(y, { onClick: () => setSelectedDriver(null), className: "w-full h-10 rounded-xl bg-slate-800 text-white hover:bg-slate-700 text-xs font-bold", children: "Close Audit" })
           ]
         })
       }) : null,
 
-      // Sensor Proof Image Viewer
+      // Sensor Proof Image Viewer (Mobile friendly)
       previewDocUrl ? e.jsx("div", {
-        className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm",
+        className: "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm",
         children: e.jsxs("div", {
           className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-4 max-w-xl w-full text-white space-y-3",
           children: [
@@ -695,10 +768,10 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
               ]
             }),
             e.jsx("div", {
-              className: "max-h-[60vh] flex items-center justify-center overflow-hidden",
-              children: e.jsx("img", { src: previewDocUrl, alt: "Proof", className: "max-h-[55vh] object-contain rounded-lg" })
+              className: "max-h-[65vh] flex items-center justify-center overflow-hidden",
+              children: e.jsx("img", { src: previewDocUrl, alt: "Proof", className: "max-h-[60vh] w-auto object-contain rounded-lg" })
             }),
-            e.jsx(y, { onClick: () => setPreviewDocUrl(null), className: "w-full bg-zinc-800 text-white hover:bg-zinc-700 text-xs", children: "Close" })
+            e.jsx(y, { onClick: () => setPreviewDocUrl(null), className: "w-full h-9 bg-zinc-800 text-white hover:bg-zinc-700 text-xs font-bold", children: "Close" })
           ]
         })
       }) : null,
