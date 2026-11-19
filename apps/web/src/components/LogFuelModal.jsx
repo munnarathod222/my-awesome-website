@@ -12,8 +12,11 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { 
   Loader2, AlertCircle, Truck, CreditCard, Fuel, Wallet, 
-  UploadCloud, FileText, Image as ImageIcon, Trash2, Camera, Eye, Paperclip, X, Download
+  UploadCloud, FileText, Image as ImageIcon, Trash2, Camera, Eye, Paperclip, X, Download,
+  ShieldAlert, AlertTriangle, Flame, CheckCircle2, DollarSign, Scale, User, TrendingDown
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import TruckSelectionModal from '@/components/TruckSelectionModal.jsx';
 import FuelStationModal from '@/components/FuelStationModal.jsx';
 import { fetchFuelStations, addFuelStationCredit } from '@/lib/fuelStationUtils.js';
@@ -154,6 +157,91 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
     }
   };
 
+  // 🚨 Fuel Sensor Scam / Disparity Reporting States
+  const [employees, setEmployees] = useState([]);
+  const [reportScam, setReportScam] = useState(false);
+  const [scamData, setScamData] = useState({
+    driver_id: '',
+    driver_name: '',
+    sensor_liters: '',
+    theft_type: 'Pump Collusion / Short Fill (Billed > Sensor)',
+    deduct_from_advance: true,
+    notes: '',
+    proofFiles: []
+  });
+  const [isDraggingSensorProof, setIsDraggingSensorProof] = useState(false);
+  const sensorProofInputRef = React.useRef(null);
+
+  const fetchEmployees = async () => {
+    try {
+      const records = await pb.collection('employees').getFullList({
+        sort: 'name',
+        $autoCancel: false
+      });
+      setEmployees(records || []);
+    } catch (err) {
+      console.warn('Failed to fetch employees in LogFuelModal:', err);
+    }
+  };
+
+  const handleSensorProofSelect = (e) => {
+    if (e.target.files) {
+      addSensorProofFiles(Array.from(e.target.files));
+    }
+  };
+
+  const addSensorProofFiles = (filesList) => {
+    const valid = [];
+    for (const file of filesList) {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`Proof file "${file.name}" exceeds 20MB limit.`);
+        continue;
+      }
+      valid.push(file);
+    }
+    if (valid.length > 0) {
+      const items = valid.map((file, idx) => ({
+        key: `sensor-proof-${Date.now()}-${idx}-${Math.random()}`,
+        file: file,
+        isNew: true,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+      }));
+      setScamData(prev => ({
+        ...prev,
+        proofFiles: [...prev.proofFiles, ...items]
+      }));
+      toast.success(`${valid.length} sensor proof screenshot(s) attached.`);
+    }
+  };
+
+  const handleRemoveSensorProofFile = (itemToRemove) => {
+    if (itemToRemove.previewUrl) {
+      try { URL.revokeObjectURL(itemToRemove.previewUrl); } catch (_) {}
+    }
+    setScamData(prev => ({
+      ...prev,
+      proofFiles: prev.proofFiles.filter(p => p.key !== itemToRemove.key)
+    }));
+  };
+
+  // Reactive calculations for Sensor Shortfall and Driver Bleed Financial Loss
+  const billedLitersNum = parseFloat(formData.liters) || 0;
+  const sensorLitersNum = parseFloat(scamData.sensor_liters) || 0;
+  const fuelCostNum = parseFloat(formData.fuel_cost) || 0;
+
+  const stolenLiters = (billedLitersNum > 0 && scamData.sensor_liters !== '' && sensorLitersNum < billedLitersNum)
+    ? Math.round((billedLitersNum - sensorLitersNum) * 100) / 100
+    : 0;
+
+  const effectiveFuelRate = billedLitersNum > 0
+    ? Math.round((fuelCostNum / billedLitersNum) * 100) / 100
+    : 94.50;
+
+  const bleedingFinancialLoss = Math.round(stolenLiters * effectiveFuelRate);
+
   // Merge parent savedCards with self-fetched internalCards and deduplicate cleanly
   const allAvailableCards = React.useMemo(() => {
     const rawList = [...(savedCards || [])];
@@ -209,6 +297,17 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
       fetchTrucks();
       loadFuelStations();
       fetchCreditCards();
+      fetchEmployees();
+      setReportScam(false);
+      setScamData({
+        driver_id: '',
+        driver_name: '',
+        sensor_liters: '',
+        theft_type: 'Pump Collusion / Short Fill (Billed > Sensor)',
+        deduct_from_advance: true,
+        notes: '',
+        proofFiles: []
+      });
       if (editLog) {
         let rawDate = editLog.date;
         if (rawDate && rawDate.includes('T')) rawDate = rawDate.split('T')[0];
@@ -339,6 +438,24 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
       }
     }
   }, [trucks, formData.vehicle_id]);
+
+  // Auto-link assigned driver from employees when a vehicle is chosen
+  useEffect(() => {
+    if (formData.vehicle_id && employees.length > 0 && !scamData.driver_id) {
+      const cleanVehicle = String(formData.vehicle_id).replace(/\s/g, '').toUpperCase();
+      const matchedEmp = employees.find(e => {
+        const trk = String(e.assigned_truck || '').replace(/\s/g, '').toUpperCase();
+        return trk && (trk.includes(cleanVehicle) || cleanVehicle.includes(trk));
+      });
+      if (matchedEmp) {
+        setScamData(prev => ({
+          ...prev,
+          driver_id: matchedEmp.id,
+          driver_name: matchedEmp.name
+        }));
+      }
+    }
+  }, [formData.vehicle_id, employees, scamData.driver_id]);
 
   // When cards are loaded and none was explicitly selected, default to the first available card
   useEffect(() => {
@@ -646,6 +763,17 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
         trackerPayload.investigation_status = 'Open';
       }
 
+      // If Fuel Sensor Scam is reported, mark tracker as anomaly and store financial loss
+      if (reportScam && stolenLiters > 0) {
+        trackerPayload.is_anomaly = true;
+        trackerPayload.excess_liters_lost = stolenLiters;
+        trackerPayload.financial_loss_inr = bleedingFinancialLoss;
+        trackerPayload.investigation_status = scamData.deduct_from_advance ? 'Resolved - Deducted from Salary' : 'Under Investigation';
+        trackerPayload.root_causes = 'Fuel Sensor Disparity / Pump Collusion';
+        trackerPayload.investigation_notes = scamData.notes || `Sensor disparity: ${stolenLiters}L shortfall reported at ₹${effectiveFuelRate}/L`;
+        trackerPayload.action_taken = scamData.deduct_from_advance ? `Deducted ₹${bleedingFinancialLoss} from driver advance` : 'Theft audit recorded';
+      }
+
       // Only attach credit_card_id if one actually exists, preventing 400 Bad Request
       if (finalCreditCardId) {
         trackerPayload.credit_card_id = finalCreditCardId;
@@ -803,6 +931,69 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
           }).catch(() => {});
           toast.success('Refill saved & synced to Expenses and Cashbook!');
         } catch (_) {}
+      }
+
+      // 🚨 Record Fuel Sensor Theft & Disparity Report
+      if (reportScam) {
+        try {
+          const scamFd = new FormData();
+          scamFd.append('incident_date', refillDate);
+          if (tracker?.id) scamFd.append('fuel_tracker_id', tracker.id);
+          scamFd.append('driver_id', scamData.driver_id || '');
+          scamFd.append('driver_name', scamData.driver_name || 'Assigned Driver');
+          scamFd.append('truck_id', selectedTruck.id);
+          scamFd.append('truck_number', vehicleName);
+          if (matchedStation?.station_name) scamFd.append('petrol_pump_name', matchedStation.station_name);
+          scamFd.append('billed_liters', String(liters));
+          scamFd.append('sensor_liters', String(sensorLitersNum));
+          scamFd.append('stolen_liters', String(stolenLiters));
+          scamFd.append('fuel_rate', String(effectiveFuelRate));
+          scamFd.append('bleeding_amount', String(bleedingFinancialLoss));
+          scamFd.append('theft_type', scamData.theft_type || 'Pump Collusion / Short Fill (Billed > Sensor)');
+          scamFd.append('status', scamData.deduct_from_advance ? 'Deducted from Salary / Advance' : 'Reported');
+          scamFd.append('notes', scamData.notes || '');
+          scamFd.append('reported_by', currentUser?.name || currentUser?.email || 'Admin');
+
+          // Attach sensor proof files
+          (scamData.proofFiles || []).forEach(pf => {
+            if (pf.file instanceof File || pf.file instanceof Blob) {
+              scamFd.append('sensor_proof_file', pf.file, pf.name || 'sensor_proof.jpg');
+            }
+          });
+
+          // Attach fuel bill files
+          (billFiles || []).forEach(bf => {
+            if (bf.file instanceof File || bf.file instanceof Blob) {
+              scamFd.append('fuel_bill_file', bf.file, bf.name || 'fuel_bill.jpg');
+            }
+          });
+
+          // 1-Click Advance Recovery Execution
+          if (scamData.deduct_from_advance && bleedingFinancialLoss > 0) {
+            try {
+              const advRes = await pb.collection('expenses_driver_advance').create({
+                driver_name: scamData.driver_name || 'Driver',
+                amount: bleedingFinancialLoss,
+                date: refillDate,
+                location: matchedStation?.station_name || vehicleName,
+                payment_mode: 'Fuel Theft Recovery',
+                notes: `Auto-recovery: Fuel sensor shortfall of ${stolenLiters}L on ${vehicleName} at ₹${effectiveFuelRate}/L`,
+              }, { $autoCancel: false });
+              if (advRes?.id) {
+                scamFd.append('advance_deduction_id', advRes.id);
+              }
+              toast.success(`₹${bleedingFinancialLoss.toLocaleString('en-IN')} auto-deducted from ${scamData.driver_name}'s advance/salary!`);
+            } catch (advErr) {
+              console.warn('Could not auto-create advance deduction:', advErr);
+            }
+          }
+
+          await pb.collection('fuel_theft_reports').create(scamFd, { $autoCancel: false });
+          toast.error(`🚨 Sensor Disparity & Theft Audit Logged: ${stolenLiters}L short (₹${bleedingFinancialLoss.toLocaleString('en-IN')} Bleed Loss)`);
+        } catch (scamErr) {
+          console.error('Failed to save fuel theft report:', scamErr);
+          toast.error('Refill saved, but could not log theft report: ' + (scamErr.message || 'Error'));
+        }
       }
       if (onSuccess) onSuccess();
       onClose();
@@ -1717,6 +1908,285 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
               )}
             </div>
 
+            {/* 🚨 REPORT SCAM / SENSOR DISPARITY BANNER */}
+            <div className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+              reportScam 
+                ? 'bg-rose-950/20 border-rose-500/50 shadow-lg shadow-rose-950/30' 
+                : 'bg-muted/30 border-border/80 hover:border-slate-700'
+            }`}>
+              {/* Header Toggle Bar */}
+              <div 
+                className="p-3.5 flex items-center justify-between cursor-pointer select-none"
+                onClick={() => setReportScam(!reportScam)}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-2 rounded-xl transition-colors ${
+                    reportScam ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    <ShieldAlert className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold font-heading ${reportScam ? 'text-rose-300' : 'text-foreground'}`}>
+                        🚨 Report Scam / Fuel Sensor Disparity
+                      </span>
+                      {reportScam && stolenLiters > 0 && (
+                        <Badge className="bg-rose-500 text-white text-[10px] font-mono font-bold animate-pulse">
+                          {stolenLiters} L Disparity
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Enable if tank IoT sensor recorded less diesel than billed on the receipt
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Switch 
+                    id="report-scam-toggle"
+                    checked={reportScam} 
+                    onCheckedChange={setReportScam} 
+                    className="data-[state=checked]:bg-rose-600"
+                  />
+                </div>
+              </div>
+
+              {/* Expanded Scam Audit Form Fields */}
+              {reportScam && (
+                <div className="p-4 pt-1 border-t border-rose-500/20 space-y-4 animate-in fade-in-50 duration-200">
+                  {/* Driver & Method Pickers */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-rose-200 flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-rose-400" /> Driver Responsible *
+                      </Label>
+                      <Select 
+                        value={scamData.driver_id} 
+                        onValueChange={(val) => {
+                          const emp = employees.find(e => e.id === val);
+                          setScamData(prev => ({
+                            ...prev,
+                            driver_id: val,
+                            driver_name: emp?.name || ''
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="h-9 text-xs bg-background/80 border-rose-500/30 rounded-xl text-foreground">
+                          <SelectValue placeholder="Select Driver..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 bg-popover border-border">
+                          {employees.map(emp => (
+                            <SelectItem key={emp.id} value={emp.id} className="text-xs">
+                              {emp.name} {emp.assigned_truck ? `(${emp.assigned_truck})` : `[${emp.position || emp.employee_type || 'Staff'}]`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-rose-200 flex items-center gap-1">
+                        <Scale className="w-3.5 h-3.5 text-rose-400" /> Theft / Scam Method *
+                      </Label>
+                      <Select 
+                        value={scamData.theft_type} 
+                        onValueChange={(val) => setScamData(prev => ({ ...prev, theft_type: val }))}
+                      >
+                        <SelectTrigger className="h-9 text-xs bg-background/80 border-rose-500/30 rounded-xl text-foreground">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          <SelectItem value="Pump Collusion / Short Fill (Billed > Sensor)">
+                            ⛽ Pump Collusion (Billed &gt; Sensor Fill)
+                          </SelectItem>
+                          <SelectItem value="Fuel Tank Siphoning">
+                            🛢️ Fuel Tank Siphoning
+                          </SelectItem>
+                          <SelectItem value="Fake / Inflated Slip">
+                            🧾 Fake / Inflated Fuel Slip
+                          </SelectItem>
+                          <SelectItem value="Sensor Drop en-route">
+                            📉 Unexplained Level Drop en-route
+                          </SelectItem>
+                          <SelectItem value="Other">
+                            ⚠️ Other Suspicious Disparity
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Liters Comparison Grid */}
+                  <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-background/60 border border-rose-500/20">
+                    <div>
+                      <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        Billed Liters (Slip / POS)
+                      </Label>
+                      <div className="text-base sm:text-lg font-bold font-mono text-foreground mt-0.5">
+                        {billedLitersNum > 0 ? `${billedLitersNum} L` : '—'}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">From receipt above</span>
+                    </div>
+
+                    <div>
+                      <Label className="text-[11px] font-medium text-rose-300 uppercase tracking-wider flex items-center gap-1">
+                        Sensor Ingested Liters *
+                      </Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="e.g. 80.0"
+                          value={scamData.sensor_liters}
+                          onChange={(e) => setScamData(prev => ({ ...prev, sensor_liters: e.target.value }))}
+                          className="h-8 text-xs font-mono font-bold bg-background border-rose-500/40 rounded-lg pr-7 text-rose-300"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-mono">
+                          L
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">True tank volume added</span>
+                    </div>
+                  </div>
+
+                  {/* Bleed Loss Financial Calculator Banner */}
+                  {stolenLiters > 0 ? (
+                    <div className="p-3.5 rounded-xl bg-gradient-to-r from-rose-950/80 via-red-900/60 to-rose-950/80 border border-rose-500/50 text-white shadow-lg space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5 uppercase tracking-wide">
+                          <Flame className="w-4 h-4 text-rose-400 animate-pulse" />
+                          Driver Financial Bleed
+                        </span>
+                        <Badge className="bg-rose-500 text-white font-mono text-xs font-black px-2 py-0.5">
+                          {stolenLiters} L Short ({billedLitersNum > 0 ? Math.round((stolenLiters / billedLitersNum) * 100) : 0}%)
+                        </Badge>
+                      </div>
+                      <div className="flex items-baseline justify-between pt-0.5">
+                        <div className="text-xl sm:text-2xl font-black font-mono text-rose-200">
+                          ₹{bleedingFinancialLoss.toLocaleString('en-IN')}
+                        </div>
+                        <div className="text-[11px] text-rose-300/80 font-mono">
+                          {stolenLiters} L × ₹{effectiveFuelRate}/L diesel rate
+                        </div>
+                      </div>
+                    </div>
+                  ) : scamData.sensor_liters !== '' && sensorLitersNum >= billedLitersNum && billedLitersNum > 0 ? (
+                    <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Sensor volume is equal to or greater than billed ({sensorLitersNum}L vs {billedLitersNum}L). No shortfall detected.</span>
+                    </div>
+                  ) : null}
+
+                  {/* 1-Click Salary Deduction Recovery Option */}
+                  <div className="p-3 rounded-xl bg-background/70 border border-rose-500/20 flex items-start gap-2.5">
+                    <Checkbox 
+                      id="deduct-advance-check"
+                      checked={scamData.deduct_from_advance} 
+                      onCheckedChange={(checked) => setScamData(prev => ({ ...prev, deduct_from_advance: !!checked }))}
+                      className="mt-0.5 data-[state=checked]:bg-rose-600 data-[state=checked]:border-rose-600"
+                    />
+                    <div className="space-y-0.5">
+                      <Label htmlFor="deduct-advance-check" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                        ⚡ Deduct ₹{bleedingFinancialLoss > 0 ? bleedingFinancialLoss.toLocaleString('en-IN') : 'Loss'} from Driver Advance / Salary immediately
+                      </Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        Automatically records a recovery debit in the driver advance ledger against {scamData.driver_name || 'the selected driver'}.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* IoT Sensor Graph Screenshot Upload */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold text-rose-200 flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5 text-rose-400" />
+                        IoT Fuel Sensor App Graph Screenshot
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">
+                        {scamData.proofFiles.length > 0 ? `${scamData.proofFiles.length} proof file(s)` : 'Evidence graph / log'}
+                      </span>
+                    </div>
+
+                    <div 
+                      onDragOver={(e) => { e.preventDefault(); setIsDraggingSensorProof(true); }}
+                      onDragLeave={() => setIsDraggingSensorProof(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDraggingSensorProof(false);
+                        if (e.dataTransfer.files) addSensorProofFiles(Array.from(e.dataTransfer.files));
+                      }}
+                      onClick={() => sensorProofInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 ${
+                        isDraggingSensorProof 
+                          ? 'border-rose-500 bg-rose-500/10 scale-[1.01]' 
+                          : 'border-rose-500/30 hover:border-rose-500/60 bg-background/50 hover:bg-rose-950/10'
+                      }`}
+                    >
+                      <input 
+                        type="file" 
+                        ref={sensorProofInputRef}
+                        className="hidden" 
+                        accept="image/*,application/pdf"
+                        multiple
+                        onChange={handleSensorProofSelect}
+                      />
+                      <UploadCloud className="w-5 h-5 text-rose-400" />
+                      <p className="text-xs font-medium text-foreground">
+                        Upload Telematics / IoT Sensor Graph Screenshot
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        PNG, JPG, PDF up to 20MB (shows refill fuel curve)
+                      </p>
+                    </div>
+
+                    {scamData.proofFiles.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        {scamData.proofFiles.map(p => (
+                          <div key={p.key} className="flex items-center justify-between p-2 rounded-lg bg-background border border-rose-500/20 text-xs">
+                            <div className="flex items-center gap-2 truncate">
+                              {p.previewUrl ? (
+                                <img src={p.previewUrl} alt="proof" className="w-8 h-8 rounded object-cover shrink-0" />
+                              ) : (
+                                <FileText className="w-5 h-5 text-rose-400 shrink-0" />
+                              )}
+                              <span className="truncate text-[11px] text-foreground font-mono">{p.name}</span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveSensorProofFile(p);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Investigation Notes / Driver Statement */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-rose-200">
+                      Investigation Notes / Driver Statement
+                    </Label>
+                    <Textarea 
+                      placeholder="e.g., Driver claimed nozzle auto-cut tripped early, but sensor graph confirms tank level only reached 80L. Confronted driver at yard."
+                      value={scamData.notes}
+                      onChange={(e) => setScamData(prev => ({ ...prev, notes: e.target.value }))}
+                      className="bg-background text-foreground text-xs resize-none border-rose-500/30"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label>Additional Notes</Label>
               <Textarea 
@@ -1736,6 +2206,8 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Saving...
                   </>
+                ) : reportScam && stolenLiters > 0 ? (
+                  `Save Refill & Audit Theft (₹${bleedingFinancialLoss.toLocaleString('en-IN')})`
                 ) : (
                   'Save Record'
                 )}
