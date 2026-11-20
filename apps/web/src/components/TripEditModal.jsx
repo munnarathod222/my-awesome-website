@@ -768,8 +768,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                   const unloadAmt = formData.unloading_paid_by !== 'company' ? (parseFloat(formData.unloading_charges) || 0) : 0;
                   const advClient = parseFloat(formData.advance_received_from_client) || 0;
                   const toll = parseFloat(formData.toll_deduction) || 0;
+                  const mun = parseFloat(formData.munsiyana) || 0;
+                  const compLoad = formData.loading_paid_by === 'company' ? (parseFloat(formData.loading_charges) || 0) : 0;
+                  const compUnload = formData.unloading_paid_by === 'company' ? (parseFloat(formData.unloading_charges) || 0) : 0;
+                  const broker = parseFloat(formData.broker_commission) || 0;
+                  const compExp = compLoad + compUnload + broker;
                   const grossBillable = rev + detAmt + loadAmt + unloadAmt;
-                  const netBalanceDue = Math.max(0, grossBillable - advClient - toll);
+                  const netBalanceDue = Math.max(0, grossBillable - advClient - toll - mun);
 
                   return (
                     <div className="p-4 rounded-xl bg-card border border-border/80 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-3">

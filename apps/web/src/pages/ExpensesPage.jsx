@@ -272,6 +272,90 @@ const ExpensesPage = () => {
         console.warn('Trip advances query skipped:', tErr);
       }
 
+      // 🛡️ Fail-Safe 4: Merge Company Trip Operational Charges (Loading, Unloading, Brokerage)
+      try {
+        const operationalTrips = await pb.collection('trip_logs').getFullList({
+          sort: '-date',
+          $autoCancel: false
+        });
+
+        const existingExpIds = new Set(mappedExpenses.map(e => e.id));
+        operationalTrips.forEach(t => {
+          const tDate = t.date || t.created || new Date().toISOString();
+          const trk = t.truck_number || '';
+          const tid = t.trip_id || t.id;
+
+          // 1. Loading Charges (Company Paid)
+          if (t.loading_paid_by === 'company' && Number(t.loading_charges) > 0) {
+            const lId = `trip_load_${t.id}`;
+            if (!existingExpIds.has(lId) && !mappedExpenses.some(e => e.reference_id === lId || (e.reference_id === t.id && e.subcategory === 'Loading / Hamali'))) {
+              existingExpIds.add(lId);
+              mappedExpenses.push({
+                id: lId,
+                reference_id: lId,
+                trip_id: t.id,
+                date: tDate,
+                category: 'Trip Operational',
+                subcategory: 'Loading / Hamali',
+                description: `Loading / Hamali (Company Paid) - Trip ${tid}${trk ? ` [${trk}]` : ''}`,
+                payment_method: 'Cash',
+                amount: Number(t.loading_charges),
+                status: 'Approved',
+                truck_number: trk,
+                notes: `Trip ${tid}: Loading charges paid by company`
+              });
+            }
+          }
+
+          // 2. Unloading Charges (Company Paid)
+          if (t.unloading_paid_by === 'company' && Number(t.unloading_charges) > 0) {
+            const uId = `trip_unload_${t.id}`;
+            if (!existingExpIds.has(uId) && !mappedExpenses.some(e => e.reference_id === uId || (e.reference_id === t.id && e.subcategory === 'Unloading / Hamali'))) {
+              existingExpIds.add(uId);
+              mappedExpenses.push({
+                id: uId,
+                reference_id: uId,
+                trip_id: t.id,
+                date: tDate,
+                category: 'Trip Operational',
+                subcategory: 'Unloading / Hamali',
+                description: `Unloading / Hamali (Company Paid) - Trip ${tid}${trk ? ` [${trk}]` : ''}`,
+                payment_method: 'Cash',
+                amount: Number(t.unloading_charges),
+                status: 'Approved',
+                truck_number: trk,
+                notes: `Trip ${tid}: Unloading charges paid by company`
+              });
+            }
+          }
+
+          // 3. Broker Commission
+          if (Number(t.broker_commission) > 0) {
+            const bId = `trip_broker_${t.id}`;
+            if (!existingExpIds.has(bId) && !mappedExpenses.some(e => e.reference_id === bId || (e.reference_id === t.id && e.subcategory === 'Broker Commission'))) {
+              existingExpIds.add(bId);
+              mappedExpenses.push({
+                id: bId,
+                reference_id: bId,
+                trip_id: t.id,
+                date: tDate,
+                category: 'Trip Operational',
+                subcategory: 'Broker Commission',
+                description: `Broker Commission - Trip ${tid}${trk ? ` [${trk}]` : ''}`,
+                payment_method: 'Bank Transfer',
+                amount: Number(t.broker_commission),
+                status: 'Approved',
+                truck_number: trk,
+                notes: `Trip ${tid}: Brokerage commission`
+              });
+            }
+          }
+        });
+        setExpenses([...mappedExpenses]);
+      } catch (opErr) {
+        console.warn('Trip operational expenses query skipped:', opErr);
+      }
+
       const sortedAdvs = (fetchedAdvances || []).sort((a, b) => new Date(b.date || b.created) - new Date(a.date || a.created));
       setAdvances(sortedAdvs);
 

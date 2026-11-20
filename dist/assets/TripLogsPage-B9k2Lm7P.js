@@ -1725,10 +1725,11 @@ import{r as a,j as e,ak as Te,cg as rs,a1 as na,a9 as gs,az as Ht,a5 as nt,ar as
   const adv=parseFloat(t.advance_received_from_client)||0;
   const load=t.loading_paid_by!=="company"?(parseFloat(t.loading_charges)||0):0;
   const unload=t.unloading_paid_by!=="company"?(parseFloat(t.unloading_charges)||0):0;
+  const mun=parseFloat(t.munsiyana)||0;
   const toll=parseFloat(t.toll_deduction)||0;
   const curDet=parseFloat(amt)||0;
   const gross=baseRev+curDet+load+unload;
-  const netBal=Math.max(0,gross-adv-toll);
+  const netBal=Math.max(0,gross-adv-toll-mun);
 
   const handleSave=async(ev)=>{
     ev.preventDefault();
@@ -1879,12 +1880,12 @@ import{r as a,j as e,ak as Te,cg as rs,a1 as na,a9 as gs,az as Ht,a5 as nt,ar as
                 e.jsxs("div",{
                   className:"text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between",
                   children:[
-                    e.jsx("span",{children:"Trip Balance Preview"}),
-                    curDet>0&&e.jsxs("span",{className:"text-emerald-400 font-mono font-bold",children:["+₹",curDet.toLocaleString("en-IN")," added"]})
+                    e.jsx("span",{children:"Trip Balance Breakdown"}),
+                    curDet>0&&e.jsxs("span",{className:"text-emerald-400 font-mono font-bold",children:["+₹",curDet.toLocaleString("en-IN")," detention added"]})
                   ]
                 }),
                 e.jsxs("div",{
-                  className:"grid grid-cols-3 gap-2 text-xs font-mono pt-1",
+                  className:"grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono pt-1",
                   children:[
                     e.jsxs("div",{
                       className:"p-2 rounded-lg bg-background/70 border border-border/40",
@@ -1896,8 +1897,15 @@ import{r as a,j as e,ak as Te,cg as rs,a1 as na,a9 as gs,az as Ht,a5 as nt,ar as
                     e.jsxs("div",{
                       className:"p-2 rounded-lg bg-background/70 border border-border/40",
                       children:[
-                        e.jsx("span",{className:"text-[10px] text-muted-foreground block font-sans",children:"Advance"}),
+                        e.jsx("span",{className:"text-[10px] text-muted-foreground block font-sans",children:"Client Advance"}),
                         e.jsxs("span",{className:"font-bold text-sky-400",children:["-₹",adv.toLocaleString("en-IN")]})
+                      ]
+                    }),
+                    mun>0&&e.jsxs("div",{
+                      className:"p-2 rounded-lg bg-background/70 border border-border/40",
+                      children:[
+                        e.jsx("span",{className:"text-[10px] text-muted-foreground block font-sans",children:"Munsiyana (Ded)"}),
+                        e.jsxs("span",{className:"font-bold text-rose-400",children:["-₹",mun.toLocaleString("en-IN")]})
                       ]
                     }),
                     e.jsxs("div",{
@@ -2405,7 +2413,7 @@ const er=({isOpen:n,onClose:d,tripId:s,onSuccess:N,employees:u=[],trucks:g=[]})=
               })
             ]})
           ]}),
-          // Real-time Balance Box in Card 2
+          // Real-time Balance & Expenses Box in Card 2
           (()=>{
             const bRev=parseFloat(r.revenue)||0;
             const dAmt=parseFloat(r.detention_amount)||0;
@@ -2413,25 +2421,35 @@ const er=({isOpen:n,onClose:d,tripId:s,onSuccess:N,employees:u=[],trucks:g=[]})=
             const uAmt=r.unloading_paid_by!=="company"?(parseFloat(r.unloading_charges)||0):0;
             const advC=parseFloat(r.advance_received_from_client)||0;
             const tll=parseFloat(r.toll_deduction)||0;
+            const mun=parseFloat(r.munsiyana)||0;
+            const compLoad=r.loading_paid_by==="company"?(parseFloat(r.loading_charges)||0):0;
+            const compUnload=r.unloading_paid_by==="company"?(parseFloat(r.unloading_charges)||0):0;
+            const broker=parseFloat(r.broker_commission)||0;
+            const compExp=compLoad+compUnload+broker;
             const grs=bRev+dAmt+lAmt+uAmt;
-            const nBal=Math.max(0,grs-advC-tll);
+            const nBal=Math.max(0,grs-advC-tll-mun);
+
             return e.jsxs("div",{className:"p-4 rounded-xl bg-card border border-border/80 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-3",children:[
-              e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs w-full md:w-auto font-mono",children:[
+              e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs w-full md:w-auto font-mono",children:[
                 e.jsxs("div",{children:[
                   e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase block font-sans",children:"Base Revenue"}),
                   e.jsxs("span",{className:"font-bold text-foreground",children:["₹",bRev.toLocaleString("en-IN")]})
                 ]}),
                 e.jsxs("div",{children:[
-                  e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase block font-sans",children:"Detention Added"}),
-                  e.jsxs("span",{className:dAmt>0?"font-bold text-amber-400":"font-bold text-muted-foreground",children:[dAmt>0?("+₹"+dAmt.toLocaleString("en-IN")+" ("+(r.detention_days||0)+"d)"):"₹0"]})
+                  e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase block font-sans",children:"Detention"}),
+                  e.jsxs("span",{className:dAmt>0?"font-bold text-amber-400":"font-bold text-muted-foreground",children:[dAmt>0?("+₹"+dAmt.toLocaleString("en-IN")):"₹0"]})
                 ]}),
                 e.jsxs("div",{children:[
                   e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase block font-sans",children:"Client Advance"}),
                   e.jsxs("span",{className:"font-bold text-sky-400",children:["-₹",advC.toLocaleString("en-IN")]})
                 ]}),
-                e.jsxs("div",{children:[
-                  e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase block font-sans",children:"Gross Billable"}),
-                  e.jsxs("span",{className:"font-bold text-foreground",children:["₹",grs.toLocaleString("en-IN")]})
+                mun>0&&e.jsxs("div",{children:[
+                  e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase block font-sans",children:"Munsiyana (Ded)"}),
+                  e.jsxs("span",{className:"font-bold text-rose-400",children:["-₹",mun.toLocaleString("en-IN")]})
+                ]}),
+                compExp>0&&e.jsxs("div",{children:[
+                  e.jsx("span",{className:"text-[10px] text-purple-400 font-bold uppercase block font-sans",children:"Company Exp"}),
+                  e.jsxs("span",{className:"font-bold text-purple-300",children:["₹",compExp.toLocaleString("en-IN")]})
                 ]})
               ]}),
               e.jsx("div",{className:"flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0 border-border/40",children:e.jsxs("div",{className:"text-right",children:[
@@ -2534,11 +2552,18 @@ ${ye}`:ye};await E(O.id,Ae),ge++,re(we=>({...we,current:we.current+1}))}catch(ee
   const rUnload=t.unloading_paid_by!=="company"?(parseFloat(t.unloading_charges)||0):0;
   const rAdv=parseFloat(t.advance_received_from_client)||0;
   const rToll=parseFloat(t.toll_deduction)||0;
-  const rNetBal=Math.max(0,rRev+rDet+rLoad+rUnload-rAdv-rToll);
+  const rMun=parseFloat(t.munsiyana)||0;
+  const rCompLoad=t.loading_paid_by==="company"?(parseFloat(t.loading_charges)||0):0;
+  const rCompUnload=t.unloading_paid_by==="company"?(parseFloat(t.unloading_charges)||0):0;
+  const rBroker=parseFloat(t.broker_commission)||0;
+  const rCompExp=rCompLoad+rCompUnload+rBroker;
+  const rGross=rRev+rDet+rLoad+rUnload;
+  const rNetBal=Math.max(0,rGross-rAdv-rToll-rMun);
 
   return e.jsxs("div",{className:"flex flex-col items-end gap-0.5 font-mono text-[10px]",children:[
     e.jsxs("span",{className:"text-emerald-400 font-semibold",title:"Received from Client",children:["Adv: +",rAdv>0?ae(rAdv):"Rs. 0"]}),
-    e.jsxs("span",{className:"text-amber-300 font-bold",title:"Net Balance Due: ₹"+rNetBal.toLocaleString("en-IN")+" (Gross: ₹"+(rRev+rDet+rLoad+rUnload).toLocaleString("en-IN")+" - Adv: ₹"+rAdv.toLocaleString("en-IN")+")",children:["Bal: ₹",rNetBal.toLocaleString("en-IN")]})
+    e.jsxs("span",{className:"text-amber-300 font-bold",title:"Net Balance Due: ₹"+rNetBal.toLocaleString("en-IN")+" (Gross: ₹"+rGross.toLocaleString("en-IN")+(rMun>0?(" - Mun: ₹"+rMun.toLocaleString("en-IN")):"")+" - Adv: ₹"+rAdv.toLocaleString("en-IN")+")",children:["Bal: ₹",rNetBal.toLocaleString("en-IN")]}),
+    rCompExp>0&&e.jsxs("span",{className:"text-[9px] text-purple-400 font-semibold",title:"Company Operational Charges: ₹"+rCompExp.toLocaleString("en-IN")+" (Hamali/Brokerage)",children:["Exp: ₹",rCompExp.toLocaleString("en-IN")]})
   ]});
 })()}),e.jsx(Ne,{className:"text-center py-2 px-1 whitespace-nowrap",children:e.jsxs("div",{className:"flex flex-col items-center gap-1",children:[(()=>{const dc=(t.lr_file_url||t.lr_file||t.lr_number?1:0)+(t.invoice_file_url||t.invoice_file||t.invoice_number?1:0)+(t.eway_bill_file_url||t.eway_bill_file||t.eway_bill_number?1:0);return e.jsxs("button",{type:"button",onClick:()=>_setDocsTrip(t),className:"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all border "+(dc===3?"bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25":dc>0?"bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25":"bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700/60"),children:[e.jsx("span",{children:"📎"}),e.jsxs("span",{children:[dc,"/3 Docs"]})]})})(),t.delivery_deadline?(()=>{const dl=new Date(t.delivery_deadline),isPast=dl<new Date()&&t.trip_status!=="Delivered"&&t.trip_status!=="Completed";return e.jsxs("span",{onClick:()=>_setDocsTrip(t),className:"cursor-pointer px-1.5 py-0.5 rounded text-[9px] font-medium border flex items-center gap-1 "+(isPast?"bg-rose-500/20 text-rose-400 border-rose-500/30":"bg-slate-900 text-slate-300 border-slate-700"),title:isPast?"Overdue SLA!":"Target SLA",children:[e.jsx("span",{children:"⏱️"}),e.jsx("span",{children:isPast?"Overdue":dl.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})})]})})():null]})}),e.jsx(Ne,{className:"text-center",children:e.jsxs("div",{className:"flex flex-col items-center",children:[e.jsxs(pe,{value:t.trip_status||"Upcoming",onValueChange:async l=>{if(!(!l||l===t.trip_status))try{const o={trip_status:l};
 l==="Arrived at Dock"&&!t.loading_dock_arrival_time?o.loading_dock_arrival_time=new Date().toISOString():
