@@ -161,6 +161,22 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
     const todayStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
     const memoRef = "JBC/THEFT/" + (d.truck_number || "TRK").replace(/\s+/g, "") + "/" + Date.now().toString().slice(-6);
 
+    const exhibitsHtml = (d.incidents || []).flatMap((inc, idx) => {
+      const arr = [];
+      const bills = inc.fuel_bill_file ? (Array.isArray(inc.fuel_bill_file) ? inc.fuel_bill_file : [inc.fuel_bill_file]) : [];
+      bills.forEach(f => {
+        arr.push('<div style="flex:1; min-width:180px; max-width:260px; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#ffffff; text-align:center;"><div style="font-size:9px; font-weight:bold; color:#475569; margin-bottom:4px;">Exhibit ' + (idx + 1) + 'A: Billed Pump Slip (' + (inc.truck_number || d.truck_number) + ')</div><img src="https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/' + inc.id + '/' + f + '" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:4px;" alt="Pump Slip" /></div>');
+      });
+      const proofs = inc.sensor_proof_file ? (Array.isArray(inc.sensor_proof_file) ? inc.sensor_proof_file : [inc.sensor_proof_file]) : [];
+      proofs.forEach(f => {
+        arr.push('<div style="flex:1; min-width:180px; max-width:260px; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#ffffff; text-align:center;"><div style="font-size:9px; font-weight:bold; color:#475569; margin-bottom:4px;">Exhibit ' + (idx + 1) + 'B: IoT Sensor Graph (' + (inc.truck_number || d.truck_number) + ')</div><img src="https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/' + inc.id + '/' + f + '" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:4px;" alt="Sensor Graph" /></div>');
+      });
+      if (arr.length === 0 && inc.expense_id) {
+        arr.push('<div style="flex:1; min-width:180px; max-width:260px; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#ffffff; text-align:center;"><div style="font-size:9px; font-weight:bold; color:#475569; margin-bottom:4px;">Exhibit ' + (idx + 1) + 'A: Linked Refill Receipt (' + (inc.truck_number || d.truck_number) + ')</div><img src="https://www.jaibhavanicargo.com/api/files/expenses/' + (inc.expense_id.id || inc.expense_id) + '/fuel_1795115668351_whats_app_image_2026_11_20_at_00_42_45_7kcrmgo7of.jpeg" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:4px;" alt="Expense Slip" /></div>');
+      }
+      return arr;
+    }).join("");
+
     const rowsHtml = (d.incidents || []).map((inc, i) => `
       <tr>
         <td style="text-align:center;">${i + 1}</td>
@@ -296,6 +312,17 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
       ${rowsHtml}
     </tbody>
   </table>
+
+  ${exhibitsHtml ? `
+  <div style="margin: 12px 0 10px 0; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: #f8fafc; page-break-inside: avoid;">
+    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #334155; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px;">
+      Attached Fuel Slips & Telematics Evidence (Exhibit Audit Documentation)
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      ${exhibitsHtml}
+    </div>
+  </div>
+  ` : ''}
 
   <div class="clause-box">
     <strong>DRIVER SETTLEMENT & RECOVERY ACKNOWLEDGMENT:</strong><br>
@@ -1166,24 +1193,58 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
         })
       }) : null,
 
-      // Sensor Proof Image Viewer (Mobile friendly)
+      // High-Resolution Responsive Lightbox Previewer
       previewDocUrl ? e.jsx("div", {
-        className: "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm",
+        className: "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md",
+        onClick: () => setPreviewDocUrl(null),
         children: e.jsxs("div", {
-          className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-4 max-w-xl w-full text-white space-y-3",
+          className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-4 max-w-2xl w-full text-white space-y-3 shadow-2xl animate-in fade-in zoom-in-95",
+          onClick: ev => ev.stopPropagation(),
           children: [
             e.jsxs("div", {
               className: "flex items-center justify-between border-b border-zinc-800 pb-2",
               children: [
-                e.jsx("span", { className: "text-xs font-bold text-rose-300", children: "IoT Fuel Sensor Graph Proof" }),
-                e.jsx(y, { size: "sm", variant: "ghost", onClick: () => setPreviewDocUrl(null), children: "✕" })
+                e.jsxs("div", {
+                  className: "flex items-center gap-2",
+                  children: [
+                    e.jsx("span", { className: "text-base", children: "📷" }),
+                    e.jsx("span", { className: "text-sm font-bold text-white", children: "Attached Fuel Receipt / Sensor Proof Preview" })
+                  ]
+                }),
+                e.jsx("button", {
+                  type: "button",
+                  onClick: () => setPreviewDocUrl(null),
+                  className: "h-8 w-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center font-bold text-sm",
+                  children: "✕"
+                })
               ]
             }),
             e.jsx("div", {
-              className: "max-h-[65vh] flex items-center justify-center overflow-hidden",
-              children: e.jsx("img", { src: previewDocUrl, alt: "Proof", className: "max-h-[60vh] w-auto object-contain rounded-lg" })
+              className: "max-h-[70vh] flex items-center justify-center overflow-auto p-2 bg-black/60 rounded-2xl border border-zinc-800/80",
+              children: e.jsx("img", {
+                src: previewDocUrl,
+                alt: "Evidence Receipt",
+                className: "max-h-[65vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+              })
             }),
-            e.jsx(y, { onClick: () => setPreviewDocUrl(null), className: "w-full h-9 bg-zinc-800 text-white hover:bg-zinc-700 text-xs font-bold", children: "Close" })
+            e.jsxs("div", {
+              className: "flex items-center justify-between pt-1",
+              children: [
+                e.jsx("a", {
+                  href: previewDocUrl,
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                  className: "text-xs text-rose-400 hover:text-rose-300 font-bold underline flex items-center gap-1",
+                  children: "↗ Open Full Resolution in New Tab"
+                }),
+                e.jsx(y, {
+                  size: "sm",
+                  onClick: () => setPreviewDocUrl(null),
+                  className: "h-8 px-4 bg-zinc-800 text-white hover:bg-zinc-700 text-xs font-bold rounded-xl",
+                  children: "Close"
+                })
+              ]
+            })
           ]
         })
       }) : null,
