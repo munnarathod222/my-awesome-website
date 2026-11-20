@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail, ArrowRightLeft, FileCheck2, Users, Clock, MoreVertical, Radio } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
+import QuickDetentionModal from '@/components/QuickDetentionModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import AddTripModal from '@/components/AddTripModal.jsx';
@@ -118,6 +119,7 @@ const TripLogsPage = () => {
   
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [quickDetentionTrip, setQuickDetentionTrip] = useState(null);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
@@ -1103,8 +1105,18 @@ const TripLogsPage = () => {
                                 <div className="text-sm font-bold text-foreground">
                                   {formatCurrency(log.revenue)}
                                 </div>
-                                {(Number(log.loading_charges) > 0 || Number(log.unloading_charges) > 0 || Number(log.broker_commission) > 0 || Number(log.munsiyana) > 0) && (
+                                {(Number(log.detention_amount) > 0 || Number(log.loading_charges) > 0 || Number(log.unloading_charges) > 0 || Number(log.broker_commission) > 0 || Number(log.munsiyana) > 0) && (
                                   <div className="flex flex-col items-end gap-0.5 mt-1 text-[9px] font-mono">
+                                    {Number(log.detention_amount) > 0 && (
+                                      <span 
+                                        onClick={() => setQuickDetentionTrip(log)}
+                                        className="text-amber-400 font-bold cursor-pointer hover:underline flex items-center gap-0.5"
+                                        title={"Detention: " + (log.detention_days || 0) + "d @ ₹" + (log.detention_rate_per_day || 1500) + "/day"}
+                                      >
+                                        <span>⏳ Det:</span>
+                                        <span>+₹{Number(log.detention_amount).toLocaleString('en-IN')} ({log.detention_days || 0}d)</span>
+                                      </span>
+                                    )}
                                     {Number(log.loading_charges) > 0 && (
                                       <span className={log.loading_paid_by === 'company' ? "text-amber-500 font-semibold" : "text-blue-400 font-semibold"}>
                                         Load: +₹{Number(log.loading_charges).toLocaleString('en-IN')} {log.loading_paid_by === 'company' ? '(Co)' : '(Cl)'}
@@ -1131,14 +1143,26 @@ const TripLogsPage = () => {
                             )}
                             {!isDispatcher && (
                               <TableCell className="text-right">
-                                <div className="flex flex-col items-end gap-1">
-                                  <span className="text-xs font-medium text-success bg-success/10 px-1.5 py-0.5 rounded" title="Received from Client">
-                                    +{log.advance_received_from_client > 0 ? formatCurrency(log.advance_received_from_client) : '0'}
-                                  </span>
-                                  <span className="text-xs font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded" title="Paid to Driver">
-                                    -{log.advance_paid_to_driver > 0 ? formatCurrency(log.advance_paid_to_driver) : '0'}
-                                  </span>
-                                </div>
+                                {(() => {
+                                  const rev = Number(log.revenue || log.freight_amount) || 0;
+                                  const det = Number(log.detention_amount) || 0;
+                                  const load = log.loading_paid_by !== 'company' ? (Number(log.loading_charges) || 0) : 0;
+                                  const unload = log.unloading_paid_by !== 'company' ? (Number(log.unloading_charges) || 0) : 0;
+                                  const adv = Number(log.advance_received_from_client) || 0;
+                                  const toll = Number(log.toll_deduction) || 0;
+                                  const netBal = Math.max(0, rev + det + load + unload - adv - toll);
+
+                                  return (
+                                    <div className="flex flex-col items-end gap-0.5">
+                                      <span className="text-xs font-medium text-success bg-success/10 px-1.5 py-0.5 rounded" title="Received from Client">
+                                        Adv: +{adv > 0 ? formatCurrency(adv) : '₹0'}
+                                      </span>
+                                      <span className="text-xs font-bold text-emerald-400 font-mono" title={"Net Balance Due: ₹" + netBal.toLocaleString('en-IN') + " (Gross ₹" + (rev + det + load + unload).toLocaleString('en-IN') + " - Adv ₹" + adv.toLocaleString('en-IN') + ")"}>
+                                        Bal: ₹{netBal.toLocaleString('en-IN')}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
                               </TableCell>
                             )}
 
@@ -1415,6 +1439,25 @@ const TripLogsPage = () => {
                                   title="Email Trip Sheet"
                                 >
                                   <Mail className="w-4 h-4" />
+                                </Button>
+
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => setQuickDetentionTrip(log)}
+                                  className={cn(
+                                    "h-8 px-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-1 bg-background shrink-0",
+                                    Number(log.detention_amount) > 0 
+                                      ? "text-amber-400 border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 shadow-xs" 
+                                      : "text-muted-foreground hover:text-amber-400 hover:border-amber-500/40"
+                                  )}
+                                  title="Quick Add / Edit Detention Charges"
+                                >
+                                  <span className="text-xs">⏳</span>
+                                  <span className="hidden xl:inline">Detention</span>
+                                  {Number(log.detention_amount) > 0 && (
+                                    <span className="text-[10px] font-mono font-bold text-amber-300">₹{Number(log.detention_amount).toLocaleString('en-IN')}</span>
+                                  )}
                                 </Button>
 
                                 <Button 
@@ -1795,6 +1838,22 @@ const TripLogsPage = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
+                            onClick={() => setQuickDetentionTrip(log)}
+                            className={cn(
+                              "flex-1 h-8 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1",
+                              Number(log.detention_amount) > 0 
+                                ? "border-amber-500/40 bg-amber-500/10 text-amber-400" 
+                                : "border-border bg-muted/30 hover:bg-muted text-foreground"
+                            )}
+                            title="Add Detention Charges"
+                          >
+                            <span className="text-xs">⏳</span>
+                            <span>{Number(log.detention_amount) > 0 ? "₹" + Number(log.detention_amount).toLocaleString('en-IN') : 'Detention'}</span>
+                          </Button>
+
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
                             onClick={() => handleEditClick(log.id)}
                             className="flex-1 h-8 rounded-xl text-xs font-bold border-border bg-muted/30 hover:bg-muted text-foreground flex items-center justify-center gap-1"
                           >
@@ -2011,6 +2070,19 @@ const TripLogsPage = () => {
           onSuccess={fetchData}
           employees={employees}
           trucks={trucks}
+        />
+      )}
+
+      {quickDetentionTrip && (
+        <QuickDetentionModal
+          isOpen={!!quickDetentionTrip}
+          trip={quickDetentionTrip}
+          onClose={() => setQuickDetentionTrip(null)}
+          onSuccess={(updatedTrip) => {
+            setTripLogs(prev => prev.map(t => t.id === updatedTrip.id ? { ...t, ...updatedTrip } : t));
+            setQuickDetentionTrip(null);
+            fetchData();
+          }}
         />
       )}
       

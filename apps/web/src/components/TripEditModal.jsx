@@ -65,7 +65,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     free_detention_hours: 4,
     detention_rate_per_hour: 500,
     detention_hours: 0,
+    detention_days: 0,
+    detention_rate_per_day: 1500,
     detention_amount: 0,
+    detention_reason: '',
     detention_status: 'none'
   });
 
@@ -129,7 +132,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           free_detention_hours: trip.free_detention_hours !== undefined && trip.free_detention_hours !== null && trip.free_detention_hours !== '' ? trip.free_detention_hours : 4,
           detention_rate_per_hour: trip.detention_rate_per_hour !== undefined && trip.detention_rate_per_hour !== null && trip.detention_rate_per_hour !== '' ? trip.detention_rate_per_hour : 500,
           detention_hours: trip.detention_hours || 0,
+          detention_days: trip.detention_days !== undefined && trip.detention_days !== null ? trip.detention_days : 0,
+          detention_rate_per_day: trip.detention_rate_per_day !== undefined && trip.detention_rate_per_day !== null ? trip.detention_rate_per_day : 1500,
           detention_amount: trip.detention_amount || 0,
+          detention_reason: trip.detention_reason || '',
           detention_status: trip.detention_status || 'none'
         });
       } catch (error) {
@@ -201,6 +207,9 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         })(),
         free_detention_hours: parseFloat(formData.free_detention_hours) || 4,
         detention_rate_per_hour: parseFloat(formData.detention_rate_per_hour) || 500,
+        detention_days: parseFloat(formData.detention_days) || 0,
+        detention_rate_per_day: parseFloat(formData.detention_rate_per_day) || 1500,
+        detention_reason: formData.detention_reason || '',
         detention_hours: (() => {
           if (formData.delivery_dock_arrival_time || formData.trip_status === 'Reached Delivery Docket' || formData.trip_status === 'Unloading in Progress') {
             const det = calculateTripDetention({
@@ -212,6 +221,12 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           return parseFloat(formData.detention_hours) || 0;
         })(),
         detention_amount: (() => {
+          const manualAmt = parseFloat(formData.detention_amount);
+          if (!isNaN(manualAmt) && manualAmt > 0) return manualAmt;
+          const days = parseFloat(formData.detention_days) || 0;
+          if (days > 0) {
+            return days * (parseFloat(formData.detention_rate_per_day) || 1500);
+          }
           if (formData.delivery_dock_arrival_time || formData.trip_status === 'Reached Delivery Docket' || formData.trip_status === 'Unloading in Progress') {
             const det = calculateTripDetention({
               ...formData,
@@ -219,9 +234,11 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
             });
             return det ? det.billableAmount : 0;
           }
-          return parseFloat(formData.detention_amount) || 0;
+          return 0;
         })(),
         detention_status: (() => {
+          const amt = parseFloat(formData.detention_amount) || ((parseFloat(formData.detention_days) || 0) * (parseFloat(formData.detention_rate_per_day) || 1500));
+          if (amt > 0) return 'billable';
           if (formData.delivery_dock_arrival_time || formData.trip_status === 'Reached Delivery Docket' || formData.trip_status === 'Unloading in Progress') {
             const det = calculateTripDetention({
               ...formData,
@@ -667,7 +684,129 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                       className="bg-background h-9 text-xs"
                     />
                   </div>
+
+                  {/* ⏳ Detention Days (Halting) */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-detention_days" className="text-xs font-semibold text-amber-400">
+                      Detention Days (Halting)
+                    </Label>
+                    <Input
+                      id="edit-detention_days"
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={formData.detention_days !== undefined ? formData.detention_days : 0}
+                      onChange={(e) => {
+                        const daysVal = e.target.value;
+                        const rate = parseFloat(formData.detention_rate_per_day) || 1500;
+                        const amt = Math.round((parseFloat(daysVal) || 0) * rate);
+                        setFormData({
+                          ...formData,
+                          detention_days: daysVal,
+                          detention_amount: amt > 0 ? amt : (daysVal === '' ? '' : 0)
+                        });
+                      }}
+                      placeholder="0"
+                      className="bg-background h-9 text-xs font-mono font-bold"
+                    />
+                  </div>
+
+                  {/* Detention Rate (₹ / Day) */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-detention_rate_per_day" className="text-xs font-semibold">
+                      Detention Rate (₹ / Day)
+                    </Label>
+                    <Input
+                      id="edit-detention_rate_per_day"
+                      type="number"
+                      step="100"
+                      min="0"
+                      value={formData.detention_rate_per_day !== undefined ? formData.detention_rate_per_day : 1500}
+                      onChange={(e) => {
+                        const rateVal = e.target.value;
+                        const days = parseFloat(formData.detention_days) || 0;
+                        const amt = Math.round(days * (parseFloat(rateVal) || 0));
+                        setFormData({
+                          ...formData,
+                          detention_rate_per_day: rateVal,
+                          detention_amount: amt > 0 ? amt : (rateVal === '' ? '' : 0)
+                        });
+                      }}
+                      placeholder="1500"
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Total Detention Charges (₹) */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-detention_amount" className="text-xs font-bold text-amber-400">
+                        Total Detention (₹)
+                      </Label>
+                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                        + Adds to Balance
+                      </span>
+                    </div>
+                    <Input
+                      id="edit-detention_amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.detention_amount !== undefined ? formData.detention_amount : 0}
+                      onChange={(e) => setFormData({ ...formData, detention_amount: e.target.value })}
+                      placeholder="0.00"
+                      className="bg-background h-9 text-xs font-mono font-bold text-amber-300 border-amber-500/40"
+                    />
+                  </div>
                 </div>
+
+                {/* 💰 Live Trip Balance & Financials Scorecard */}
+                {(() => {
+                  const rev = parseFloat(formData.revenue) || 0;
+                  const detAmt = parseFloat(formData.detention_amount) || 0;
+                  const loadAmt = formData.loading_paid_by !== 'company' ? (parseFloat(formData.loading_charges) || 0) : 0;
+                  const unloadAmt = formData.unloading_paid_by !== 'company' ? (parseFloat(formData.unloading_charges) || 0) : 0;
+                  const advClient = parseFloat(formData.advance_received_from_client) || 0;
+                  const toll = parseFloat(formData.toll_deduction) || 0;
+                  const grossBillable = rev + detAmt + loadAmt + unloadAmt;
+                  const netBalanceDue = Math.max(0, grossBillable - advClient - toll);
+
+                  return (
+                    <div className="p-4 rounded-xl bg-card border border-border/80 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs w-full md:w-auto font-mono">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase block font-sans">Base Revenue</span>
+                          <span className="font-bold text-foreground">₹{rev.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase block font-sans">Detention Added</span>
+                          <span className={detAmt > 0 ? "font-bold text-amber-400" : "font-bold text-muted-foreground"}>
+                            +{detAmt > 0 ? "₹" + detAmt.toLocaleString('en-IN') + " (" + (formData.detention_days || 0) + "d)" : '₹0'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase block font-sans">Client Advance</span>
+                          <span className="font-bold text-sky-400">-{advClient > 0 ? "₹" + advClient.toLocaleString('en-IN') : '₹0'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground uppercase block font-sans">Gross Billable</span>
+                          <span className="font-bold text-foreground">₹{grossBillable.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0 border-border/40">
+                        <div className="text-right">
+                          <span className="text-[10px] text-emerald-400/90 uppercase font-bold tracking-wider block">
+                            ★ Net Trip Balance Due
+                          </span>
+                          <span className="text-xl font-black font-mono text-emerald-400">
+                            ₹{netBalanceDue.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {isAttached && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-blue-900/35 bg-blue-950/10 animate-in fade-in duration-300 mt-2">
