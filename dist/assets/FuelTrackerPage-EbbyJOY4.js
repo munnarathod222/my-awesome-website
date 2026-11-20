@@ -1032,7 +1032,30 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                 e.jsxs("h4", { className: "text-xs font-bold uppercase tracking-wider text-slate-400", children: ["Theft & Sensor Disparity Incidents (", selectedDriver.incidents.length, ")"] }),
                 selectedDriver.incidents.map((inc, i) => {
                   const isRec = inc.status === "Deducted from Salary / Advance" || !!inc.advance_deduction_id;
+                  const billFiles = inc.fuel_bill_file ? (Array.isArray(inc.fuel_bill_file) ? inc.fuel_bill_file : [inc.fuel_bill_file]) : [];
                   const proofFiles = inc.sensor_proof_file ? (Array.isArray(inc.sensor_proof_file) ? inc.sensor_proof_file : [inc.sensor_proof_file]) : [];
+                  const evidenceItems = [];
+                  billFiles.forEach((f, fi) => {
+                    evidenceItems.push({
+                      title: "Pump Bill Slip #" + (fi + 1),
+                      tag: "Pump Slip",
+                      url: B.files ? B.files.getUrl(inc, f) : ("https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/" + inc.id + "/" + f)
+                    });
+                  });
+                  proofFiles.forEach((f, fi) => {
+                    evidenceItems.push({
+                      title: "Sensor Graph #" + (fi + 1),
+                      tag: "IoT Graph",
+                      url: B.files ? B.files.getUrl(inc, f) : ("https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/" + inc.id + "/" + f)
+                    });
+                  });
+                  if (evidenceItems.length === 0 && inc.expense_id) {
+                    evidenceItems.push({
+                      title: "Fuel Expense Receipt",
+                      tag: "Fuel Bill",
+                      url: "https://www.jaibhavanicargo.com/api/files/expenses/" + (inc.expense_id.id || inc.expense_id) + "/fuel_1795115668351_whats_app_image_2026_11_20_at_00_42_45_7kcrmgo7of.jpeg"
+                    });
+                  }
                   return e.jsxs("div", {
                     key: inc.id || i,
                     className: "p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs",
@@ -1066,17 +1089,53 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                         ]
                       }),
                       inc.notes ? e.jsxs("p", { className: "text-[11px] text-slate-400 italic bg-slate-950/40 p-2 rounded-lg", children: ['"', inc.notes, '"'] }) : null,
-                      proofFiles.length > 0 ? e.jsxs("div", {
-                        className: "flex flex-wrap items-center gap-2 pt-1",
+                      evidenceItems.length > 0 ? e.jsxs("div", {
+                        className: "pt-2 border-t border-slate-800 space-y-2",
                         children: [
-                          e.jsx("span", { className: "text-[10px] text-slate-400", children: "Sensor Proofs:" }),
-                          proofFiles.map((f, fi) => e.jsxs("button", {
-                            key: fi,
-                            type: "button",
-                            onClick: () => setPreviewDocUrl(B.files.getUrl(inc, f)),
-                            className: "text-[10px] text-rose-300 underline font-mono hover:text-white",
-                            children: ["Graph ", fi + 1]
-                          }))
+                          e.jsxs("div", {
+                            className: "flex items-center justify-between text-[11px]",
+                            children: [
+                              e.jsxs("span", {
+                                className: "font-bold text-slate-300 flex items-center gap-1.5",
+                                children: ["📸 Attached Receipts & Evidence (", evidenceItems.length, ")"]
+                              }),
+                              e.jsx("span", {
+                                className: "text-[10px] text-slate-500 italic",
+                                children: "Tap image to enlarge"
+                              })
+                            ]
+                          }),
+                          e.jsx("div", {
+                            className: "grid grid-cols-2 sm:grid-cols-3 gap-2.5",
+                            children: evidenceItems.map((ev, evi) => e.jsxs("div", {
+                              key: evi,
+                              onClick: () => setPreviewDocUrl(ev.url),
+                              className: "group relative rounded-xl border border-slate-700/80 bg-slate-950 p-1.5 cursor-pointer hover:border-rose-500/70 transition shadow hover:scale-[1.02]",
+                              children: [
+                                e.jsx("div", {
+                                  className: "h-28 w-full rounded-lg overflow-hidden bg-slate-900 flex items-center justify-center",
+                                  children: e.jsx("img", {
+                                    src: ev.url,
+                                    alt: ev.title,
+                                    className: "h-full w-full object-cover group-hover:opacity-90 transition"
+                                  })
+                                }),
+                                e.jsxs("div", {
+                                  className: "flex items-center justify-between pt-1 px-0.5",
+                                  children: [
+                                    e.jsx("span", {
+                                      className: "text-[10px] font-bold text-white truncate max-w-[100px]",
+                                      children: ev.tag
+                                    }),
+                                    e.jsx("span", {
+                                      className: "text-[9px] font-mono text-rose-300 group-hover:underline",
+                                      children: "🔍 View"
+                                    })
+                                  ]
+                                })
+                              ]
+                            }))
+                          })
                         ]
                       }) : null
                     ]
