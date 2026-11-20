@@ -939,6 +939,7 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, ed
           const scamFd = new FormData();
           scamFd.append('incident_date', refillDate);
           if (tracker?.id) scamFd.append('fuel_tracker_id', tracker.id);
+          if (expenseRecord?.id) scamFd.append('expense_id', expenseRecord.id);
           scamFd.append('driver_id', scamData.driver_id || '');
           scamFd.append('driver_name', scamData.driver_name || 'Assigned Driver');
           scamFd.append('truck_id', selectedTruck.id);
