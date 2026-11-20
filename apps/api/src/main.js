@@ -4163,7 +4163,7 @@ runPocketBase();
 
 // Start end-of-month leaderboard + payroll cron job
 startMonthEndCron();
-startTripClosureCron();
+// startTripClosureCron(); // Disabled: auto-close and 10-minute timer removed per user request
 startEscalationCron();
 
 // Diagnostic endpoint — executes pocketbase migrate up manually on Render
