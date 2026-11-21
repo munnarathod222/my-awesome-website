@@ -2,7 +2,6 @@ import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
 import path from 'path';
 import fs from 'fs';
-import { DatabaseSync } from 'node:sqlite';
 
 /**
  * Standard Indian highway speed benchmark for 32FT SXL / heavy freight.
@@ -24,7 +23,7 @@ function toEpoch(val) {
 }
 
 /**
- * Robust database reader: Tries PocketBase HTTP first; falls back to direct SQLite if daemon is offline.
+ * Robust database reader: Tries PocketBase HTTP first; falls back to dynamic sqlite if available.
  */
 export async function queryCollection(collectionName, filter = null, sort = null) {
   try {
@@ -35,21 +34,23 @@ export async function queryCollection(collectionName, filter = null, sort = null
     });
     return list;
   } catch (err) {
-    const dbPaths = [
-      path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
-      path.resolve(process.cwd(), 'pocketbase/pb_data/data.db')
-    ];
-    const foundPath = dbPaths.find(p => fs.existsSync(p));
-    if (foundPath) {
-      try {
-        const db = new DatabaseSync(foundPath);
-        let sql = `SELECT * FROM ${collectionName}`;
-        const rows = db.prepare(sql).all();
-        return rows;
-      } catch (sqlErr) {
-        return [];
+    try {
+      const dbPaths = [
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pocketbase/pb_data/data.db')
+      ];
+      const foundPath = dbPaths.find(p => fs.existsSync(p));
+      if (foundPath) {
+        let sqliteMod = null;
+        try {
+          sqliteMod = await import('node:sqlite');
+        } catch (_) {}
+        if (sqliteMod && sqliteMod.DatabaseSync) {
+          const db = new sqliteMod.DatabaseSync(foundPath);
+          return db.prepare(`SELECT * FROM ${collectionName}`).all();
+        }
       }
-    }
+    } catch (_) {}
     return [];
   }
 }
