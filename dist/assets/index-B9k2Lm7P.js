@@ -1,7 +1,7 @@
 window.Helmet=window.Helmet||function(){return null;};
 function jbcCheckRole(pth,title,usrRole,email){
-const isOwner=email?.toLowerCase()==="munnarathod222@gmail.com"||usrRole==="super_admin"||usrRole==="superuser"||usrRole==="owner";
-if(isOwner)return true;
+const isOwner=email?.toLowerCase()==="munnarathod222@gmail.com"||email?.toLowerCase()==="operations@jaibhavanicargo.com"||usrRole==="super_admin"||usrRole==="superuser"||usrRole==="owner";
+if(isOwner||pth.startsWith("/reservations"))return true;
 const r=(usrRole||"user").toLowerCase();
 if(r==="admin"){return pth!=="/dashboard/audit-logs"&&pth!=="/db-viewer";}
 if(r==="fleet_manager"||r==="manager"){
