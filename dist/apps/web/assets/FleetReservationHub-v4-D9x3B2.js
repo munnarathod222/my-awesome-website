@@ -148,6 +148,16 @@ var Calendar = createLucideIcon("Calendar", [
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ]);
 
+// apps/web/node_modules/lucide-react/dist/esm/icons/chevron-left.js
+var ChevronLeft = createLucideIcon("ChevronLeft", [
+  ["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/chevron-right.js
+var ChevronRight = createLucideIcon("ChevronRight", [
+  ["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]
+]);
+
 // apps/web/node_modules/lucide-react/dist/esm/icons/circle-alert.js
 var CircleAlert = createLucideIcon("CircleAlert", [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
@@ -253,6 +263,12 @@ var MapPin = createLucideIcon("MapPin", [
 // apps/web/node_modules/lucide-react/dist/esm/icons/navigation.js
 var Navigation = createLucideIcon("Navigation", [
   ["polygon", { points: "3 11 22 2 13 21 11 13 3 11", key: "1ltx0t" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/plus.js
+var Plus = createLucideIcon("Plus", [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
 ]);
 
 // apps/web/node_modules/lucide-react/dist/esm/icons/printer.js
@@ -6794,18 +6810,90 @@ var useAuth = () => {
 
 // apps/web/src/pages/FleetCalendarPage.jsx
 var STATUS_CONFIG = {
-  "Available": { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30", label: "Available" },
-  "Booked": { bg: "bg-blue-500/15", text: "text-blue-400", border: "border-blue-500/30", label: "Booked" },
-  "Booking Requested": { bg: "bg-amber-500/15", text: "text-amber-400", border: "border-amber-500/30", label: "Booking Requested" },
-  "Loading": { bg: "bg-teal-500/15", text: "text-teal-400", border: "border-teal-500/30", label: "Loading at Dock" },
-  "In Transit": { bg: "bg-purple-500/15", text: "text-purple-400", border: "border-purple-500/30", label: "In Transit" },
-  "Unloading": { bg: "bg-cyan-500/15", text: "text-cyan-400", border: "border-cyan-500/30", label: "Unloading at Dock" },
-  "Waiting": { bg: "bg-yellow-500/15", text: "text-yellow-400", border: "border-yellow-500/30", label: "Detained / Waiting" },
-  "Expected Available": { bg: "bg-emerald-500/10 border-dashed", text: "text-emerald-300", border: "border-emerald-400/40", label: "Expected Available" },
-  "Maintenance": { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30", label: "Maintenance" },
-  "Breakdown": { bg: "bg-rose-500/20", text: "text-rose-400", border: "border-rose-500/40", label: "Breakdown" },
-  "Documents Expired": { bg: "bg-red-500/25", text: "text-red-400", border: "border-red-500/50", label: "Documents Expired" },
-  "Schedule Conflict": { bg: "bg-crimson-500/30 animate-pulse", text: "text-red-300", border: "border-red-500", label: "Schedule Conflict" }
+  "Available": {
+    bg: "bg-emerald-500/15 hover:bg-emerald-500/25",
+    text: "text-emerald-400",
+    border: "border-emerald-500/30",
+    dot: "bg-emerald-400",
+    label: "Available"
+  },
+  "Booked": {
+    bg: "bg-blue-500/20 hover:bg-blue-500/30",
+    text: "text-blue-300",
+    border: "border-blue-500/40",
+    dot: "bg-blue-400",
+    label: "Confirmed Booked"
+  },
+  "Booking Requested": {
+    bg: "bg-amber-500/20 hover:bg-amber-500/30",
+    text: "text-amber-300",
+    border: "border-amber-500/40",
+    dot: "bg-amber-400",
+    label: "Booking Request"
+  },
+  "Loading": {
+    bg: "bg-teal-500/20 hover:bg-teal-500/30",
+    text: "text-teal-300",
+    border: "border-teal-500/40",
+    dot: "bg-teal-400",
+    label: "Loading at Dock"
+  },
+  "In Transit": {
+    bg: "bg-purple-500/20 hover:bg-purple-500/30",
+    text: "text-purple-300",
+    border: "border-purple-500/40",
+    dot: "bg-purple-400",
+    label: "In Transit"
+  },
+  "Unloading": {
+    bg: "bg-cyan-500/20 hover:bg-cyan-500/30",
+    text: "text-cyan-300",
+    border: "border-cyan-500/40",
+    dot: "bg-cyan-400",
+    label: "Unloading at Dock"
+  },
+  "Waiting": {
+    bg: "bg-yellow-500/20 hover:bg-yellow-500/30",
+    text: "text-yellow-300",
+    border: "border-yellow-500/40",
+    dot: "bg-yellow-400",
+    label: "Detained / Waiting"
+  },
+  "Expected Available": {
+    bg: "bg-emerald-500/10 border-dashed hover:bg-emerald-500/20",
+    text: "text-emerald-300",
+    border: "border-emerald-400/40",
+    dot: "bg-emerald-300",
+    label: "Expected Available"
+  },
+  "Maintenance": {
+    bg: "bg-orange-500/20 hover:bg-orange-500/30",
+    text: "text-orange-300",
+    border: "border-orange-500/40",
+    dot: "bg-orange-400",
+    label: "Maintenance"
+  },
+  "Breakdown": {
+    bg: "bg-rose-500/25 hover:bg-rose-500/35",
+    text: "text-rose-300",
+    border: "border-rose-500/50",
+    dot: "bg-rose-400",
+    label: "Breakdown"
+  },
+  "Documents Expired": {
+    bg: "bg-red-500/30 hover:bg-red-500/40",
+    text: "text-red-300",
+    border: "border-red-500/60",
+    dot: "bg-red-500",
+    label: "Docs Expired"
+  },
+  "Schedule Conflict": {
+    bg: "bg-red-600/30 animate-pulse",
+    text: "text-red-200",
+    border: "border-red-500",
+    dot: "bg-red-400",
+    label: "Conflict"
+  }
 };
 function FleetCalendarPage() {
   let currentUser = null;
@@ -6818,11 +6906,29 @@ function FleetCalendarPage() {
     } catch (err) {
     }
   }
-  const [viewMode, setViewMode] = useState("weekly");
+  const [dateOffset, setDateOffset] = useState(0);
+  const [viewDaysCount, setViewDaysCount] = useState(7);
   const [timelineData, setTimelineData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedTruck, setSelectedTruck] = useState(null);
+  const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
+  const [reserveForm, setReserveForm] = useState({
+    truck_number: "",
+    vehicle_category: "",
+    customer_name: "",
+    customer_phone: "",
+    customer_email: "",
+    origin: "",
+    destination: "",
+    loading_datetime: "",
+    reservation_type: "Confirmed",
+    indicative_freight: "",
+    cargo_weight_tons: "14.5",
+    notes: ""
+  });
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [blockForm, setBlockForm] = useState({
     truck_number: "",
@@ -6834,7 +6940,7 @@ function FleetCalendarPage() {
   const loadCalendar = async () => {
     try {
       setLoading(true);
-      const res = await reservationClient.getCalendar(viewMode);
+      const res = await reservationClient.getCalendar("weekly");
       setTimelineData(res.timeline || []);
     } catch (err) {
       toast.error("Failed to load fleet calendar: " + err.message);
@@ -6844,7 +6950,69 @@ function FleetCalendarPage() {
   };
   useEffect(() => {
     loadCalendar();
-  }, [viewMode]);
+  }, []);
+  const baseDate = /* @__PURE__ */ new Date();
+  baseDate.setDate(baseDate.getDate() + dateOffset);
+  const days = Array.from({ length: viewDaysCount }, (_, i2) => {
+    const d = new Date(baseDate);
+    d.setDate(baseDate.getDate() + i2);
+    const today = /* @__PURE__ */ new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    return {
+      date: d,
+      dateString: d.toISOString().split("T")[0],
+      dayName: d.toLocaleDateString("en-IN", { weekday: "short" }),
+      dayNum: d.getDate(),
+      month: d.toLocaleDateString("en-IN", { month: "short" }),
+      isToday
+    };
+  });
+  const startDateFormatted = days[0]?.date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const endDateFormatted = days[days.length - 1]?.date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const filteredTimeline = timelineData.filter((t2) => {
+    const matchesSearch = (t2.truck_number || "").toLowerCase().includes(searchTerm.toLowerCase()) || (t2.current_location || "").toLowerCase().includes(searchTerm.toLowerCase()) || (t2.predicted_location || "").toLowerCase().includes(searchTerm.toLowerCase()) || (t2.current_status || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || t2.vehicle_category === selectedCategory;
+    const matchesStatus = selectedStatus === "All" || t2.current_status === selectedStatus;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+  const categories = ["All", ...new Set(timelineData.map((t2) => t2.vehicle_category).filter(Boolean))];
+  const handleOpenReserve = (truck, dateObj) => {
+    const dateStr = dateObj ? dateObj.dateString : (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const defaultTime = `${dateStr}T09:00`;
+    setReserveForm({
+      truck_number: truck.truck_number,
+      vehicle_category: truck.vehicle_category || "32FT SXL",
+      customer_name: currentUser?.name || currentUser?.full_name || "",
+      customer_phone: currentUser?.phone || "",
+      customer_email: currentUser?.email || "",
+      origin: truck.predicted_location || truck.current_location || "Hyderabad Hub",
+      destination: "",
+      loading_datetime: defaultTime,
+      reservation_type: "Confirmed",
+      indicative_freight: "32000",
+      cargo_weight_tons: String(truck.capacity_tons || 14.5),
+      notes: ""
+    });
+    setIsReserveModalOpen(true);
+  };
+  const handleCreateReservation = async (e2) => {
+    e2.preventDefault();
+    if (!reserveForm.customer_name || !reserveForm.destination) {
+      toast.warning("Please enter customer name and destination.");
+      return;
+    }
+    try {
+      await reservationClient.createReservation({
+        ...reserveForm,
+        created_by: currentUser?.full_name || currentUser?.name || "Dispatcher"
+      });
+      toast.success(`Reservation Confirmed for ${reserveForm.truck_number} \u2192 ${reserveForm.destination}!`);
+      setIsReserveModalOpen(false);
+      loadCalendar();
+    } catch (err) {
+      toast.error(err.message || "Failed to create reservation");
+    }
+  };
   const handleCreateBlock = async (e2) => {
     e2.preventDefault();
     if (!blockForm.truck_number || !blockForm.reason) {
@@ -6856,40 +7024,165 @@ function FleetCalendarPage() {
         ...blockForm,
         created_by: currentUser?.full_name || currentUser?.name || "Dispatcher"
       });
-      toast.success(`Truck ${blockForm.truck_number} blocked for ${blockForm.block_type}.`);
+      toast.success(`Availability block placed on ${blockForm.truck_number}.`);
       setIsBlockModalOpen(false);
       loadCalendar();
     } catch (err) {
       toast.error(err.message || "Failed to create block");
     }
   };
-  const filteredTimeline = timelineData.filter(
-    (t2) => (t2.truck_number || "").toLowerCase().includes(searchTerm.toLowerCase()) || (t2.current_location || "").toLowerCase().includes(searchTerm.toLowerCase()) || (t2.current_status || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const days = Array.from({ length: 7 }, (_, i2) => {
-    const d = /* @__PURE__ */ new Date();
-    d.setDate(d.getDate() + i2);
+  const getSlotInfo = (truck, dayObj, dayIndex) => {
+    const dayStr = dayObj.dateString;
+    if (truck.blocks && truck.blocks.length > 0) {
+      const activeBlock = truck.blocks.find((b) => {
+        const start = (b.start_time || "").slice(0, 10);
+        const end = (b.end_time || "").slice(0, 10);
+        return dayStr >= start && dayStr <= end;
+      });
+      if (activeBlock) {
+        return {
+          type: "block",
+          label: `\u{1F527} ${activeBlock.block_type || "Maintenance"}`,
+          sub: activeBlock.reason || "Blocked",
+          status: "Maintenance",
+          clickable: false
+        };
+      }
+    }
+    if (truck.reservations && truck.reservations.length > 0) {
+      const res = truck.reservations.find((r3) => {
+        const loadD = (r3.loading_datetime || "").slice(0, 10);
+        const unloadD = (r3.expected_unloading_datetime || loadD).slice(0, 10);
+        return dayStr >= loadD && dayStr <= unloadD;
+      });
+      if (res) {
+        return {
+          type: "reservation",
+          label: `\u{1F512} Booked \u2192 ${res.destination || "Unload"}`,
+          sub: res.customer_name || "Client Order",
+          status: "Booked",
+          reservation: res,
+          clickable: true
+        };
+      }
+    }
+    if (dayObj.isToday) {
+      if (truck.current_status === "In Transit") {
+        return {
+          type: "transit",
+          label: `\u{1F69B} En Route to ${truck.expected_destination || "Hub"}`,
+          sub: truck.estimated_arrival ? `ETA: ${new Date(truck.estimated_arrival).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : "In Transit",
+          status: "In Transit",
+          clickable: true
+        };
+      }
+      if (truck.current_status === "Loading" || truck.current_status === "Unloading") {
+        return {
+          type: "dock",
+          label: `\u2693 ${truck.current_status} at Dock`,
+          sub: truck.predicted_location || "Terminal",
+          status: truck.current_status,
+          clickable: true
+        };
+      }
+      if (truck.current_status === "Maintenance" || truck.current_status === "Breakdown") {
+        return {
+          type: "maintenance",
+          label: `\u26A0\uFE0F ${truck.current_status}`,
+          sub: "Downtime",
+          status: truck.current_status,
+          clickable: false
+        };
+      }
+      return {
+        type: "available",
+        label: `\u26A1 Available Now`,
+        sub: `at ${truck.current_location || "Hub"}`,
+        status: "Available",
+        clickable: true,
+        canBook: true
+      };
+    }
+    if (truck.current_status === "In Transit" && dayIndex === 1) {
+      return {
+        type: "arrival",
+        label: `\u{1F4CD} Arrival: ${truck.expected_destination || "Hubli"}`,
+        sub: "Unloading window",
+        status: "Unloading",
+        clickable: true
+      };
+    }
+    if (truck.current_status === "In Transit" && dayIndex === 2) {
+      return {
+        type: "expected_available",
+        label: `\u2728 Available at ${truck.expected_destination || "Hubli"}`,
+        sub: "Ready for outbound",
+        status: "Expected Available",
+        clickable: true,
+        canBook: true
+      };
+    }
+    if (dayIndex >= 3 && truck.expected_destination && truck.expected_destination.toLowerCase() !== "hyderabad") {
+      return {
+        type: "return_load",
+        label: `\u{1F504} Return Load Opportunity`,
+        sub: `${truck.expected_destination} \u2192 Hyd`,
+        status: "Available",
+        clickable: true,
+        canBook: true
+      };
+    }
     return {
-      date: d,
-      label: d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }),
-      isToday: i2 === 0
+      type: "open",
+      label: `+ Reserve`,
+      sub: `at ${truck.predicted_location || truck.current_location || "Depot"}`,
+      status: "Available",
+      clickable: true,
+      canBook: true
     };
-  });
-  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, "Module 1: Airline-Style Fleet Schedule"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-3 h-3" }), " Live Telematics & Forecast Matrix")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(Calendar, { className: "w-7 h-7 text-emerald-400" }), "Fleet Availability Calendar"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm text-slate-400" }, "Real-time multi-resource timeline. Schedule bookings, forecast truck movements, and manage fleet downtime.")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-lg p-1 flex items-center" }, ["daily", "weekly", "monthly"].map((mode) => /* @__PURE__ */ react_shim_default.createElement(
+  };
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-5 max-w-[1500px] mx-auto font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-1 border-b border-slate-800/60" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/25" }, "Airline Flight-Style Scheduling"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1.5 font-medium" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-ping" }), "Live Fleet Dispatch Engine")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement(CalendarDays, { className: "w-7 h-7 text-emerald-400" }), "Fleet Availability Calendar"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs md:text-sm text-slate-400" }, "Real-time multi-resource timeline. Schedule bookings, inspect movement forecasts, and prevent double-booking.")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-xl p-1 flex items-center shadow-inner" }, [
+    { days: 7, label: "7 Days" },
+    { days: 14, label: "14 Days" },
+    { days: 30, label: "30 Days" }
+  ].map((v) => /* @__PURE__ */ react_shim_default.createElement(
     "button",
     {
-      key: mode,
-      onClick: () => setViewMode(mode),
-      className: `px-3 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${viewMode === mode ? "bg-emerald-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-white"}`
+      key: v.days,
+      onClick: () => setViewDaysCount(v.days),
+      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewDaysCount === v.days ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md font-black" : "text-slate-400 hover:text-white"}`
     },
-    mode
-  ))), /* @__PURE__ */ react_shim_default.createElement(
+    v.label
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5" }, /* @__PURE__ */ react_shim_default.createElement(
+    "button",
+    {
+      onClick: () => setDateOffset((prev) => prev - 7),
+      title: "Previous 7 Days",
+      className: "p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(ChevronLeft, { className: "w-4 h-4" })
+  ), /* @__PURE__ */ react_shim_default.createElement(
+    "button",
+    {
+      onClick: () => setDateOffset(0),
+      className: "px-2.5 py-1 text-xs font-bold text-slate-300 hover:text-emerald-400 transition-colors"
+    },
+    "Today"
+  ), /* @__PURE__ */ react_shim_default.createElement(
+    "button",
+    {
+      onClick: () => setDateOffset((prev) => prev + 7),
+      title: "Next 7 Days",
+      className: "p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(ChevronRight, { className: "w-4 h-4" })
+  )), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       variant: "outline",
       size: "sm",
       onClick: loadCalendar,
-      className: "border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+      className: "border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 text-xs h-9 rounded-xl"
     },
     /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
     "Refresh"
@@ -6903,113 +7196,265 @@ function FleetCalendarPage() {
         }
         setIsBlockModalOpen(true);
       },
-      className: "bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-md shadow-amber-600/20"
+      className: "bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs h-9 rounded-xl shadow-lg shadow-amber-600/20"
     },
     /* @__PURE__ */ react_shim_default.createElement(ShieldAlert, { className: "w-3.5 h-3.5 mr-1.5" }),
     "Block Availability"
-  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5" }, Object.entries(STATUS_CONFIG).slice(0, 6).map(([statusKey, cfg]) => {
-    const count3 = timelineData.filter((t2) => t2.current_status === statusKey).length;
-    return /* @__PURE__ */ react_shim_default.createElement(
-      "div",
-      {
-        key: statusKey,
-        className: `p-2.5 rounded-xl border ${cfg.border} ${cfg.bg} flex items-center justify-between transition-all`
-      },
-      /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-0.5" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-semibold text-slate-300" }, cfg.label), /* @__PURE__ */ react_shim_default.createElement("p", { className: `text-base font-extrabold ${cfg.text}` }, count3, " Trucks")),
-      /* @__PURE__ */ react_shim_default.createElement("div", { className: `w-2.5 h-2.5 rounded-full ${cfg.text.replace("text-", "bg-")}` })
-    );
-  })), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800/80" }, /* @__PURE__ */ react_shim_default.createElement(Filter, { className: "w-4 h-4 text-slate-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement(
-    Input,
-    {
-      placeholder: "Filter by truck number, terminal city, or status...",
-      value: searchTerm,
-      onChange: (e2) => setSearchTerm(e2.target.value),
-      className: "bg-slate-950 border-slate-800 text-xs h-9 text-white placeholder:text-slate-500"
-    }
-  ), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-xs text-slate-400 shrink-0 font-medium px-2" }, "Showing ", /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-emerald-400 font-bold" }, filteredTimeline.length), " of ", timelineData.length, " Fleet Resources")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "min-w-[900px]" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-12 bg-slate-900/90 border-b border-slate-800 text-xs font-bold text-slate-300 py-3 px-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-3 flex items-center gap-2 text-slate-400 uppercase tracking-wider text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4 text-emerald-400" }), "Fleet Resource & Specs"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-9 grid grid-cols-7 gap-1" }, days.map((day, idx) => /* @__PURE__ */ react_shim_default.createElement(
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5" }, [
+    { label: "Available", key: "Available", count: timelineData.filter((t2) => t2.current_status === "Available").length, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", dot: "bg-emerald-400" },
+    { label: "In Transit", key: "In Transit", count: timelineData.filter((t2) => t2.current_status === "In Transit").length, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20", dot: "bg-purple-400" },
+    { label: "Confirmed Booked", key: "Booked", count: timelineData.filter((t2) => t2.current_status === "Booked").length, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", dot: "bg-blue-400" },
+    { label: "Dock Operations", key: "Loading", count: timelineData.filter((t2) => t2.current_status === "Loading" || t2.current_status === "Unloading").length, color: "text-teal-400", bg: "bg-teal-500/10 border-teal-500/20", dot: "bg-teal-400" },
+    { label: "Maintenance / Blocks", key: "Maintenance", count: timelineData.filter((t2) => t2.current_status === "Maintenance" || t2.current_status === "Breakdown").length, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20", dot: "bg-orange-400" },
+    { label: "Total Fleet Resources", key: "Total", count: timelineData.length, color: "text-slate-200", bg: "bg-slate-900/80 border-slate-800", dot: "bg-emerald-500" }
+  ].map((item, idx) => /* @__PURE__ */ react_shim_default.createElement(
     "div",
     {
       key: idx,
-      className: `text-center py-1 rounded-md ${day.isToday ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "text-slate-400"}`
+      className: `p-3 rounded-2xl border ${item.bg} flex items-center justify-between transition-all shadow-sm`
     },
-    /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[10px] uppercase font-semibold" }, day.label.split(",")[0]),
-    /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs font-extrabold" }, day.label.split(",")[1] || day.label)
-  )))), loading ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-16 text-center text-slate-400 flex flex-col items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-6 h-6 animate-spin text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm" }, "Calculating real-time fleet movement schedules...")) : filteredTimeline.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-16 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-8 h-8 mx-auto mb-2 opacity-40" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-semibold" }, "No fleet resources found matching filter.")) : /* @__PURE__ */ react_shim_default.createElement("div", { className: "divide-y divide-slate-850" }, filteredTimeline.map((truck) => {
-    const cfg = STATUS_CONFIG[truck.current_status] || STATUS_CONFIG["Available"];
+    /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-bold text-slate-400" }, item.label), /* @__PURE__ */ react_shim_default.createElement("p", { className: `text-xl font-black ${item.color} tracking-tight` }, item.count, " Trucks")),
+    /* @__PURE__ */ react_shim_default.createElement("div", { className: `w-3 h-3 rounded-full ${item.dot} shadow-sm` })
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-2 flex-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "relative flex-1 min-w-[220px]" }, /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" }), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "Filter by truck number (e.g. TG12, TS08), city, or status...",
+      value: searchTerm,
+      onChange: (e2) => setSearchTerm(e2.target.value),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 pl-9 text-white placeholder:text-slate-500 rounded-xl"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto" }, categories.map((cat) => /* @__PURE__ */ react_shim_default.createElement(
+    "button",
+    {
+      key: cat,
+      onClick: () => setSelectedCategory(cat),
+      className: `px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${selectedCategory === cat ? "bg-emerald-500 text-slate-950" : "bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`
+    },
+    cat
+  )))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-3.5 h-3.5 text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("span", null, "Timeline Horizon: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, startDateFormatted), " \u2192 ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, endDateFormatted)))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { minWidth: `${320 + days.length * 140}px` }, className: "w-full" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-stretch bg-slate-900 border-b border-slate-800 text-xs font-bold text-slate-300" }, /* @__PURE__ */ react_shim_default.createElement(
+    "div",
+    {
+      style: { width: "300px", minWidth: "300px", flexShrink: 0 },
+      className: "p-3.5 border-r border-slate-800 flex items-center justify-between uppercase tracking-wider text-[11px] text-slate-400 font-black bg-slate-900/95"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4 text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("span", null, "Fleet Resource & Hub")),
+    /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300" }, filteredTimeline.length, " Trucks")
+  ), /* @__PURE__ */ react_shim_default.createElement(
+    "div",
+    {
+      style: {
+        flex: 1,
+        display: "grid",
+        gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+        gap: "4px"
+      },
+      className: "p-2"
+    },
+    days.map((day, idx) => /* @__PURE__ */ react_shim_default.createElement(
+      "div",
+      {
+        key: idx,
+        className: `text-center py-2 px-1 rounded-xl transition-all ${day.isToday ? "bg-emerald-500/15 border-2 border-emerald-400/60 shadow-lg shadow-emerald-500/10" : "bg-slate-950/60 border border-slate-850 hover:border-slate-700"}`
+      },
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `text-[11px] font-black uppercase ${day.isToday ? "text-emerald-400" : "text-slate-400"}` }, day.dayName), day.isToday && /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[9px] px-1 py-0.2 rounded bg-emerald-500 text-slate-950 font-black" }, "TODAY")),
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-baseline justify-center gap-1 mt-0.5" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `text-base font-black ${day.isToday ? "text-emerald-300" : "text-white"}` }, day.dayNum), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, day.month))
+    ))
+  )), loading ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-24 text-center text-slate-400 flex flex-col items-center justify-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-8 h-8 animate-spin text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-bold text-slate-300" }, "Calculating real-time fleet schedules & future movements..."), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs text-slate-500" }, "Checking PocketBase collections, active trips, and conflict locks")) : filteredTimeline.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-20 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-10 h-10 mx-auto mb-2 opacity-30 text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-base font-bold text-slate-300" }, "No fleet trucks found"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "Try clearing your search query or filters.")) : /* @__PURE__ */ react_shim_default.createElement("div", { className: "divide-y divide-slate-850" }, filteredTimeline.map((truck) => {
+    const statusCfg = STATUS_CONFIG[truck.current_status] || STATUS_CONFIG["Available"];
     return /* @__PURE__ */ react_shim_default.createElement(
       "div",
       {
         key: truck.truck_id || truck.truck_number,
-        className: "grid grid-cols-12 py-3.5 px-4 items-center hover:bg-slate-900/50 transition-colors cursor-pointer group",
-        onClick: () => setSelectedTruck(truck)
+        className: "flex items-stretch hover:bg-slate-900/40 transition-colors group"
       },
-      /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-3 space-y-1 pr-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-sm text-white tracking-wide group-hover:text-emerald-400 transition-colors" }, truck.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { variant: "outline", className: "text-[10px] px-1.5 py-0 border-slate-700 bg-slate-900 text-slate-300" }, truck.vehicle_category || "32FT SXL")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 text-[11px] text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3 h-3 text-emerald-400" }), truck.predicted_location || truck.current_location || "Depot"), /* @__PURE__ */ react_shim_default.createElement("span", null, "\u2022"), /* @__PURE__ */ react_shim_default.createElement("span", null, truck.capacity_tons || 14.5, " MT"))),
-      /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-9 grid grid-cols-7 gap-1 h-10 items-center" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: `col-span-7 h-8 rounded-lg border ${cfg.border} ${cfg.bg} flex items-center justify-between px-3 relative overflow-hidden shadow-inner` }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 z-10" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${cfg.text.replace("text-", "bg-")} animate-pulse` }), /* @__PURE__ */ react_shim_default.createElement("span", { className: `text-xs font-extrabold ${cfg.text}` }, cfg.label), truck.expected_destination && /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[11px] text-slate-300 font-medium" }, "\u2192 ", truck.expected_destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 z-10 text-[11px] text-slate-400" }, truck.earliest_next_departure && /* @__PURE__ */ react_shim_default.createElement("span", null, "Next Free: ", new Date(truck.earliest_next_departure).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-slate-900/80 text-[10px] text-emerald-400 border border-emerald-500/30" }, truck.prediction_confidence || 85, "% Conf."))))
+      /* @__PURE__ */ react_shim_default.createElement(
+        "div",
+        {
+          style: { width: "300px", minWidth: "300px", flexShrink: 0 },
+          className: "p-3.5 border-r border-slate-800 flex flex-col justify-between bg-slate-950/80 group-hover:bg-slate-900/70 transition-colors"
+        },
+        /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement(
+          "span",
+          {
+            onClick: () => setSelectedTruck(truck),
+            className: "font-black text-sm text-white tracking-wide hover:text-emerald-400 transition-colors cursor-pointer flex items-center gap-1.5"
+          },
+          truck.truck_number,
+          /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${statusCfg.dot}` })
+        ), /* @__PURE__ */ react_shim_default.createElement(Badge, { variant: "outline", className: "text-[10px] font-bold px-1.5 py-0 border-slate-700 bg-slate-900 text-slate-300" }, truck.vehicle_category || "32FT SXL")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 text-xs text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "flex items-center gap-1 font-semibold text-slate-300 truncate" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3 h-3 text-emerald-400 shrink-0" }), truck.predicted_location || truck.current_location || "Hyderabad"), /* @__PURE__ */ react_shim_default.createElement("span", null, "\u2022"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-slate-300 shrink-0" }, truck.capacity_tons || 14.5, " MT"))),
+        /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `font-extrabold ${statusCfg.text} text-[10px] uppercase` }, statusCfg.label), /* @__PURE__ */ react_shim_default.createElement(
+          "button",
+          {
+            onClick: () => handleOpenReserve(truck, days[0]),
+            className: "text-emerald-400 hover:text-emerald-300 font-extrabold flex items-center gap-1 hover:underline"
+          },
+          /* @__PURE__ */ react_shim_default.createElement(Plus, { className: "w-3 h-3" }),
+          " Quick Book"
+        ))
+      ),
+      /* @__PURE__ */ react_shim_default.createElement(
+        "div",
+        {
+          style: {
+            flex: 1,
+            display: "grid",
+            gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+            gap: "4px"
+          },
+          className: "p-2 items-center"
+        },
+        days.map((day, dIdx) => {
+          const slot = getSlotInfo(truck, day, dIdx);
+          const cfg = STATUS_CONFIG[slot.status] || STATUS_CONFIG["Available"];
+          return /* @__PURE__ */ react_shim_default.createElement(
+            "div",
+            {
+              key: dIdx,
+              onClick: () => {
+                if (slot.canBook) {
+                  handleOpenReserve(truck, day);
+                } else {
+                  setSelectedTruck(truck);
+                }
+              },
+              className: `h-14 rounded-xl border p-2 flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden group/slot ${slot.type === "open" ? "border-slate-850 bg-slate-900/30 hover:border-emerald-500/50 hover:bg-emerald-500/10" : `${cfg.border} ${cfg.bg} shadow-sm`}`
+            },
+            /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between gap-1" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `text-[11px] font-black leading-tight truncate ${slot.type === "open" ? "text-slate-500 group-hover/slot:text-emerald-300" : cfg.text}` }, slot.label), slot.canBook && /* @__PURE__ */ react_shim_default.createElement(Plus, { className: "w-3 h-3 text-slate-500 group-hover/slot:text-emerald-400 shrink-0" })),
+            /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between text-[10px] text-slate-400 truncate" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "truncate" }, slot.sub), day.isToday && /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" }))
+          );
+        })
+      )
     );
-  }))))), selectedTruck && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedTruck, onOpenChange: () => setSelectedTruck(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-xl font-bold flex items-center gap-2 text-white" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-5 h-5 text-emerald-400" }), selectedTruck.truck_number, " \u2014 Schedule Details"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-4 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Current Scheduled Status"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-extrabold text-emerald-400" }, selectedTruck.current_status)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Prediction Confidence"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-extrabold text-cyan-400" }, selectedTruck.prediction_confidence, "% High"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Current Location"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.current_location || "Hyderabad")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Predicted Availability Spot"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-emerald-400 text-xs" }, selectedTruck.predicted_location || "Hyderabad")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Vehicle Specs"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.vehicle_category, " (", selectedTruck.capacity_tons, " MT)")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Earliest Next Departure"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.earliest_next_departure ? new Date(selectedTruck.earliest_next_departure).toLocaleString("en-IN") : "Available Immediately"))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("h4", { className: "font-bold text-slate-300 mb-2 flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement(FileText, { className: "w-3.5 h-3.5 text-blue-400" }), "Upcoming Confirmed Bookings (", selectedTruck.reservations?.length || 0, ")"), selectedTruck.reservations?.length > 0 ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-1.5 max-h-36 overflow-y-auto" }, selectedTruck.reservations.map((res) => /* @__PURE__ */ react_shim_default.createElement("div", { key: res.id || res.booking_number, className: "p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white" }, res.booking_number), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400" }, res.origin, " \u2192 ", res.destination)), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-blue-500/20 text-blue-400 text-[10px] border-blue-500/30" }, res.status)))) : /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-500 italic text-[11px]" }, "No conflicting confirmed bookings on this timeline."))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, null, /* @__PURE__ */ react_shim_default.createElement(Button, { variant: "outline", size: "sm", onClick: () => setSelectedTruck(null), className: "border-slate-800" }, "Close"), /* @__PURE__ */ react_shim_default.createElement(
-    Button,
+  }))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isReserveModalOpen, onOpenChange: setIsReserveModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg rounded-2xl shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-black text-white flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Plus, { className: "w-5 h-5 text-emerald-400" }), "Book Truck: ", reserveForm.truck_number)), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleCreateReservation, className: "space-y-3.5 py-2" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Customer Name *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
     {
-      size: "sm",
-      onClick: () => {
-        setBlockForm((prev) => ({ ...prev, truck_number: selectedTruck.truck_number }));
-        setSelectedTruck(null);
-        setIsBlockModalOpen(true);
-      },
-      className: "bg-amber-600 hover:bg-amber-500 text-white font-semibold"
+      required: true,
+      placeholder: "e.g. Reliance Retail / Tata",
+      value: reserveForm.customer_name,
+      onChange: (e2) => setReserveForm({ ...reserveForm, customer_name: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Customer Phone"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "e.g. 9876543210",
+      value: reserveForm.customer_phone,
+      onChange: (e2) => setReserveForm({ ...reserveForm, customer_phone: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Origin Hub *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Hyderabad Hub",
+      value: reserveForm.origin,
+      onChange: (e2) => setReserveForm({ ...reserveForm, origin: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Destination Hub *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Hubli / Bangalore / Pune",
+      value: reserveForm.destination,
+      onChange: (e2) => setReserveForm({ ...reserveForm, destination: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Loading Date & Time *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "datetime-local",
+      required: true,
+      value: reserveForm.loading_datetime,
+      onChange: (e2) => setReserveForm({ ...reserveForm, loading_datetime: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Reservation Type"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      value: reserveForm.reservation_type,
+      onChange: (e2) => setReserveForm({ ...reserveForm, reservation_type: e2.target.value }),
+      className: "w-full bg-slate-950 border border-slate-800 text-xs h-9 mt-1 px-3 rounded-xl text-white font-bold"
     },
-    /* @__PURE__ */ react_shim_default.createElement(ShieldAlert, { className: "w-3.5 h-3.5 mr-1.5" }),
-    "Block This Truck"
-  )))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isBlockModalOpen, onOpenChange: setIsBlockModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(ShieldAlert, { className: "w-5 h-5 text-amber-400" }), "Manual Fleet Availability Block")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleCreateBlock, className: "space-y-3.5 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Select Truck"), /* @__PURE__ */ react_shim_default.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Confirmed" }, "Confirmed Reservation (Immediate Lock)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Provisional" }, "Provisional (Requires Approval)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Booking Request" }, "Booking Request")
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Agreed Freight (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "number",
+      placeholder: "e.g. 32000",
+      value: reserveForm.indicative_freight,
+      onChange: (e2) => setReserveForm({ ...reserveForm, indicative_freight: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Cargo Weight (MT)"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "e.g. 14.5",
+      value: reserveForm.cargo_weight_tons,
+      onChange: (e2) => setReserveForm({ ...reserveForm, cargo_weight_tons: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsReserveModalOpen(false), className: "border-slate-800 rounded-xl text-xs" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs" }, "Confirm & Lock Schedule"))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isBlockModalOpen, onOpenChange: setIsBlockModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-black text-white flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(ShieldAlert, { className: "w-5 h-5 text-amber-500" }), "Block Truck Availability")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleCreateBlock, className: "space-y-3 py-2" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Select Truck *"), /* @__PURE__ */ react_shim_default.createElement(
     "select",
     {
       value: blockForm.truck_number,
       onChange: (e2) => setBlockForm({ ...blockForm, truck_number: e2.target.value }),
-      className: "w-full bg-slate-950 border border-slate-800 rounded-md p-2 text-white text-xs",
-      required: true
+      className: "w-full bg-slate-950 border border-slate-800 text-xs h-9 mt-1 px-3 rounded-xl text-white font-bold"
     },
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "" }, "-- Choose Truck --"),
-    timelineData.map((t2) => /* @__PURE__ */ react_shim_default.createElement("option", { key: t2.truck_number, value: t2.truck_number }, t2.truck_number, " (", t2.vehicle_category, ")"))
-  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Block Reason Category"), /* @__PURE__ */ react_shim_default.createElement(
+    timelineData.map((t2) => /* @__PURE__ */ react_shim_default.createElement("option", { key: t2.truck_number, value: t2.truck_number }, t2.truck_number, " (", t2.vehicle_category, " \xB7 ", t2.current_location, ")"))
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Downtime Reason Type *"), /* @__PURE__ */ react_shim_default.createElement(
     "select",
     {
       value: blockForm.block_type,
       onChange: (e2) => setBlockForm({ ...blockForm, block_type: e2.target.value }),
-      className: "w-full bg-slate-950 border border-slate-800 rounded-md p-2 text-white text-xs"
+      className: "w-full bg-slate-950 border border-slate-800 text-xs h-9 mt-1 px-3 rounded-xl text-white font-bold"
     },
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Maintenance" }, "Scheduled Workshop Maintenance"),
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Breakdown" }, "Mechanical Breakdown"),
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Document Expired" }, "Permit / Insurance Expired"),
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "RTO Inspection" }, "RTO Passing / Fitness Inspection"),
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Personal Use" }, "Owner / Personal Use"),
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Operational Hold" }, "Operational Hold")
-  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Start Date & Time"), /* @__PURE__ */ react_shim_default.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Maintenance" }, "Scheduled Maintenance / Workshop"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Breakdown" }, "Mechanical Breakdown / Repair"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Documents Expired" }, "RTO / Fitness / Insurance Renewal"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Driver Unavailable" }, "Driver Leave / Rest Period"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Operational Hold" }, "Internal Operational Hold")
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Detailed Operational Notes *"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
-      type: "datetime-local",
-      value: blockForm.start_time,
-      onChange: (e2) => setBlockForm({ ...blockForm, start_time: e2.target.value }),
-      className: "bg-slate-950 border-slate-800 text-white text-xs",
-      required: true
-    }
-  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "End Date & Time"), /* @__PURE__ */ react_shim_default.createElement(
-    Input,
-    {
-      type: "datetime-local",
-      value: blockForm.end_time,
-      onChange: (e2) => setBlockForm({ ...blockForm, end_time: e2.target.value }),
-      className: "bg-slate-950 border-slate-800 text-white text-xs",
-      required: true
-    }
-  ))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Specific Reason & Notes"), /* @__PURE__ */ react_shim_default.createElement(
-    Input,
-    {
-      placeholder: "e.g. Engine overhaul and front axle tyre replacement",
+      required: true,
+      placeholder: "e.g. Engine overhaul scheduled at Solapur workshop",
       value: blockForm.reason,
       onChange: (e2) => setBlockForm({ ...blockForm, reason: e2.target.value }),
-      className: "bg-slate-950 border-slate-800 text-white text-xs",
-      required: true
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
     }
-  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setIsBlockModalOpen(false), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-amber-600 hover:bg-amber-500 text-white font-semibold" }, "Lock Availability"))))));
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Start Time"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "datetime-local",
+      required: true,
+      value: blockForm.start_time,
+      onChange: (e2) => setBlockForm({ ...blockForm, start_time: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Expected Release Time"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "datetime-local",
+      required: true,
+      value: blockForm.end_time,
+      onChange: (e2) => setBlockForm({ ...blockForm, end_time: e2.target.value }),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 mt-1 text-white rounded-xl"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsBlockModalOpen(false), className: "border-slate-800 rounded-xl text-xs" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-amber-600 hover:bg-amber-500 text-white font-black rounded-xl text-xs" }, "Confirm Block"))))), selectedTruck && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: Boolean(selectedTruck), onOpenChange: () => setSelectedTruck(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg rounded-2xl shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-black text-white flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-5 h-5 text-emerald-400" }), selectedTruck.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" }, selectedTruck.current_status))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-4 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 font-bold block text-[10px] uppercase" }, "Vehicle Category"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-white font-extrabold text-sm" }, selectedTruck.vehicle_category || "32FT SXL")), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 font-bold block text-[10px] uppercase" }, "Rated Capacity"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-white font-extrabold text-sm" }, selectedTruck.capacity_tons || 14.5, " MT")), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 font-bold block text-[10px] uppercase" }, "Current Hub"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-emerald-400 font-extrabold" }, selectedTruck.current_location || "Hyderabad")), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 font-bold block text-[10px] uppercase" }, "Predicted Future Hub"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-cyan-400 font-extrabold" }, selectedTruck.predicted_location || "Hyderabad"))), selectedTruck.expected_destination && /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-purple-950/30 border border-purple-500/30 p-3 rounded-xl space-y-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between text-purple-300 font-bold" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "En Route Destination:"), /* @__PURE__ */ react_shim_default.createElement("span", null, selectedTruck.expected_destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between text-slate-400 text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Estimated Arrival (ETA):"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-white font-bold" }, selectedTruck.estimated_arrival ? new Date(selectedTruck.estimated_arrival).toLocaleString("en-IN") : "En Route"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 font-bold" }, "Prediction Engine Confidence:"), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30 font-black" }, selectedTruck.prediction_confidence || 85, "% Confidence")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-end gap-2 pt-2" }, /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      onClick: () => {
+        handleOpenReserve(selectedTruck, days[0]);
+        setSelectedTruck(null);
+      },
+      className: "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(Plus, { className: "w-3.5 h-3.5 mr-1" }),
+    " Book Truck Now"
+  ))))));
 }
 
 // apps/web/src/pages/MovementPredictionPage.jsx
@@ -7554,7 +7999,7 @@ function FleetReservationHub({ initialTab = "calendar" }) {
     } catch (e2) {
     }
   };
-  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "min-h-screen bg-slate-950 text-white font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md px-4 md:px-6 py-2.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "max-w-7xl mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xs" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-sm tracking-tight text-white hidden sm:inline" }, "Fleet Reservation")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 shrink-0 bg-slate-950 p-1 rounded-xl border border-slate-800" }, SUBMODULES.map((tab) => {
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "min-h-screen bg-slate-950 text-white font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md px-4 md:px-6 py-2.5 shadow-md" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "max-w-[1600px] mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xs" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-sm tracking-tight text-white hidden sm:inline" }, "Fleet Reservation")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 shrink-0 bg-slate-950 p-1 rounded-xl border border-slate-800" }, SUBMODULES.map((tab) => {
     const Icon2 = tab.icon;
     const isActive = activeTab === tab.id;
     return /* @__PURE__ */ react_shim_default.createElement(
@@ -7581,6 +8026,8 @@ lucide-react/dist/esm/createLucideIcon.js:
 lucide-react/dist/esm/icons/arrow-right.js:
 lucide-react/dist/esm/icons/calendar-days.js:
 lucide-react/dist/esm/icons/calendar.js:
+lucide-react/dist/esm/icons/chevron-left.js:
+lucide-react/dist/esm/icons/chevron-right.js:
 lucide-react/dist/esm/icons/circle-alert.js:
 lucide-react/dist/esm/icons/circle-check.js:
 lucide-react/dist/esm/icons/circle-x.js:
@@ -7592,6 +8039,7 @@ lucide-react/dist/esm/icons/filter.js:
 lucide-react/dist/esm/icons/layers.js:
 lucide-react/dist/esm/icons/map-pin.js:
 lucide-react/dist/esm/icons/navigation.js:
+lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/printer.js:
 lucide-react/dist/esm/icons/radio.js:
 lucide-react/dist/esm/icons/refresh-cw.js:
