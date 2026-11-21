@@ -1,22 +1,19 @@
 const fs = require('fs');
 const vm = require('vm');
+const path = require('path');
 
 console.log('--- Building Collapsible Dynamic Stops Patch ---');
 
-// Backup original index-B9k2Lm7P.js if not yet backed up
-if (!fs.existsSync('scratch/orig_index-B9k2Lm7P.js')) {
-  fs.copyFileSync('dist/assets/index-B9k2Lm7P.js', 'scratch/orig_index-B9k2Lm7P.js');
-  console.log('✓ Backed up dist/assets/index-B9k2Lm7P.js to scratch/orig_index-B9k2Lm7P.js');
-}
-
-let chunk = fs.readFileSync('scratch/orig_index-B9k2Lm7P.js', 'utf8');
-console.log('Original chunk length:', chunk.length);
+// Primary source file: dist/assets/index-DLxf9dwO.js
+const dlPath = 'dist/assets/index-DLxf9dwO.js';
+let chunk = fs.readFileSync(dlPath, 'utf8');
+console.log('Original index-DLxf9dwO.js chunk length:', chunk.length);
 
 const startIdx = chunk.indexOf('function eg({stops:s=[]');
 const nextFnIdx = chunk.indexOf('function Jt(s,t="00:00"');
 
 if (startIdx === -1 || nextFnIdx === -1) {
-  console.error('eg function boundaries not found in index-B9k2Lm7P.js!');
+  console.error('eg function boundaries not found in index-DLxf9dwO.js!');
   process.exit(1);
 }
 
@@ -87,15 +84,21 @@ try {
 chunk = chunk.slice(0, startIdx) + newEg + chunk.slice(nextFnIdx);
 console.log('New full chunk length:', chunk.length);
 
-// Write to all 4 distribution roots
+// Write to all bundle files across all distribution roots
 const distTargets = [
+  'dist/assets/index-DLxf9dwO.js',
   'dist/assets/index-B9k2Lm7P.js',
+  'dist/apps/web/assets/index-DLxf9dwO.js',
   'dist/apps/web/assets/index-B9k2Lm7P.js',
+  'apps/api/dist/assets/index-DLxf9dwO.js',
   'apps/api/dist/assets/index-B9k2Lm7P.js',
+  'apps/web/dist/assets/index-DLxf9dwO.js',
   'apps/web/dist/assets/index-B9k2Lm7P.js'
 ];
 
 distTargets.forEach(p => {
+  const dir = path.dirname(p);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(p, chunk, 'utf8');
   console.log(`✓ Updated ${p} (${chunk.length} bytes)`);
 });
