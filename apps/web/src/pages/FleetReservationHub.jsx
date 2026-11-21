@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { 
   CalendarDays, Compass, Search, ClipboardCheck, Repeat, 
   Truck, ArrowRight, ShieldCheck, Sparkles
@@ -18,14 +17,33 @@ const SUBMODULES = [
   { id: 'return-loads', label: 'Return-Load Opportunities', icon: Repeat, description: 'Backhaul revenue maximizer' },
 ];
 
+function getUrlTab() {
+  try {
+    if (typeof window === 'undefined') return 'calendar';
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get('tab') || 'calendar';
+  } catch (e) {
+    return 'calendar';
+  }
+}
+
 export default function FleetReservationHub({ initialTab = 'calendar' }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(urlTab || initialTab);
+  const [activeTab, setActiveTab] = useState(getUrlTab);
+
+  useEffect(() => {
+    const onPop = () => setActiveTab(getUrlTab());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
-    setSearchParams({ tab: tabId });
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      sp.set('tab', tabId);
+      const newUrl = `${window.location.pathname}?${sp.toString()}`;
+      window.history.pushState(null, '', newUrl);
+    } catch (e) {}
   };
 
   return (

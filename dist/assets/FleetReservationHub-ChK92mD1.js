@@ -1,959 +1,65 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-}) : x)(function(x) {
-  if (typeof require !== "undefined") return require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x + '" is not supported');
-});
-var __commonJS = (cb, mod) => function __require2() {
-  try {
-    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-  } catch (e2) {
-    throw mod = 0, e2;
-  }
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
+
+// apps/web/src/lib/react-shim.js
+var react_shim_exports = {};
+__export(react_shim_exports, {
+  Children: () => Children,
+  Fragment: () => Fragment,
+  cloneElement: () => cloneElement,
+  createContext: () => createContext,
+  createElement: () => createElement,
+  default: () => react_shim_default,
+  forwardRef: () => forwardRef,
+  isValidElement: () => isValidElement,
+  jsx: () => jsx,
+  jsxs: () => jsxs,
+  useCallback: () => useCallback,
+  useContext: () => useContext,
+  useEffect: () => useEffect,
+  useId: () => useId,
+  useLayoutEffect: () => useLayoutEffect,
+  useMemo: () => useMemo,
+  useReducer: () => useReducer,
+  useRef: () => useRef,
+  useState: () => useState
+});
+import { r as _React } from "./vendor-react-Bs5V2qFE.js";
+var React = _React || (typeof window !== "undefined" ? window.React : {});
+var useState = (...args) => React.useState(...args);
+var useEffect = (...args) => React.useEffect(...args);
+var useLayoutEffect = (...args) => (React.useLayoutEffect || React.useEffect)(...args);
+var useContext = (...args) => React.useContext(...args);
+var createContext = (...args) => React.createContext(...args);
+var useMemo = (...args) => React.useMemo(...args);
+var useCallback = (...args) => React.useCallback(...args);
+var useRef = (...args) => React.useRef(...args);
+var useId = (...args) => React.useId ? React.useId(...args) : Math.random().toString(36).slice(2);
+var useReducer = (...args) => React.useReducer(...args);
+var forwardRef = (...args) => React.forwardRef(...args);
+var createElement = (...args) => React.createElement(...args);
+var cloneElement = (...args) => React.cloneElement(...args);
+var Children = React.Children;
+var Fragment = React.Fragment;
+var isValidElement = (...args) => React.isValidElement(...args);
+var jsx = (type, props, key) => {
+  if (!props) return React.createElement(type, key !== void 0 ? { key } : null);
+  const { children, ...rest } = props;
+  const p = key !== void 0 ? { ...rest, key } : rest;
+  if (children === void 0) return React.createElement(type, p);
+  return Array.isArray(children) ? React.createElement(type, p, ...children) : React.createElement(type, p, children);
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-
-// node_modules/react/cjs/react-jsx-runtime.development.js
-var require_react_jsx_runtime_development = __commonJS({
-  "node_modules/react/cjs/react-jsx-runtime.development.js"(exports) {
-    "use strict";
-    if (true) {
-      (function() {
-        "use strict";
-        var React37 = __require("./vendor-react-Bs5V2qFE.js");
-        var REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.element");
-        var REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal");
-        var REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment");
-        var REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode");
-        var REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler");
-        var REACT_PROVIDER_TYPE = /* @__PURE__ */ Symbol.for("react.provider");
-        var REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context");
-        var REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref");
-        var REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense");
-        var REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list");
-        var REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo");
-        var REACT_LAZY_TYPE2 = /* @__PURE__ */ Symbol.for("react.lazy");
-        var REACT_OFFSCREEN_TYPE = /* @__PURE__ */ Symbol.for("react.offscreen");
-        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
-        var FAUX_ITERATOR_SYMBOL = "@@iterator";
-        function getIteratorFn(maybeIterable) {
-          if (maybeIterable === null || typeof maybeIterable !== "object") {
-            return null;
-          }
-          var maybeIterator = MAYBE_ITERATOR_SYMBOL && maybeIterable[MAYBE_ITERATOR_SYMBOL] || maybeIterable[FAUX_ITERATOR_SYMBOL];
-          if (typeof maybeIterator === "function") {
-            return maybeIterator;
-          }
-          return null;
-        }
-        var ReactSharedInternals = React37.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-        function error(format) {
-          {
-            {
-              for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-                args[_key2 - 1] = arguments[_key2];
-              }
-              printWarning("error", format, args);
-            }
-          }
-        }
-        function printWarning(level, format, args) {
-          {
-            var ReactDebugCurrentFrame2 = ReactSharedInternals.ReactDebugCurrentFrame;
-            var stack = ReactDebugCurrentFrame2.getStackAddendum();
-            if (stack !== "") {
-              format += "%s";
-              args = args.concat([stack]);
-            }
-            var argsWithFormat = args.map(function(item) {
-              return String(item);
-            });
-            argsWithFormat.unshift("Warning: " + format);
-            Function.prototype.apply.call(console[level], console, argsWithFormat);
-          }
-        }
-        var enableScopeAPI = false;
-        var enableCacheElement = false;
-        var enableTransitionTracing = false;
-        var enableLegacyHidden = false;
-        var enableDebugTracing = false;
-        var REACT_MODULE_REFERENCE;
-        {
-          REACT_MODULE_REFERENCE = /* @__PURE__ */ Symbol.for("react.module.reference");
-        }
-        function isValidElementType(type) {
-          if (typeof type === "string" || typeof type === "function") {
-            return true;
-          }
-          if (type === REACT_FRAGMENT_TYPE || type === REACT_PROFILER_TYPE || enableDebugTracing || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || enableLegacyHidden || type === REACT_OFFSCREEN_TYPE || enableScopeAPI || enableCacheElement || enableTransitionTracing) {
-            return true;
-          }
-          if (typeof type === "object" && type !== null) {
-            if (type.$$typeof === REACT_LAZY_TYPE2 || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || // This needs to include all possible module reference object
-            // types supported by any Flight configuration anywhere since
-            // we don't know which Flight build this will end up being used
-            // with.
-            type.$$typeof === REACT_MODULE_REFERENCE || type.getModuleId !== void 0) {
-              return true;
-            }
-          }
-          return false;
-        }
-        function getWrappedName(outerType, innerType, wrapperName) {
-          var displayName = outerType.displayName;
-          if (displayName) {
-            return displayName;
-          }
-          var functionName = innerType.displayName || innerType.name || "";
-          return functionName !== "" ? wrapperName + "(" + functionName + ")" : wrapperName;
-        }
-        function getContextName(type) {
-          return type.displayName || "Context";
-        }
-        function getComponentNameFromType(type) {
-          if (type == null) {
-            return null;
-          }
-          {
-            if (typeof type.tag === "number") {
-              error("Received an unexpected object in getComponentNameFromType(). This is likely a bug in React. Please file an issue.");
-            }
-          }
-          if (typeof type === "function") {
-            return type.displayName || type.name || null;
-          }
-          if (typeof type === "string") {
-            return type;
-          }
-          switch (type) {
-            case REACT_FRAGMENT_TYPE:
-              return "Fragment";
-            case REACT_PORTAL_TYPE:
-              return "Portal";
-            case REACT_PROFILER_TYPE:
-              return "Profiler";
-            case REACT_STRICT_MODE_TYPE:
-              return "StrictMode";
-            case REACT_SUSPENSE_TYPE:
-              return "Suspense";
-            case REACT_SUSPENSE_LIST_TYPE:
-              return "SuspenseList";
-          }
-          if (typeof type === "object") {
-            switch (type.$$typeof) {
-              case REACT_CONTEXT_TYPE:
-                var context = type;
-                return getContextName(context) + ".Consumer";
-              case REACT_PROVIDER_TYPE:
-                var provider = type;
-                return getContextName(provider._context) + ".Provider";
-              case REACT_FORWARD_REF_TYPE:
-                return getWrappedName(type, type.render, "ForwardRef");
-              case REACT_MEMO_TYPE:
-                var outerName = type.displayName || null;
-                if (outerName !== null) {
-                  return outerName;
-                }
-                return getComponentNameFromType(type.type) || "Memo";
-              case REACT_LAZY_TYPE2: {
-                var lazyComponent = type;
-                var payload = lazyComponent._payload;
-                var init = lazyComponent._init;
-                try {
-                  return getComponentNameFromType(init(payload));
-                } catch (x) {
-                  return null;
-                }
-              }
-            }
-          }
-          return null;
-        }
-        var assign = Object.assign;
-        var disabledDepth = 0;
-        var prevLog;
-        var prevInfo;
-        var prevWarn;
-        var prevError;
-        var prevGroup;
-        var prevGroupCollapsed;
-        var prevGroupEnd;
-        function disabledLog() {
-        }
-        disabledLog.__reactDisabledLog = true;
-        function disableLogs() {
-          {
-            if (disabledDepth === 0) {
-              prevLog = console.log;
-              prevInfo = console.info;
-              prevWarn = console.warn;
-              prevError = console.error;
-              prevGroup = console.group;
-              prevGroupCollapsed = console.groupCollapsed;
-              prevGroupEnd = console.groupEnd;
-              var props = {
-                configurable: true,
-                enumerable: true,
-                value: disabledLog,
-                writable: true
-              };
-              Object.defineProperties(console, {
-                info: props,
-                log: props,
-                warn: props,
-                error: props,
-                group: props,
-                groupCollapsed: props,
-                groupEnd: props
-              });
-            }
-            disabledDepth++;
-          }
-        }
-        function reenableLogs() {
-          {
-            disabledDepth--;
-            if (disabledDepth === 0) {
-              var props = {
-                configurable: true,
-                enumerable: true,
-                writable: true
-              };
-              Object.defineProperties(console, {
-                log: assign({}, props, {
-                  value: prevLog
-                }),
-                info: assign({}, props, {
-                  value: prevInfo
-                }),
-                warn: assign({}, props, {
-                  value: prevWarn
-                }),
-                error: assign({}, props, {
-                  value: prevError
-                }),
-                group: assign({}, props, {
-                  value: prevGroup
-                }),
-                groupCollapsed: assign({}, props, {
-                  value: prevGroupCollapsed
-                }),
-                groupEnd: assign({}, props, {
-                  value: prevGroupEnd
-                })
-              });
-            }
-            if (disabledDepth < 0) {
-              error("disabledDepth fell below zero. This is a bug in React. Please file an issue.");
-            }
-          }
-        }
-        var ReactCurrentDispatcher = ReactSharedInternals.ReactCurrentDispatcher;
-        var prefix;
-        function describeBuiltInComponentFrame(name, source, ownerFn) {
-          {
-            if (prefix === void 0) {
-              try {
-                throw Error();
-              } catch (x) {
-                var match = x.stack.trim().match(/\n( *(at )?)/);
-                prefix = match && match[1] || "";
-              }
-            }
-            return "\n" + prefix + name;
-          }
-        }
-        var reentry = false;
-        var componentFrameCache;
-        {
-          var PossiblyWeakMap = typeof WeakMap === "function" ? WeakMap : Map;
-          componentFrameCache = new PossiblyWeakMap();
-        }
-        function describeNativeComponentFrame(fn, construct) {
-          if (!fn || reentry) {
-            return "";
-          }
-          {
-            var frame = componentFrameCache.get(fn);
-            if (frame !== void 0) {
-              return frame;
-            }
-          }
-          var control;
-          reentry = true;
-          var previousPrepareStackTrace = Error.prepareStackTrace;
-          Error.prepareStackTrace = void 0;
-          var previousDispatcher;
-          {
-            previousDispatcher = ReactCurrentDispatcher.current;
-            ReactCurrentDispatcher.current = null;
-            disableLogs();
-          }
-          try {
-            if (construct) {
-              var Fake = function() {
-                throw Error();
-              };
-              Object.defineProperty(Fake.prototype, "props", {
-                set: function() {
-                  throw Error();
-                }
-              });
-              if (typeof Reflect === "object" && Reflect.construct) {
-                try {
-                  Reflect.construct(Fake, []);
-                } catch (x) {
-                  control = x;
-                }
-                Reflect.construct(fn, [], Fake);
-              } else {
-                try {
-                  Fake.call();
-                } catch (x) {
-                  control = x;
-                }
-                fn.call(Fake.prototype);
-              }
-            } else {
-              try {
-                throw Error();
-              } catch (x) {
-                control = x;
-              }
-              fn();
-            }
-          } catch (sample) {
-            if (sample && control && typeof sample.stack === "string") {
-              var sampleLines = sample.stack.split("\n");
-              var controlLines = control.stack.split("\n");
-              var s2 = sampleLines.length - 1;
-              var c = controlLines.length - 1;
-              while (s2 >= 1 && c >= 0 && sampleLines[s2] !== controlLines[c]) {
-                c--;
-              }
-              for (; s2 >= 1 && c >= 0; s2--, c--) {
-                if (sampleLines[s2] !== controlLines[c]) {
-                  if (s2 !== 1 || c !== 1) {
-                    do {
-                      s2--;
-                      c--;
-                      if (c < 0 || sampleLines[s2] !== controlLines[c]) {
-                        var _frame = "\n" + sampleLines[s2].replace(" at new ", " at ");
-                        if (fn.displayName && _frame.includes("<anonymous>")) {
-                          _frame = _frame.replace("<anonymous>", fn.displayName);
-                        }
-                        {
-                          if (typeof fn === "function") {
-                            componentFrameCache.set(fn, _frame);
-                          }
-                        }
-                        return _frame;
-                      }
-                    } while (s2 >= 1 && c >= 0);
-                  }
-                  break;
-                }
-              }
-            }
-          } finally {
-            reentry = false;
-            {
-              ReactCurrentDispatcher.current = previousDispatcher;
-              reenableLogs();
-            }
-            Error.prepareStackTrace = previousPrepareStackTrace;
-          }
-          var name = fn ? fn.displayName || fn.name : "";
-          var syntheticFrame = name ? describeBuiltInComponentFrame(name) : "";
-          {
-            if (typeof fn === "function") {
-              componentFrameCache.set(fn, syntheticFrame);
-            }
-          }
-          return syntheticFrame;
-        }
-        function describeFunctionComponentFrame(fn, source, ownerFn) {
-          {
-            return describeNativeComponentFrame(fn, false);
-          }
-        }
-        function shouldConstruct(Component) {
-          var prototype = Component.prototype;
-          return !!(prototype && prototype.isReactComponent);
-        }
-        function describeUnknownElementTypeFrameInDEV(type, source, ownerFn) {
-          if (type == null) {
-            return "";
-          }
-          if (typeof type === "function") {
-            {
-              return describeNativeComponentFrame(type, shouldConstruct(type));
-            }
-          }
-          if (typeof type === "string") {
-            return describeBuiltInComponentFrame(type);
-          }
-          switch (type) {
-            case REACT_SUSPENSE_TYPE:
-              return describeBuiltInComponentFrame("Suspense");
-            case REACT_SUSPENSE_LIST_TYPE:
-              return describeBuiltInComponentFrame("SuspenseList");
-          }
-          if (typeof type === "object") {
-            switch (type.$$typeof) {
-              case REACT_FORWARD_REF_TYPE:
-                return describeFunctionComponentFrame(type.render);
-              case REACT_MEMO_TYPE:
-                return describeUnknownElementTypeFrameInDEV(type.type, source, ownerFn);
-              case REACT_LAZY_TYPE2: {
-                var lazyComponent = type;
-                var payload = lazyComponent._payload;
-                var init = lazyComponent._init;
-                try {
-                  return describeUnknownElementTypeFrameInDEV(init(payload), source, ownerFn);
-                } catch (x) {
-                }
-              }
-            }
-          }
-          return "";
-        }
-        var hasOwnProperty = Object.prototype.hasOwnProperty;
-        var loggedTypeFailures = {};
-        var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
-        function setCurrentlyValidatingElement(element) {
-          {
-            if (element) {
-              var owner = element._owner;
-              var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
-              ReactDebugCurrentFrame.setExtraStackFrame(stack);
-            } else {
-              ReactDebugCurrentFrame.setExtraStackFrame(null);
-            }
-          }
-        }
-        function checkPropTypes(typeSpecs, values, location, componentName, element) {
-          {
-            var has = Function.call.bind(hasOwnProperty);
-            for (var typeSpecName in typeSpecs) {
-              if (has(typeSpecs, typeSpecName)) {
-                var error$1 = void 0;
-                try {
-                  if (typeof typeSpecs[typeSpecName] !== "function") {
-                    var err = Error((componentName || "React class") + ": " + location + " type `" + typeSpecName + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + typeof typeSpecs[typeSpecName] + "`.This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`.");
-                    err.name = "Invariant Violation";
-                    throw err;
-                  }
-                  error$1 = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED");
-                } catch (ex) {
-                  error$1 = ex;
-                }
-                if (error$1 && !(error$1 instanceof Error)) {
-                  setCurrentlyValidatingElement(element);
-                  error("%s: type specification of %s `%s` is invalid; the type checker function must return `null` or an `Error` but returned a %s. You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument).", componentName || "React class", location, typeSpecName, typeof error$1);
-                  setCurrentlyValidatingElement(null);
-                }
-                if (error$1 instanceof Error && !(error$1.message in loggedTypeFailures)) {
-                  loggedTypeFailures[error$1.message] = true;
-                  setCurrentlyValidatingElement(element);
-                  error("Failed %s type: %s", location, error$1.message);
-                  setCurrentlyValidatingElement(null);
-                }
-              }
-            }
-          }
-        }
-        var isArrayImpl = Array.isArray;
-        function isArray(a) {
-          return isArrayImpl(a);
-        }
-        function typeName(value) {
-          {
-            var hasToStringTag = typeof Symbol === "function" && Symbol.toStringTag;
-            var type = hasToStringTag && value[Symbol.toStringTag] || value.constructor.name || "Object";
-            return type;
-          }
-        }
-        function willCoercionThrow(value) {
-          {
-            try {
-              testStringCoercion(value);
-              return false;
-            } catch (e2) {
-              return true;
-            }
-          }
-        }
-        function testStringCoercion(value) {
-          return "" + value;
-        }
-        function checkKeyStringCoercion(value) {
-          {
-            if (willCoercionThrow(value)) {
-              error("The provided key is an unsupported type %s. This value must be coerced to a string before before using it here.", typeName(value));
-              return testStringCoercion(value);
-            }
-          }
-        }
-        var ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
-        var RESERVED_PROPS = {
-          key: true,
-          ref: true,
-          __self: true,
-          __source: true
-        };
-        var specialPropKeyWarningShown;
-        var specialPropRefWarningShown;
-        var didWarnAboutStringRefs;
-        {
-          didWarnAboutStringRefs = {};
-        }
-        function hasValidRef(config) {
-          {
-            if (hasOwnProperty.call(config, "ref")) {
-              var getter = Object.getOwnPropertyDescriptor(config, "ref").get;
-              if (getter && getter.isReactWarning) {
-                return false;
-              }
-            }
-          }
-          return config.ref !== void 0;
-        }
-        function hasValidKey(config) {
-          {
-            if (hasOwnProperty.call(config, "key")) {
-              var getter = Object.getOwnPropertyDescriptor(config, "key").get;
-              if (getter && getter.isReactWarning) {
-                return false;
-              }
-            }
-          }
-          return config.key !== void 0;
-        }
-        function warnIfStringRefCannotBeAutoConverted(config, self) {
-          {
-            if (typeof config.ref === "string" && ReactCurrentOwner.current && self && ReactCurrentOwner.current.stateNode !== self) {
-              var componentName = getComponentNameFromType(ReactCurrentOwner.current.type);
-              if (!didWarnAboutStringRefs[componentName]) {
-                error('Component "%s" contains the string ref "%s". Support for string refs will be removed in a future major release. This case cannot be automatically converted to an arrow function. We ask you to manually fix this case by using useRef() or createRef() instead. Learn more about using refs safely here: https://reactjs.org/link/strict-mode-string-ref', getComponentNameFromType(ReactCurrentOwner.current.type), config.ref);
-                didWarnAboutStringRefs[componentName] = true;
-              }
-            }
-          }
-        }
-        function defineKeyPropWarningGetter(props, displayName) {
-          {
-            var warnAboutAccessingKey = function() {
-              if (!specialPropKeyWarningShown) {
-                specialPropKeyWarningShown = true;
-                error("%s: `key` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", displayName);
-              }
-            };
-            warnAboutAccessingKey.isReactWarning = true;
-            Object.defineProperty(props, "key", {
-              get: warnAboutAccessingKey,
-              configurable: true
-            });
-          }
-        }
-        function defineRefPropWarningGetter(props, displayName) {
-          {
-            var warnAboutAccessingRef = function() {
-              if (!specialPropRefWarningShown) {
-                specialPropRefWarningShown = true;
-                error("%s: `ref` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", displayName);
-              }
-            };
-            warnAboutAccessingRef.isReactWarning = true;
-            Object.defineProperty(props, "ref", {
-              get: warnAboutAccessingRef,
-              configurable: true
-            });
-          }
-        }
-        var ReactElement = function(type, key, ref, self, source, owner, props) {
-          var element = {
-            // This tag allows us to uniquely identify this as a React Element
-            $$typeof: REACT_ELEMENT_TYPE,
-            // Built-in properties that belong on the element
-            type,
-            key,
-            ref,
-            props,
-            // Record the component responsible for creating this element.
-            _owner: owner
-          };
-          {
-            element._store = {};
-            Object.defineProperty(element._store, "validated", {
-              configurable: false,
-              enumerable: false,
-              writable: true,
-              value: false
-            });
-            Object.defineProperty(element, "_self", {
-              configurable: false,
-              enumerable: false,
-              writable: false,
-              value: self
-            });
-            Object.defineProperty(element, "_source", {
-              configurable: false,
-              enumerable: false,
-              writable: false,
-              value: source
-            });
-            if (Object.freeze) {
-              Object.freeze(element.props);
-              Object.freeze(element);
-            }
-          }
-          return element;
-        };
-        function jsxDEV(type, config, maybeKey, source, self) {
-          {
-            var propName;
-            var props = {};
-            var key = null;
-            var ref = null;
-            if (maybeKey !== void 0) {
-              {
-                checkKeyStringCoercion(maybeKey);
-              }
-              key = "" + maybeKey;
-            }
-            if (hasValidKey(config)) {
-              {
-                checkKeyStringCoercion(config.key);
-              }
-              key = "" + config.key;
-            }
-            if (hasValidRef(config)) {
-              ref = config.ref;
-              warnIfStringRefCannotBeAutoConverted(config, self);
-            }
-            for (propName in config) {
-              if (hasOwnProperty.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
-                props[propName] = config[propName];
-              }
-            }
-            if (type && type.defaultProps) {
-              var defaultProps = type.defaultProps;
-              for (propName in defaultProps) {
-                if (props[propName] === void 0) {
-                  props[propName] = defaultProps[propName];
-                }
-              }
-            }
-            if (key || ref) {
-              var displayName = typeof type === "function" ? type.displayName || type.name || "Unknown" : type;
-              if (key) {
-                defineKeyPropWarningGetter(props, displayName);
-              }
-              if (ref) {
-                defineRefPropWarningGetter(props, displayName);
-              }
-            }
-            return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current, props);
-          }
-        }
-        var ReactCurrentOwner$1 = ReactSharedInternals.ReactCurrentOwner;
-        var ReactDebugCurrentFrame$1 = ReactSharedInternals.ReactDebugCurrentFrame;
-        function setCurrentlyValidatingElement$1(element) {
-          {
-            if (element) {
-              var owner = element._owner;
-              var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
-              ReactDebugCurrentFrame$1.setExtraStackFrame(stack);
-            } else {
-              ReactDebugCurrentFrame$1.setExtraStackFrame(null);
-            }
-          }
-        }
-        var propTypesMisspellWarningShown;
-        {
-          propTypesMisspellWarningShown = false;
-        }
-        function isValidElement2(object) {
-          {
-            return typeof object === "object" && object !== null && object.$$typeof === REACT_ELEMENT_TYPE;
-          }
-        }
-        function getDeclarationErrorAddendum() {
-          {
-            if (ReactCurrentOwner$1.current) {
-              var name = getComponentNameFromType(ReactCurrentOwner$1.current.type);
-              if (name) {
-                return "\n\nCheck the render method of `" + name + "`.";
-              }
-            }
-            return "";
-          }
-        }
-        function getSourceInfoErrorAddendum(source) {
-          {
-            if (source !== void 0) {
-              var fileName = source.fileName.replace(/^.*[\\\/]/, "");
-              var lineNumber = source.lineNumber;
-              return "\n\nCheck your code at " + fileName + ":" + lineNumber + ".";
-            }
-            return "";
-          }
-        }
-        var ownerHasKeyUseWarning = {};
-        function getCurrentComponentErrorInfo(parentType) {
-          {
-            var info = getDeclarationErrorAddendum();
-            if (!info) {
-              var parentName = typeof parentType === "string" ? parentType : parentType.displayName || parentType.name;
-              if (parentName) {
-                info = "\n\nCheck the top-level render call using <" + parentName + ">.";
-              }
-            }
-            return info;
-          }
-        }
-        function validateExplicitKey(element, parentType) {
-          {
-            if (!element._store || element._store.validated || element.key != null) {
-              return;
-            }
-            element._store.validated = true;
-            var currentComponentErrorInfo = getCurrentComponentErrorInfo(parentType);
-            if (ownerHasKeyUseWarning[currentComponentErrorInfo]) {
-              return;
-            }
-            ownerHasKeyUseWarning[currentComponentErrorInfo] = true;
-            var childOwner = "";
-            if (element && element._owner && element._owner !== ReactCurrentOwner$1.current) {
-              childOwner = " It was passed a child from " + getComponentNameFromType(element._owner.type) + ".";
-            }
-            setCurrentlyValidatingElement$1(element);
-            error('Each child in a list should have a unique "key" prop.%s%s See https://reactjs.org/link/warning-keys for more information.', currentComponentErrorInfo, childOwner);
-            setCurrentlyValidatingElement$1(null);
-          }
-        }
-        function validateChildKeys(node, parentType) {
-          {
-            if (typeof node !== "object") {
-              return;
-            }
-            if (isArray(node)) {
-              for (var i2 = 0; i2 < node.length; i2++) {
-                var child = node[i2];
-                if (isValidElement2(child)) {
-                  validateExplicitKey(child, parentType);
-                }
-              }
-            } else if (isValidElement2(node)) {
-              if (node._store) {
-                node._store.validated = true;
-              }
-            } else if (node) {
-              var iteratorFn = getIteratorFn(node);
-              if (typeof iteratorFn === "function") {
-                if (iteratorFn !== node.entries) {
-                  var iterator = iteratorFn.call(node);
-                  var step;
-                  while (!(step = iterator.next()).done) {
-                    if (isValidElement2(step.value)) {
-                      validateExplicitKey(step.value, parentType);
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        function validatePropTypes(element) {
-          {
-            var type = element.type;
-            if (type === null || type === void 0 || typeof type === "string") {
-              return;
-            }
-            var propTypes;
-            if (typeof type === "function") {
-              propTypes = type.propTypes;
-            } else if (typeof type === "object" && (type.$$typeof === REACT_FORWARD_REF_TYPE || // Note: Memo only checks outer props here.
-            // Inner props are checked in the reconciler.
-            type.$$typeof === REACT_MEMO_TYPE)) {
-              propTypes = type.propTypes;
-            } else {
-              return;
-            }
-            if (propTypes) {
-              var name = getComponentNameFromType(type);
-              checkPropTypes(propTypes, element.props, "prop", name, element);
-            } else if (type.PropTypes !== void 0 && !propTypesMisspellWarningShown) {
-              propTypesMisspellWarningShown = true;
-              var _name = getComponentNameFromType(type);
-              error("Component %s declared `PropTypes` instead of `propTypes`. Did you misspell the property assignment?", _name || "Unknown");
-            }
-            if (typeof type.getDefaultProps === "function" && !type.getDefaultProps.isReactClassApproved) {
-              error("getDefaultProps is only used on classic React.createClass definitions. Use a static property named `defaultProps` instead.");
-            }
-          }
-        }
-        function validateFragmentProps(fragment) {
-          {
-            var keys = Object.keys(fragment.props);
-            for (var i2 = 0; i2 < keys.length; i2++) {
-              var key = keys[i2];
-              if (key !== "children" && key !== "key") {
-                setCurrentlyValidatingElement$1(fragment);
-                error("Invalid prop `%s` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.", key);
-                setCurrentlyValidatingElement$1(null);
-                break;
-              }
-            }
-            if (fragment.ref !== null) {
-              setCurrentlyValidatingElement$1(fragment);
-              error("Invalid attribute `ref` supplied to `React.Fragment`.");
-              setCurrentlyValidatingElement$1(null);
-            }
-          }
-        }
-        var didWarnAboutKeySpread = {};
-        function jsxWithValidation(type, props, key, isStaticChildren, source, self) {
-          {
-            var validType = isValidElementType(type);
-            if (!validType) {
-              var info = "";
-              if (type === void 0 || typeof type === "object" && type !== null && Object.keys(type).length === 0) {
-                info += " You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.";
-              }
-              var sourceInfo = getSourceInfoErrorAddendum(source);
-              if (sourceInfo) {
-                info += sourceInfo;
-              } else {
-                info += getDeclarationErrorAddendum();
-              }
-              var typeString;
-              if (type === null) {
-                typeString = "null";
-              } else if (isArray(type)) {
-                typeString = "array";
-              } else if (type !== void 0 && type.$$typeof === REACT_ELEMENT_TYPE) {
-                typeString = "<" + (getComponentNameFromType(type.type) || "Unknown") + " />";
-                info = " Did you accidentally export a JSX literal instead of a component?";
-              } else {
-                typeString = typeof type;
-              }
-              error("React.jsx: type is invalid -- expected a string (for built-in components) or a class/function (for composite components) but got: %s.%s", typeString, info);
-            }
-            var element = jsxDEV(type, props, key, source, self);
-            if (element == null) {
-              return element;
-            }
-            if (validType) {
-              var children = props.children;
-              if (children !== void 0) {
-                if (isStaticChildren) {
-                  if (isArray(children)) {
-                    for (var i2 = 0; i2 < children.length; i2++) {
-                      validateChildKeys(children[i2], type);
-                    }
-                    if (Object.freeze) {
-                      Object.freeze(children);
-                    }
-                  } else {
-                    error("React.jsx: Static children should always be an array. You are likely explicitly calling React.jsxs or React.jsxDEV. Use the Babel transform instead.");
-                  }
-                } else {
-                  validateChildKeys(children, type);
-                }
-              }
-            }
-            {
-              if (hasOwnProperty.call(props, "key")) {
-                var componentName = getComponentNameFromType(type);
-                var keys = Object.keys(props).filter(function(k) {
-                  return k !== "key";
-                });
-                var beforeExample = keys.length > 0 ? "{key: someKey, " + keys.join(": ..., ") + ": ...}" : "{key: someKey}";
-                if (!didWarnAboutKeySpread[componentName + beforeExample]) {
-                  var afterExample = keys.length > 0 ? "{" + keys.join(": ..., ") + ": ...}" : "{}";
-                  error('A props object containing a "key" prop is being spread into JSX:\n  let props = %s;\n  <%s {...props} />\nReact keys must be passed directly to JSX without using spread:\n  let props = %s;\n  <%s key={someKey} {...props} />', beforeExample, componentName, afterExample, componentName);
-                  didWarnAboutKeySpread[componentName + beforeExample] = true;
-                }
-              }
-            }
-            if (type === REACT_FRAGMENT_TYPE) {
-              validateFragmentProps(element);
-            } else {
-              validatePropTypes(element);
-            }
-            return element;
-          }
-        }
-        function jsxWithValidationStatic(type, props, key) {
-          {
-            return jsxWithValidation(type, props, key, true);
-          }
-        }
-        function jsxWithValidationDynamic(type, props, key) {
-          {
-            return jsxWithValidation(type, props, key, false);
-          }
-        }
-        var jsx7 = jsxWithValidationDynamic;
-        var jsxs = jsxWithValidationStatic;
-        exports.Fragment = REACT_FRAGMENT_TYPE;
-        exports.jsx = jsx7;
-        exports.jsxs = jsxs;
-      })();
-    }
-  }
-});
-
-// node_modules/react/jsx-runtime.js
-var require_jsx_runtime = __commonJS({
-  "node_modules/react/jsx-runtime.js"(exports, module) {
-    "use strict";
-    if (false) {
-      module.exports = null;
-    } else {
-      module.exports = require_react_jsx_runtime_development();
-    }
-  }
-});
-
-// apps/web/src/pages/FleetReservationHub.jsx
-import React36, { useState as useState17 } from "./vendor-react-Bs5V2qFE.js";
-import { useSearchParams } from "./vendor-react-Bs5V2qFE.js";
-
-// apps/web/node_modules/lucide-react/dist/esm/createLucideIcon.js
-import { forwardRef as forwardRef2, createElement as createElement2 } from "./vendor-react-Bs5V2qFE.js";
+var jsxs = jsx;
+var react_shim_default = React;
 
 // apps/web/node_modules/lucide-react/dist/esm/shared/src/utils.js
 var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 var mergeClasses = (...classes) => classes.filter((className, index, array) => {
   return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index;
 }).join(" ").trim();
-
-// apps/web/node_modules/lucide-react/dist/esm/Icon.js
-import { forwardRef, createElement } from "./vendor-react-Bs5V2qFE.js";
 
 // apps/web/node_modules/lucide-react/dist/esm/defaultAttributes.js
 var defaultAttributes = {
@@ -1002,8 +108,8 @@ var Icon = forwardRef(
 
 // apps/web/node_modules/lucide-react/dist/esm/createLucideIcon.js
 var createLucideIcon = (iconName, iconNode) => {
-  const Component = forwardRef2(
-    ({ className, ...props }, ref) => createElement2(Icon, {
+  const Component = forwardRef(
+    ({ className, ...props }, ref) => createElement(Icon, {
       ref,
       iconNode,
       className: mergeClasses(`lucide-${toKebabCase(iconName)}`, className),
@@ -1259,12 +365,6 @@ var X = createLucideIcon("X", [
   ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
 ]);
-
-// apps/web/src/pages/FleetCalendarPage.jsx
-import React31, { useState as useState12, useEffect as useEffect14 } from "./vendor-react-Bs5V2qFE.js";
-
-// apps/web/src/components/ui/card.jsx
-import * as React from "./vendor-react-Bs5V2qFE.js";
 
 // node_modules/clsx/dist/clsx.mjs
 function r(e2) {
@@ -3747,7 +2847,7 @@ function cn(...inputs) {
 }
 
 // apps/web/src/components/ui/card.jsx
-var Card = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React.createElement(
+var Card = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   "div",
   {
     ref,
@@ -3756,7 +2856,7 @@ var Card = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ Re
   }
 ));
 Card.displayName = "Card";
-var CardHeader = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React.createElement(
+var CardHeader = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   "div",
   {
     ref,
@@ -3765,7 +2865,7 @@ var CardHeader = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__
   }
 ));
 CardHeader.displayName = "CardHeader";
-var CardTitle = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React.createElement(
+var CardTitle = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   "div",
   {
     ref,
@@ -3774,7 +2874,7 @@ var CardTitle = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ 
   }
 ));
 CardTitle.displayName = "CardTitle";
-var CardDescription = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React.createElement(
+var CardDescription = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   "div",
   {
     ref,
@@ -3783,9 +2883,9 @@ var CardDescription = React.forwardRef(({ className, ...props }, ref) => /* @__P
   }
 ));
 CardDescription.displayName = "CardDescription";
-var CardContent = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React.createElement("div", { ref, className: cn("p-6 pt-0", className), ...props }));
+var CardContent = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement("div", { ref, className: cn("p-6 pt-0", className), ...props }));
 CardContent.displayName = "CardContent";
-var CardFooter = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React.createElement(
+var CardFooter = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   "div",
   {
     ref,
@@ -3795,14 +2895,7 @@ var CardFooter = React.forwardRef(({ className, ...props }, ref) => /* @__PURE__
 ));
 CardFooter.displayName = "CardFooter";
 
-// apps/web/src/components/ui/button.jsx
-import * as React4 from "./vendor-react-Bs5V2qFE.js";
-
-// node_modules/@radix-ui/react-slot/dist/index.mjs
-import * as React3 from "./vendor-react-Bs5V2qFE.js";
-
 // node_modules/@radix-ui/react-compose-refs/dist/index.mjs
-import * as React2 from "./vendor-react-Bs5V2qFE.js";
 var __defProp2 = Object.defineProperty;
 var __name = (target, value) => __defProp2(target, "name", { value, configurable: true });
 function setRef(ref, value) {
@@ -3839,7 +2932,7 @@ function composeRefs(...refs) {
 }
 __name(composeRefs, "composeRefs");
 function useComposedRefs(...refs) {
-  return React2.useCallback(composeRefs(...refs), refs);
+  return useCallback(composeRefs(...refs), refs);
 }
 __name(useComposedRefs, "useComposedRefs");
 
@@ -3848,7 +2941,7 @@ var __defProp3 = Object.defineProperty;
 var __name2 = (target, value) => __defProp3(target, "name", { value, configurable: true });
 // @__NO_SIDE_EFFECTS__
 function createSlot(ownerName) {
-  const Slot22 = React3.forwardRef((props, forwardedRef) => {
+  const Slot22 = forwardRef((props, forwardedRef) => {
     let { children, ...slotProps } = props;
     let slottableElement = null;
     let hasSlottable = false;
@@ -3856,7 +2949,7 @@ function createSlot(ownerName) {
     if (isLazyComponent(children) && typeof use === "function") {
       children = use(children._payload);
     }
-    React3.Children.forEach(children, (maybeSlottable) => {
+    Children.forEach(children, (maybeSlottable) => {
       if (isSlottable(maybeSlottable)) {
         hasSlottable = true;
         const slottable = maybeSlottable;
@@ -3871,13 +2964,13 @@ function createSlot(ownerName) {
       }
     });
     if (slottableElement) {
-      slottableElement = React3.cloneElement(slottableElement, void 0, newChildren);
+      slottableElement = cloneElement(slottableElement, void 0, newChildren);
     } else if (
       // A `Slottable` was found but it didn't resolve to a single element (e.g.
       // it wrapped multiple elements, text, or a render-prop `child` that
       // wasn't an element). Don't fall back to treating the `Slottable` wrapper
       // itself as the slot target — throw a descriptive error below instead.
-      !hasSlottable && React3.Children.count(children) === 1 && React3.isValidElement(children)
+      !hasSlottable && Children.count(children) === 1 && isValidElement(children)
     ) {
       slottableElement = children;
     }
@@ -3892,10 +2985,10 @@ function createSlot(ownerName) {
       return children;
     }
     const mergedProps = mergeProps(slotProps, slottableElement.props ?? {});
-    if (slottableElement.type !== React3.Fragment) {
+    if (slottableElement.type !== Fragment) {
       mergedProps.ref = forwardedRef ? composedRef : slottableElementRef;
     }
-    return React3.cloneElement(slottableElement, mergedProps);
+    return cloneElement(slottableElement, mergedProps);
   });
   Slot22.displayName = `${ownerName}.Slot`;
   return Slot22;
@@ -3914,10 +3007,10 @@ __name2(createSlottable, "createSlottable");
 var getSlottableElementFromSlottable = /* @__PURE__ */ __name2((slottable, child) => {
   if ("child" in slottable.props) {
     const child2 = slottable.props.child;
-    if (!React3.isValidElement(child2)) return null;
-    return React3.cloneElement(child2, void 0, slottable.props.children(child2.props.children));
+    if (!isValidElement(child2)) return null;
+    return cloneElement(child2, void 0, slottable.props.children(child2.props.children));
   }
-  return React3.isValidElement(child) ? child : null;
+  return isValidElement(child) ? child : null;
 }, "getSlottableElementFromSlottable");
 function mergeProps(slotProps, childProps) {
   const overrideProps = { ...childProps };
@@ -3959,7 +3052,7 @@ function getElementRef(element) {
 }
 __name2(getElementRef, "getElementRef");
 function isSlottable(child) {
-  return React3.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
+  return isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
 }
 __name2(isSlottable, "isSlottable");
 var REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy");
@@ -3977,7 +3070,7 @@ var createSlotError = /* @__PURE__ */ __name2((ownerName) => {
 var createSlottableError = /* @__PURE__ */ __name2((ownerName) => {
   return `${ownerName} failed to slot onto its \`Slottable\`. Expected \`Slottable\` to receive a single React element child.`;
 }, "createSlottableError");
-var use = React3[" use ".trim().toString()];
+var use = react_shim_exports[" use ".trim().toString()];
 
 // node_modules/class-variance-authority/dist/index.mjs
 var falsyToString = (value) => typeof value === "boolean" ? `${value}` : value === 0 ? "0" : value;
@@ -4047,9 +3140,9 @@ var buttonVariants = cva(
     }
   }
 );
-var Button = React4.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
+var Button = forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button";
-  return /* @__PURE__ */ React4.createElement(
+  return /* @__PURE__ */ createElement(
     Comp,
     {
       className: cn(buttonVariants({ variant, size, className })),
@@ -4061,7 +3154,6 @@ var Button = React4.forwardRef(({ className, variant, size, asChild = false, ...
 Button.displayName = "Button";
 
 // apps/web/src/components/ui/badge.jsx
-import * as React5 from "./vendor-react-Bs5V2qFE.js";
 var badgeVariants = cva(
   "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
@@ -4083,13 +3175,12 @@ function Badge({
   variant,
   ...props
 }) {
-  return /* @__PURE__ */ React5.createElement("div", { className: cn(badgeVariants({ variant }), className), ...props });
+  return /* @__PURE__ */ createElement("div", { className: cn(badgeVariants({ variant }), className), ...props });
 }
 
 // apps/web/src/components/ui/input.jsx
-import * as React6 from "./vendor-react-Bs5V2qFE.js";
-var Input = React6.forwardRef(({ className, type, ...props }, ref) => {
-  return /* @__PURE__ */ React6.createElement(
+var Input = forwardRef(({ className, type, ...props }, ref) => {
+  return /* @__PURE__ */ createElement(
     "input",
     {
       type,
@@ -4103,12 +3194,6 @@ var Input = React6.forwardRef(({ className, type, ...props }, ref) => {
   );
 });
 Input.displayName = "Input";
-
-// apps/web/src/components/ui/dialog.jsx
-import * as React29 from "./vendor-react-Bs5V2qFE.js";
-
-// node_modules/@radix-ui/react-dialog/dist/index.mjs
-import * as React28 from "./vendor-react-Bs5V2qFE.js";
 
 // node_modules/@radix-ui/primitive/dist/index.mjs
 var __defProp4 = Object.defineProperty;
@@ -4163,74 +3248,72 @@ function isFrame(element) {
 __name3(isFrame, "isFrame");
 
 // node_modules/@radix-ui/react-context/dist/index.mjs
-var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-import * as React7 from "./vendor-react-Bs5V2qFE.js";
 var __defProp5 = Object.defineProperty;
 var __name4 = (target, value) => __defProp5(target, "name", { value, configurable: true });
 // @__NO_SIDE_EFFECTS__
 function createContext2(rootComponentName, defaultContext) {
-  const Context = React7.createContext(defaultContext);
+  const Context = createContext(defaultContext);
   Context.displayName = rootComponentName + "Context";
   const Provider = /* @__PURE__ */ __name4((props) => {
     const { children, ...context } = props;
-    const value = React7.useMemo(() => context, Object.values(context));
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, { value, children });
+    const value = useMemo(() => context, Object.values(context));
+    return /* @__PURE__ */ jsx(Context.Provider, { value, children });
   }, "Provider");
   Provider.displayName = rootComponentName + "Provider";
-  function useContext22(consumerName, options2 = {}) {
+  function useContext2(consumerName, options2 = {}) {
     const { optional = false } = options2;
-    const context = React7.useContext(Context);
+    const context = useContext(Context);
     if (context) return context;
     if (defaultContext !== void 0) return defaultContext;
     if (optional) return void 0;
     throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
   }
-  __name4(useContext22, "useContext");
-  return [Provider, useContext22];
+  __name4(useContext2, "useContext");
+  return [Provider, useContext2];
 }
 __name4(createContext2, "createContext");
 // @__NO_SIDE_EFFECTS__
 function createContextScope(scopeName, createContextScopeDeps = []) {
   let defaultContexts = [];
-  function createContext32(rootComponentName, defaultContext) {
-    const BaseContext = React7.createContext(defaultContext);
+  function createContext3(rootComponentName, defaultContext) {
+    const BaseContext = createContext(defaultContext);
     BaseContext.displayName = rootComponentName + "Context";
     const index = defaultContexts.length;
     defaultContexts = [...defaultContexts, defaultContext];
     const Provider = /* @__PURE__ */ __name4((props) => {
       const { scope, children, ...context } = props;
       const Context = scope?.[scopeName]?.[index] || BaseContext;
-      const value = React7.useMemo(() => context, Object.values(context));
-      return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Context.Provider, { value, children });
+      const value = useMemo(() => context, Object.values(context));
+      return /* @__PURE__ */ jsx(Context.Provider, { value, children });
     }, "Provider");
     Provider.displayName = rootComponentName + "Provider";
-    function useContext22(consumerName, scope, options2 = {}) {
+    function useContext2(consumerName, scope, options2 = {}) {
       const { optional = false } = options2;
       const Context = scope?.[scopeName]?.[index] || BaseContext;
-      const context = React7.useContext(Context);
+      const context = useContext(Context);
       if (context) return context;
       if (defaultContext !== void 0) return defaultContext;
       if (optional) return void 0;
       throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
     }
-    __name4(useContext22, "useContext");
-    return [Provider, useContext22];
+    __name4(useContext2, "useContext");
+    return [Provider, useContext2];
   }
-  __name4(createContext32, "createContext");
+  __name4(createContext3, "createContext");
   const createScope = /* @__PURE__ */ __name4(() => {
     const scopeContexts = defaultContexts.map((defaultContext) => {
-      return React7.createContext(defaultContext);
+      return createContext(defaultContext);
     });
     return /* @__PURE__ */ __name4(function useScope(scope) {
       const contexts = scope?.[scopeName] || scopeContexts;
-      return React7.useMemo(
+      return useMemo(
         () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
         [scope, contexts]
       );
     }, "useScope");
   }, "createScope");
   createScope.scopeName = scopeName;
-  return [createContext32, composeContextScopes(createScope, ...createContextScopeDeps)];
+  return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
 }
 __name4(createContextScope, "createContextScope");
 function composeContextScopes(...scopes) {
@@ -4247,7 +3330,7 @@ function composeContextScopes(...scopes) {
         const currentScope = scopeProps[`__scope${scopeName}`];
         return { ...nextScopes2, ...currentScope };
       }, {});
-      return React7.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
+      return useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
     }, "useComposedScopes");
   }, "createScope");
   createScope.scopeName = baseScope.scopeName;
@@ -4255,48 +3338,37 @@ function composeContextScopes(...scopes) {
 }
 __name4(composeContextScopes, "composeContextScopes");
 
-// node_modules/@radix-ui/react-id/dist/index.mjs
-import * as React9 from "./vendor-react-Bs5V2qFE.js";
-
 // node_modules/@radix-ui/react-use-layout-effect/dist/index.mjs
-import * as React8 from "./vendor-react-Bs5V2qFE.js";
-var useLayoutEffect2 = globalThis?.document ? React8.useLayoutEffect : () => {
+var useLayoutEffect2 = globalThis?.document ? useLayoutEffect : () => {
 };
 
 // node_modules/@radix-ui/react-id/dist/index.mjs
 var __defProp6 = Object.defineProperty;
 var __name5 = (target, value) => __defProp6(target, "name", { value, configurable: true });
-var useReactId = React9[" useId ".trim().toString()] || (() => void 0);
+var useReactId = react_shim_exports[" useId ".trim().toString()] || (() => void 0);
 var count = 0;
-function useId(deterministicId) {
-  const [id, setId] = React9.useState(useReactId());
+function useId2(deterministicId) {
+  const [id, setId] = useState(useReactId());
   useLayoutEffect2(() => {
     if (!deterministicId) setId((reactId) => reactId ?? String(count++));
   }, [deterministicId]);
   return deterministicId || (id ? `radix-${id}` : "");
 }
-__name5(useId, "useId");
-
-// node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
-import * as React11 from "./vendor-react-Bs5V2qFE.js";
+__name5(useId2, "useId");
 
 // node_modules/@radix-ui/primitive/dist/internal/is-development.false.mjs
 var IS_DEVELOPMENT = false;
 
-// node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
-import * as React22 from "./vendor-react-Bs5V2qFE.js";
-
 // node_modules/@radix-ui/react-use-effect-event/dist/index.mjs
-import * as React10 from "./vendor-react-Bs5V2qFE.js";
 var __defProp7 = Object.defineProperty;
 var __name6 = (target, value) => __defProp7(target, "name", { value, configurable: true });
-var useReactEffectEvent = React10[" useEffectEvent ".trim().toString()];
-var useReactInsertionEffect = React10[" useInsertionEffect ".trim().toString()];
+var useReactEffectEvent = react_shim_exports[" useEffectEvent ".trim().toString()];
+var useReactInsertionEffect = react_shim_exports[" useInsertionEffect ".trim().toString()];
 function useEffectEvent(callback) {
   if (typeof useReactEffectEvent === "function") {
     return useReactEffectEvent(callback);
   }
-  const ref = React10.useRef(() => {
+  const ref = useRef(() => {
     throw new Error("Cannot call an event handler while rendering.");
   });
   if (typeof useReactInsertionEffect === "function") {
@@ -4308,14 +3380,14 @@ function useEffectEvent(callback) {
       ref.current = callback;
     });
   }
-  return React10.useMemo(() => ((...args) => ref.current?.(...args)), []);
+  return useMemo(() => ((...args) => ref.current?.(...args)), []);
 }
 __name6(useEffectEvent, "useEffectEvent");
 
 // node_modules/@radix-ui/react-use-controllable-state/dist/index.mjs
 var __defProp8 = Object.defineProperty;
 var __name7 = (target, value) => __defProp8(target, "name", { value, configurable: true });
-var useInsertionEffect = React11[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
+var useInsertionEffect = react_shim_exports[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
 function useControllableState({
   prop,
   defaultProp,
@@ -4330,8 +3402,8 @@ function useControllableState({
   const isControlled = prop !== void 0;
   const value = isControlled ? prop : uncontrolledProp;
   if (IS_DEVELOPMENT) {
-    const isControlledRef = React11.useRef(prop !== void 0);
-    React11.useEffect(() => {
+    const isControlledRef = useRef(prop !== void 0);
+    useEffect(() => {
       const wasControlled = isControlledRef.current;
       if (wasControlled !== isControlled) {
         const from = wasControlled ? "controlled" : "uncontrolled";
@@ -4343,7 +3415,7 @@ function useControllableState({
       isControlledRef.current = isControlled;
     }, [isControlled, caller]);
   }
-  const setValue = React11.useCallback(
+  const setValue = useCallback(
     (nextValue) => {
       if (isControlled) {
         const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
@@ -4363,13 +3435,13 @@ function useUncontrolledState({
   defaultProp,
   onChange
 }) {
-  const [value, setValue] = React11.useState(defaultProp);
-  const prevValueRef = React11.useRef(value);
-  const onChangeRef = React11.useRef(onChange);
+  const [value, setValue] = useState(defaultProp);
+  const prevValueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
   useInsertionEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
-  React11.useEffect(() => {
+  useEffect(() => {
     if (prevValueRef.current !== value) {
       onChangeRef.current?.(value);
       prevValueRef.current = value;
@@ -4388,8 +3460,8 @@ function useControllableStateReducer(reducer, userArgs, initialArg, init) {
   const isControlled = controlledState !== void 0;
   const onChange = useEffectEvent(onChangeProp);
   if (IS_DEVELOPMENT) {
-    const isControlledRef = React22.useRef(controlledState !== void 0);
-    React22.useEffect(() => {
+    const isControlledRef = useRef(controlledState !== void 0);
+    useEffect(() => {
       const wasControlled = isControlledRef.current;
       if (wasControlled !== isControlled) {
         const from = wasControlled ? "controlled" : "uncontrolled";
@@ -4405,7 +3477,7 @@ function useControllableStateReducer(reducer, userArgs, initialArg, init) {
   if (init) {
     args.push(init);
   }
-  const [internalState, dispatch] = React22.useReducer(
+  const [internalState, dispatch] = useReducer(
     (state2, action) => {
       if (action.type === SYNC_STATE) {
         return { ...state2, state: action.state };
@@ -4419,8 +3491,8 @@ function useControllableStateReducer(reducer, userArgs, initialArg, init) {
     ...args
   );
   const uncontrolledState = internalState.state;
-  const prevValueRef = React22.useRef(uncontrolledState);
-  React22.useEffect(() => {
+  const prevValueRef = useRef(uncontrolledState);
+  useEffect(() => {
     if (prevValueRef.current !== uncontrolledState) {
       prevValueRef.current = uncontrolledState;
       if (!isControlled) {
@@ -4428,14 +3500,14 @@ function useControllableStateReducer(reducer, userArgs, initialArg, init) {
       }
     }
   }, [uncontrolledState, prevValueRef, isControlled]);
-  const state = React22.useMemo(() => {
+  const state = useMemo(() => {
     const isControlled2 = controlledState !== void 0;
     if (isControlled2) {
       return { ...internalState, state: controlledState };
     }
     return internalState;
   }, [internalState, controlledState]);
-  React22.useEffect(() => {
+  useEffect(() => {
     if (isControlled && !Object.is(controlledState, internalState.state)) {
       dispatch({ type: SYNC_STATE, state: controlledState });
     }
@@ -4444,13 +3516,7 @@ function useControllableStateReducer(reducer, userArgs, initialArg, init) {
 }
 __name7(useControllableStateReducer, "useControllableStateReducer");
 
-// node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs
-import * as React14 from "./vendor-react-Bs5V2qFE.js";
-
 // node_modules/@radix-ui/react-primitive/dist/index.mjs
-import * as React12 from "./vendor-react-Bs5V2qFE.js";
-import * as ReactDOM from "./vendor-react-Bs5V2qFE.js";
-var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
 var __defProp9 = Object.defineProperty;
 var __name8 = (target, value) => __defProp9(target, "name", { value, configurable: true });
 var NODES = [
@@ -4474,44 +3540,42 @@ var NODES = [
 ];
 var Primitive = NODES.reduce((primitive, node) => {
   const Slot3 = createSlot(`Primitive.${node}`);
-  const Node2 = React12.forwardRef((props, forwardedRef) => {
+  const Node2 = forwardRef((props, forwardedRef) => {
     const { asChild, ...primitiveProps } = props;
     const Comp = asChild ? Slot3 : node;
     if (typeof window !== "undefined") {
       window[/* @__PURE__ */ Symbol.for("radix-ui")] = true;
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsx(Comp, { ...primitiveProps, ref: forwardedRef });
   });
   Node2.displayName = `Primitive.${node}`;
   return { ...primitive, [node]: Node2 };
 }, {});
 function dispatchDiscreteCustomEvent(target, event) {
-  if (target) ReactDOM.flushSync(() => target.dispatchEvent(event));
+  if (target) (void 0)(() => target.dispatchEvent(event));
 }
 __name8(dispatchDiscreteCustomEvent, "dispatchDiscreteCustomEvent");
 
 // node_modules/@radix-ui/react-use-callback-ref/dist/index.mjs
-import * as React13 from "./vendor-react-Bs5V2qFE.js";
 var __defProp10 = Object.defineProperty;
 var __name9 = (target, value) => __defProp10(target, "name", { value, configurable: true });
 function useCallbackRef(callback) {
-  const callbackRef = React13.useRef(callback);
-  React13.useEffect(() => {
+  const callbackRef = useRef(callback);
+  useEffect(() => {
     callbackRef.current = callback;
   });
-  return React13.useMemo(() => ((...args) => callbackRef.current?.(...args)), []);
+  return useMemo(() => ((...args) => callbackRef.current?.(...args)), []);
 }
 __name9(useCallbackRef, "useCallbackRef");
 
 // node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs
-var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
 var __defProp11 = Object.defineProperty;
 var __name10 = (target, value) => __defProp11(target, "name", { value, configurable: true });
 var CONTEXT_UPDATE = "dismissableLayer.update";
 var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
 var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
 var originalBodyPointerEvents;
-var DismissableLayerContext = React14.createContext({
+var DismissableLayerContext = createContext({
   layers: /* @__PURE__ */ new Set(),
   layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
   branches: /* @__PURE__ */ new Set(),
@@ -4522,7 +3586,7 @@ var DismissableLayerContext = React14.createContext({
   // See https://github.com/radix-ui/primitives/issues/3346
   dismissableSurfaces: /* @__PURE__ */ new Set()
 });
-var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
+var DismissableLayer = /* @__PURE__ */ forwardRef(
   // blank line to reduce diff noise
   /* @__PURE__ */ __name10(function DismissableLayer2(props, forwardedRef) {
     const {
@@ -4535,10 +3599,10 @@ var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
       onDismiss,
       ...layerProps
     } = props;
-    const context = React14.useContext(DismissableLayerContext);
-    const [node, setNode] = React14.useState(null);
+    const context = useContext(DismissableLayerContext);
+    const [node, setNode] = useState(null);
     const ownerDocument = node?.ownerDocument ?? globalThis?.document;
-    const [, force] = React14.useState({});
+    const [, force] = useState({});
     const composedRefs = useComposedRefs(forwardedRef, setNode);
     const layers = Array.from(context.layers);
     const [highestLayerWithOutsidePointerEventsDisabled] = [
@@ -4548,7 +3612,7 @@ var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
     const index = node ? layers.indexOf(node) : -1;
     const isBodyPointerEventsDisabled = context.layersWithOutsidePointerEventsDisabled.size > 0;
     const isPointerEventsEnabled = index >= highestLayerWithOutsidePointerEventsDisabledIndex;
-    const isDeferredPointerDownOutsideRef = React14.useRef(false);
+    const isDeferredPointerDownOutsideRef = useRef(false);
     const pointerDownOutside = usePointerDownOutside(
       (event) => {
         onPointerDownOutside?.(event);
@@ -4560,7 +3624,7 @@ var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
         deferPointerDownOutside,
         isDeferredPointerDownOutsideRef,
         dismissableSurfaces: context.dismissableSurfaces,
-        shouldHandlePointerDownOutside: React14.useCallback(
+        shouldHandlePointerDownOutside: useCallback(
           (target) => {
             if (!(target instanceof Node)) {
               return false;
@@ -4596,14 +3660,14 @@ var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
         onDismiss();
       }
     });
-    React14.useEffect(() => {
+    useEffect(() => {
       if (!isHighestLayer) {
         return;
       }
       ownerDocument.addEventListener("keydown", handleKeyDown, { capture: true });
       return () => ownerDocument.removeEventListener("keydown", handleKeyDown, { capture: true });
     }, [ownerDocument, isHighestLayer, handleKeyDown]);
-    React14.useEffect(() => {
+    useEffect(() => {
       if (!node) return;
       if (disableOutsidePointerEvents) {
         if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
@@ -4623,7 +3687,7 @@ var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
         }
       };
     }, [node, ownerDocument, disableOutsidePointerEvents, context]);
-    React14.useEffect(() => {
+    useEffect(() => {
       return () => {
         if (!node) return;
         context.layers.delete(node);
@@ -4631,12 +3695,12 @@ var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
         dispatchUpdate();
       };
     }, [node, context]);
-    React14.useEffect(() => {
+    useEffect(() => {
       const handleUpdate = /* @__PURE__ */ __name10(() => force({}), "handleUpdate");
       document.addEventListener(CONTEXT_UPDATE, handleUpdate);
       return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
     }, []);
-    return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+    return /* @__PURE__ */ jsx(
       Primitive.div,
       {
         ...layerProps,
@@ -4656,9 +3720,9 @@ var DismissableLayer = /* @__PURE__ */ React14.forwardRef(
   }, "DismissableLayer")
 );
 function useDismissableLayerSurface() {
-  const context = React14.useContext(DismissableLayerContext);
-  const [node, setNode] = React14.useState(null);
-  React14.useEffect(() => {
+  const context = useContext(DismissableLayerContext);
+  const [node, setNode] = useState(null);
+  useEffect(() => {
     if (!node) {
       return;
     }
@@ -4680,12 +3744,12 @@ function usePointerDownOutside(onPointerDownOutside, args) {
     shouldHandlePointerDownOutside = IS_TRUE
   } = args;
   const handlePointerDownOutside = useCallbackRef(onPointerDownOutside);
-  const isPointerInsideReactTreeRef = React14.useRef(false);
-  const isPointerDownOutsideRef = React14.useRef(false);
-  const interceptedOutsideInteractionEventsRef = React14.useRef(/* @__PURE__ */ new Map());
-  const handleClickRef = React14.useRef(() => {
+  const isPointerInsideReactTreeRef = useRef(false);
+  const isPointerDownOutsideRef = useRef(false);
+  const interceptedOutsideInteractionEventsRef = useRef(/* @__PURE__ */ new Map());
+  const handleClickRef = useRef(() => {
   });
-  React14.useEffect(() => {
+  useEffect(() => {
     function resetOutsideInteraction() {
       isPointerDownOutsideRef.current = false;
       isDeferredPointerDownOutsideRef.current = false;
@@ -4800,8 +3864,8 @@ function usePointerDownOutside(onPointerDownOutside, args) {
 __name10(usePointerDownOutside, "usePointerDownOutside");
 function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
   const handleFocusOutside = useCallbackRef(onFocusOutside);
-  const isFocusInsideReactTreeRef = React14.useRef(false);
-  React14.useEffect(() => {
+  const isFocusInsideReactTreeRef = useRef(false);
+  useEffect(() => {
     const handleFocus = /* @__PURE__ */ __name10((event) => {
       if (event.target && !isFocusInsideReactTreeRef.current) {
         const eventDetail = { originalEvent: event };
@@ -4837,14 +3901,12 @@ function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
 __name10(handleAndDispatchCustomEvent, "handleAndDispatchCustomEvent");
 
 // node_modules/@radix-ui/react-focus-scope/dist/index.mjs
-import * as React15 from "./vendor-react-Bs5V2qFE.js";
-var import_jsx_runtime4 = __toESM(require_jsx_runtime(), 1);
 var __defProp12 = Object.defineProperty;
 var __name11 = (target, value) => __defProp12(target, "name", { value, configurable: true });
 var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
 var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
 var EVENT_OPTIONS = { bubbles: false, cancelable: true };
-var FocusScope = /* @__PURE__ */ React15.forwardRef(
+var FocusScope = /* @__PURE__ */ forwardRef(
   /* @__PURE__ */ __name11(function FocusScope2(props, forwardedRef) {
     const {
       loop = false,
@@ -4853,12 +3915,12 @@ var FocusScope = /* @__PURE__ */ React15.forwardRef(
       onUnmountAutoFocus: onUnmountAutoFocusProp,
       ...scopeProps
     } = props;
-    const [container, setContainer] = React15.useState(null);
+    const [container, setContainer] = useState(null);
     const onMountAutoFocus = useCallbackRef(onMountAutoFocusProp);
     const onUnmountAutoFocus = useCallbackRef(onUnmountAutoFocusProp);
-    const lastFocusedElementRef = React15.useRef(null);
+    const lastFocusedElementRef = useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, setContainer);
-    const focusScope = React15.useRef({
+    const focusScope = useRef({
       paused: false,
       pause() {
         this.paused = true;
@@ -4867,7 +3929,7 @@ var FocusScope = /* @__PURE__ */ React15.forwardRef(
         this.paused = false;
       }
     }).current;
-    React15.useEffect(() => {
+    useEffect(() => {
       if (trapped) {
         let handleFocusIn2 = function(event) {
           if (focusScope.paused || !container) return;
@@ -4906,7 +3968,7 @@ var FocusScope = /* @__PURE__ */ React15.forwardRef(
         };
       }
     }, [trapped, container, focusScope.paused]);
-    React15.useEffect(() => {
+    useEffect(() => {
       if (container) {
         focusScopesStack.add(focusScope);
         const previouslyFocusedElement = document.activeElement;
@@ -4937,7 +3999,7 @@ var FocusScope = /* @__PURE__ */ React15.forwardRef(
         };
       }
     }, [container, onMountAutoFocus, onUnmountAutoFocus, focusScope]);
-    const handleKeyDown = React15.useCallback(
+    const handleKeyDown = useCallback(
       (event) => {
         if (!loop && !trapped) return;
         if (focusScope.paused) return;
@@ -4962,7 +4024,7 @@ var FocusScope = /* @__PURE__ */ React15.forwardRef(
       },
       [loop, trapped, focusScope.paused]
     );
-    return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
+    return /* @__PURE__ */ jsx(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
   }, "FocusScope")
 );
 function focusFirst(candidates, { select = false } = {}) {
@@ -5060,28 +4122,23 @@ function removeLinks(items) {
 __name11(removeLinks, "removeLinks");
 
 // node_modules/@radix-ui/react-portal/dist/index.mjs
-import * as React16 from "./vendor-react-Bs5V2qFE.js";
-import * as ReactDOM2 from "./vendor-react-Bs5V2qFE.js";
-var import_jsx_runtime5 = __toESM(require_jsx_runtime(), 1);
 var __defProp13 = Object.defineProperty;
 var __name12 = (target, value) => __defProp13(target, "name", { value, configurable: true });
-var Portal = /* @__PURE__ */ React16.forwardRef(
+var Portal = /* @__PURE__ */ forwardRef(
   /* @__PURE__ */ __name12(function Portal2(props, forwardedRef) {
     const { container: containerProp, ...portalProps } = props;
-    const [mounted, setMounted] = React16.useState(false);
+    const [mounted, setMounted] = useState(false);
     useLayoutEffect2(() => setMounted(true), []);
     const container = containerProp || mounted && globalThis?.document?.body;
-    return container ? ReactDOM2.createPortal(/* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Primitive.div, { ...portalProps, ref: forwardedRef }), container) : null;
+    return container ? (void 0)(/* @__PURE__ */ jsx(Primitive.div, { ...portalProps, ref: forwardedRef }), container) : null;
   }, "Portal")
 );
 
 // node_modules/@radix-ui/react-presence/dist/index.mjs
-import * as React23 from "./vendor-react-Bs5V2qFE.js";
-import * as React17 from "./vendor-react-Bs5V2qFE.js";
 var __defProp14 = Object.defineProperty;
 var __name13 = (target, value) => __defProp14(target, "name", { value, configurable: true });
 function useStateMachine(initialState, machine) {
-  return React17.useReducer((state, event) => {
+  return useReducer((state, event) => {
     const nextState = machine[state][event];
     return nextState ?? state;
   }, initialState);
@@ -5090,17 +4147,17 @@ __name13(useStateMachine, "useStateMachine");
 var Presence = /* @__PURE__ */ __name13((props) => {
   const { present, children } = props;
   const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : React23.Children.only(children);
+  const child = typeof children === "function" ? children({ present: presence.isPresent }) : Children.only(children);
   const ref = useStableComposedRefs(presence.ref, getElementRef2(child));
   const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? React23.cloneElement(child, { ref }) : null;
+  return forceMount || presence.isPresent ? cloneElement(child, { ref }) : null;
 }, "Presence");
 function usePresence(present) {
-  const [node, setNode] = React23.useState();
-  const stylesRef = React23.useRef(null);
-  const prevPresentRef = React23.useRef(present);
-  const prevAnimationNameRef = React23.useRef("none");
-  const mountAnimationNameRef = React23.useRef(void 0);
+  const [node, setNode] = useState();
+  const stylesRef = useRef(null);
+  const prevPresentRef = useRef(present);
+  const prevAnimationNameRef = useRef("none");
+  const mountAnimationNameRef = useRef(void 0);
   const initialState = present ? "mounted" : "unmounted";
   const [state, send] = useStateMachine(initialState, {
     mounted: {
@@ -5115,7 +4172,7 @@ function usePresence(present) {
       MOUNT: "mounted"
     }
   });
-  React23.useEffect(() => {
+  useEffect(() => {
     if (state === "mounted") {
       prevAnimationNameRef.current = mountAnimationNameRef.current ?? getAnimationName(stylesRef.current);
       mountAnimationNameRef.current = void 0;
@@ -5186,7 +4243,7 @@ function usePresence(present) {
   }, [node, send]);
   return {
     isPresent: ["mounted", "unmountSuspended"].includes(state),
-    ref: React23.useCallback((node2) => {
+    ref: useCallback((node2) => {
       if (node2) {
         const styles = getComputedStyle(node2);
         stylesRef.current = styles;
@@ -5208,9 +4265,9 @@ function setRef2(ref, value) {
 }
 __name13(setRef2, "setRef");
 function useStableComposedRefs(...refs) {
-  const refsRef = React23.useRef(refs);
+  const refsRef = useRef(refs);
   refsRef.current = refs;
-  return React23.useCallback((node) => {
+  return useCallback((node) => {
     const currentRefs = refsRef.current;
     let hasCleanup = false;
     const cleanups = currentRefs.map((ref) => {
@@ -5255,7 +4312,6 @@ function getElementRef2(element) {
 __name13(getElementRef2, "getElementRef");
 
 // node_modules/@radix-ui/react-focus-guards/dist/index.mjs
-import * as React18 from "./vendor-react-Bs5V2qFE.js";
 var __defProp15 = Object.defineProperty;
 var __name14 = (target, value) => __defProp15(target, "name", { value, configurable: true });
 var count2 = 0;
@@ -5266,7 +4322,7 @@ function FocusGuards(props) {
 }
 __name14(FocusGuards, "FocusGuards");
 function useFocusGuards() {
-  React18.useEffect(() => {
+  useEffect(() => {
     if (!guards) {
       guards = { start: createFocusGuard(), end: createFocusGuard() };
     }
@@ -5333,12 +4389,6 @@ function __spreadArray(to, from, pack) {
   return to.concat(ar || Array.prototype.slice.call(from));
 }
 
-// node_modules/react-remove-scroll/dist/es2015/Combination.js
-import * as React27 from "./vendor-react-Bs5V2qFE.js";
-
-// node_modules/react-remove-scroll/dist/es2015/UI.js
-import * as React21 from "./vendor-react-Bs5V2qFE.js";
-
 // node_modules/react-remove-scroll-bar/dist/es2015/constants.js
 var zeroRightClassName = "right-scroll-bar-position";
 var fullWidthClassName = "width-before-scroll-bar";
@@ -5356,9 +4406,8 @@ function assignRef(ref, value) {
 }
 
 // node_modules/use-callback-ref/dist/es2015/useRef.js
-import { useState as useState7 } from "./vendor-react-Bs5V2qFE.js";
 function useCallbackRef2(initialValue, callback) {
-  var ref = useState7(function() {
+  var ref = useState(function() {
     return {
       // value
       value: initialValue,
@@ -5384,8 +4433,7 @@ function useCallbackRef2(initialValue, callback) {
 }
 
 // node_modules/use-callback-ref/dist/es2015/useMergeRef.js
-import * as React19 from "./vendor-react-Bs5V2qFE.js";
-var useIsomorphicLayoutEffect = typeof window !== "undefined" ? React19.useLayoutEffect : React19.useEffect;
+var useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 var currentValues = /* @__PURE__ */ new WeakMap();
 function useMergeRefs(refs, defaultValue) {
   var callbackRef = useCallbackRef2(defaultValue || null, function(newValue) {
@@ -5502,7 +4550,6 @@ function createSidecarMedium(options2) {
 }
 
 // node_modules/use-sidecar/dist/es2015/exports.js
-import * as React20 from "./vendor-react-Bs5V2qFE.js";
 var SideCar = function(_a) {
   var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
   if (!sideCar) {
@@ -5512,7 +4559,7 @@ var SideCar = function(_a) {
   if (!Target) {
     throw new Error("Sidecar medium not found");
   }
-  return React20.createElement(Target, __assign({}, rest));
+  return createElement(Target, __assign({}, rest));
 };
 SideCar.isSideCarExport = true;
 function exportSidecar(medium, exported) {
@@ -5527,9 +4574,9 @@ var effectCar = createSidecarMedium();
 var nothing = function() {
   return;
 };
-var RemoveScroll = React21.forwardRef(function(props, parentRef) {
-  var ref = React21.useRef(null);
-  var _a = React21.useState({
+var RemoveScroll = forwardRef(function(props, parentRef) {
+  var ref = useRef(null);
+  var _a = useState({
     onScrollCapture: nothing,
     onWheelCapture: nothing,
     onTouchMoveCapture: nothing
@@ -5538,11 +4585,11 @@ var RemoveScroll = React21.forwardRef(function(props, parentRef) {
   var SideCar2 = sideCar;
   var containerRef = useMergeRefs([ref, parentRef]);
   var containerProps = __assign(__assign({}, rest), callbacks);
-  return React21.createElement(
-    React21.Fragment,
+  return createElement(
+    Fragment,
     null,
-    enabled && React21.createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
-    forwardProps ? React21.cloneElement(React21.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : React21.createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
+    enabled && createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
+    forwardProps ? cloneElement(Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
   );
 });
 RemoveScroll.defaultProps = {
@@ -5554,15 +4601,6 @@ RemoveScroll.classNames = {
   fullWidth: fullWidthClassName,
   zeroRight: zeroRightClassName
 };
-
-// node_modules/react-remove-scroll/dist/es2015/SideEffect.js
-import * as React26 from "./vendor-react-Bs5V2qFE.js";
-
-// node_modules/react-remove-scroll-bar/dist/es2015/component.js
-import * as React25 from "./vendor-react-Bs5V2qFE.js";
-
-// node_modules/react-style-singleton/dist/es2015/hook.js
-import * as React24 from "./vendor-react-Bs5V2qFE.js";
 
 // node_modules/get-nonce/dist/es2015/index.js
 var currentNonce;
@@ -5626,7 +4664,7 @@ var stylesheetSingleton = function() {
 var styleHookSingleton = function() {
   var sheet = stylesheetSingleton();
   return function(styles, isDynamic) {
-    React24.useEffect(function() {
+    useEffect(function() {
       sheet.add(styles);
       return function() {
         sheet.remove();
@@ -5700,7 +4738,7 @@ var getCurrentUseCounter = function() {
   return isFinite(counter) ? counter : 0;
 };
 var useLockAttribute = function() {
-  React25.useEffect(function() {
+  useEffect(function() {
     document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
     return function() {
       var newCounter = getCurrentUseCounter() - 1;
@@ -5715,10 +4753,10 @@ var useLockAttribute = function() {
 var RemoveScrollBar = function(_a) {
   var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
   useLockAttribute();
-  var gap = React25.useMemo(function() {
+  var gap = useMemo(function() {
     return getGapWidth(gapMode);
   }, [gapMode]);
-  return React25.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
+  return createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
 };
 
 // node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
@@ -5859,16 +4897,16 @@ var generateStyle = function(id) {
 var idCounter = 0;
 var lockStack = [];
 function RemoveScrollSideCar(props) {
-  var shouldPreventQueue = React26.useRef([]);
-  var touchStartRef = React26.useRef([0, 0]);
-  var activeAxis = React26.useRef();
-  var id = React26.useState(idCounter++)[0];
-  var Style2 = React26.useState(styleSingleton)[0];
-  var lastProps = React26.useRef(props);
-  React26.useEffect(function() {
+  var shouldPreventQueue = useRef([]);
+  var touchStartRef = useRef([0, 0]);
+  var activeAxis = useRef();
+  var id = useState(idCounter++)[0];
+  var Style2 = useState(styleSingleton)[0];
+  var lastProps = useRef(props);
+  useEffect(function() {
     lastProps.current = props;
   }, [props]);
-  React26.useEffect(function() {
+  useEffect(function() {
     if (props.inert) {
       document.body.classList.add("block-interactivity-".concat(id));
       var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef), true).filter(Boolean);
@@ -5884,7 +4922,7 @@ function RemoveScrollSideCar(props) {
     }
     return;
   }, [props.inert, props.lockRef.current, props.shards]);
-  var shouldCancelEvent = React26.useCallback(function(event, parent) {
+  var shouldCancelEvent = useCallback(function(event, parent) {
     if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) {
       return !lastProps.current.allowPinchZoom;
     }
@@ -5926,7 +4964,7 @@ function RemoveScrollSideCar(props) {
     var cancelingAxis = activeAxis.current || currentAxis;
     return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY, true);
   }, []);
-  var shouldPrevent = React26.useCallback(function(_event) {
+  var shouldPrevent = useCallback(function(_event) {
     var event = _event;
     if (!lockStack.length || lockStack[lockStack.length - 1] !== Style2) {
       return;
@@ -5953,7 +4991,7 @@ function RemoveScrollSideCar(props) {
       }
     }
   }, []);
-  var shouldCancel = React26.useCallback(function(name, delta, target, should) {
+  var shouldCancel = useCallback(function(name, delta, target, should) {
     var event = { name, delta, target, should, shadowParent: getOutermostShadowParent(target) };
     shouldPreventQueue.current.push(event);
     setTimeout(function() {
@@ -5962,17 +5000,17 @@ function RemoveScrollSideCar(props) {
       });
     }, 1);
   }, []);
-  var scrollTouchStart = React26.useCallback(function(event) {
+  var scrollTouchStart = useCallback(function(event) {
     touchStartRef.current = getTouchXY(event);
     activeAxis.current = void 0;
   }, []);
-  var scrollWheel = React26.useCallback(function(event) {
+  var scrollWheel = useCallback(function(event) {
     shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
   }, []);
-  var scrollTouchMove = React26.useCallback(function(event) {
+  var scrollTouchMove = useCallback(function(event) {
     shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
   }, []);
-  React26.useEffect(function() {
+  useEffect(function() {
     lockStack.push(Style2);
     props.setCallbacks({
       onScrollCapture: scrollWheel,
@@ -5992,11 +5030,11 @@ function RemoveScrollSideCar(props) {
     };
   }, []);
   var removeScrollBar = props.removeScrollBar, inert = props.inert;
-  return React26.createElement(
-    React26.Fragment,
+  return createElement(
+    Fragment,
     null,
-    inert ? React26.createElement(Style2, { styles: generateStyle(id) }) : null,
-    removeScrollBar ? React26.createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
+    inert ? createElement(Style2, { styles: generateStyle(id) }) : null,
+    removeScrollBar ? createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
   );
 }
 function getOutermostShadowParent(node) {
@@ -6015,8 +5053,8 @@ function getOutermostShadowParent(node) {
 var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
 
 // node_modules/react-remove-scroll/dist/es2015/Combination.js
-var ReactRemoveScroll = React27.forwardRef(function(props, ref) {
-  return React27.createElement(RemoveScroll, __assign({}, props, { ref, sideCar: sidecar_default }));
+var ReactRemoveScroll = forwardRef(function(props, ref) {
+  return createElement(RemoveScroll, __assign({}, props, { ref, sideCar: sidecar_default }));
 });
 ReactRemoveScroll.classNames = RemoveScroll.classNames;
 var Combination_default = ReactRemoveScroll;
@@ -6143,7 +5181,6 @@ var hideOthers = function(originalTarget, parentNode, markerName) {
 };
 
 // node_modules/@radix-ui/react-dialog/dist/index.mjs
-var import_jsx_runtime6 = __toESM(require_jsx_runtime(), 1);
 var __defProp16 = Object.defineProperty;
 var __name15 = (target, value) => __defProp16(target, "name", { value, configurable: true });
 var DIALOG_NAME = "Dialog";
@@ -6158,32 +5195,32 @@ var Dialog = /* @__PURE__ */ __name15((props) => {
     onOpenChange,
     modal = true
   } = props;
-  const triggerRef = React28.useRef(null);
-  const contentRef = React28.useRef(null);
+  const triggerRef = useRef(null);
+  const contentRef = useRef(null);
   const [open, setOpen] = useControllableState({
     prop: openProp,
     defaultProp: defaultOpen ?? false,
     onChange: onOpenChange,
     caller: DIALOG_NAME
   });
-  const [titleCount, setTitleCount] = React28.useState(0);
-  const [descriptionCount, setDescriptionCount] = React28.useState(0);
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+  const [titleCount, setTitleCount] = useState(0);
+  const [descriptionCount, setDescriptionCount] = useState(0);
+  return /* @__PURE__ */ jsx(
     DialogProvider,
     {
       scope: __scopeDialog,
       triggerRef,
       contentRef,
-      contentId: useId(),
-      titleId: useId(),
-      descriptionId: useId(),
+      contentId: useId2(),
+      titleId: useId2(),
+      descriptionId: useId2(),
       titlePresent: titleCount > 0,
       descriptionPresent: descriptionCount > 0,
       setTitleCount,
       setDescriptionCount,
       open,
       onOpenChange: setOpen,
-      onOpenToggle: React28.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+      onOpenToggle: useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
       modal,
       children
     }
@@ -6196,19 +5233,19 @@ var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME, {
 var DialogPortal = /* @__PURE__ */ __name15((props) => {
   const { __scopeDialog, forceMount, children, container } = props;
   const context = useDialogContext(PORTAL_NAME, __scopeDialog);
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PortalProvider, { scope: __scopeDialog, forceMount, children: React28.Children.map(children, (child) => /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Portal, { asChild: true, container, children: child }) })) });
+  return /* @__PURE__ */ jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: Children.map(children, (child) => /* @__PURE__ */ jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsx(Portal, { asChild: true, container, children: child }) })) });
 }, "DialogPortal");
 var OVERLAY_NAME = "DialogOverlay";
-var DialogOverlay = /* @__PURE__ */ React28.forwardRef(
+var DialogOverlay = /* @__PURE__ */ forwardRef(
   /* @__PURE__ */ __name15(function DialogOverlay2(props, forwardedRef) {
     const portalContext = usePortalContext(OVERLAY_NAME, props.__scopeDialog);
     const { forceMount = portalContext.forceMount, ...overlayProps } = props;
     const context = useDialogContext(OVERLAY_NAME, props.__scopeDialog);
-    return context.modal ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
+    return context.modal ? /* @__PURE__ */ jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
   }, "DialogOverlay")
 );
 var Slot2 = createSlot("DialogOverlay.RemoveScroll");
-var DialogOverlayImpl = /* @__PURE__ */ React28.forwardRef(
+var DialogOverlayImpl = /* @__PURE__ */ forwardRef(
   // blank line to reduce diff noise
   /* @__PURE__ */ __name15(function DialogOverlayImpl2(props, forwardedRef) {
     const { __scopeDialog, ...overlayProps } = props;
@@ -6218,7 +5255,7 @@ var DialogOverlayImpl = /* @__PURE__ */ React28.forwardRef(
     return (
       // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
       // ie. when `Overlay` and `Content` are siblings
-      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Combination_default, { as: Slot2, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+      /* @__PURE__ */ jsx(Combination_default, { as: Slot2, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsx(
         Primitive.div,
         {
           "data-state": getState(context.open),
@@ -6231,25 +5268,25 @@ var DialogOverlayImpl = /* @__PURE__ */ React28.forwardRef(
   }, "DialogOverlayImpl")
 );
 var CONTENT_NAME = "DialogContent";
-var DialogContent = /* @__PURE__ */ React28.forwardRef(
+var DialogContent = /* @__PURE__ */ forwardRef(
   /* @__PURE__ */ __name15(function DialogContent2(props, forwardedRef) {
     const portalContext = usePortalContext(CONTENT_NAME, props.__scopeDialog);
     const { forceMount = portalContext.forceMount, ...contentProps } = props;
     const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
+    return /* @__PURE__ */ jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
   }, "DialogContent")
 );
-var DialogContentModal = /* @__PURE__ */ React28.forwardRef(
+var DialogContentModal = /* @__PURE__ */ forwardRef(
   // blank line to reduce diff noise
   /* @__PURE__ */ __name15(function DialogContentModal2(props, forwardedRef) {
     const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    const contentRef = React28.useRef(null);
+    const contentRef = useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
-    React28.useEffect(() => {
+    useEffect(() => {
       const content = contentRef.current;
       if (content) return hideOthers(content);
     }, []);
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+    return /* @__PURE__ */ jsx(
       DialogContentImpl,
       {
         ...props,
@@ -6274,13 +5311,13 @@ var DialogContentModal = /* @__PURE__ */ React28.forwardRef(
     );
   }, "DialogContentModal")
 );
-var DialogContentNonModal = /* @__PURE__ */ React28.forwardRef(
+var DialogContentNonModal = /* @__PURE__ */ forwardRef(
   // blank line to reduce diff noise
   /* @__PURE__ */ __name15(function DialogContentNonModal2(props, forwardedRef) {
     const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    const hasInteractedOutsideRef = React28.useRef(false);
-    const hasPointerDownOutsideRef = React28.useRef(false);
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+    const hasInteractedOutsideRef = useRef(false);
+    const hasPointerDownOutsideRef = useRef(false);
+    return /* @__PURE__ */ jsx(
       DialogContentImpl,
       {
         ...props,
@@ -6315,13 +5352,13 @@ var DialogContentNonModal = /* @__PURE__ */ React28.forwardRef(
     );
   }, "DialogContentNonModal")
 );
-var DialogContentImpl = /* @__PURE__ */ React28.forwardRef(
+var DialogContentImpl = /* @__PURE__ */ forwardRef(
   // blank line to reduce diff noise
   /* @__PURE__ */ __name15(function DialogContentImpl2(props, forwardedRef) {
     const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
     const context = useDialogContext(CONTENT_NAME, __scopeDialog);
     useFocusGuards();
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(import_jsx_runtime6.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+    return /* @__PURE__ */ jsx(Fragment, { children: /* @__PURE__ */ jsx(
       FocusScope,
       {
         asChild: true,
@@ -6329,7 +5366,7 @@ var DialogContentImpl = /* @__PURE__ */ React28.forwardRef(
         trapped: trapFocus,
         onMountAutoFocus: onOpenAutoFocus,
         onUnmountAutoFocus: onCloseAutoFocus,
-        children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+        children: /* @__PURE__ */ jsx(
           DismissableLayer,
           {
             role: "dialog",
@@ -6348,7 +5385,7 @@ var DialogContentImpl = /* @__PURE__ */ React28.forwardRef(
   }, "DialogContentImpl")
 );
 var TITLE_NAME = "DialogTitle";
-var DialogTitle = /* @__PURE__ */ React28.forwardRef(
+var DialogTitle = /* @__PURE__ */ forwardRef(
   /* @__PURE__ */ __name15(function DialogTitle2(props, forwardedRef) {
     const { __scopeDialog, ...titleProps } = props;
     const context = useDialogContext(TITLE_NAME, __scopeDialog);
@@ -6357,11 +5394,11 @@ var DialogTitle = /* @__PURE__ */ React28.forwardRef(
       setTitleCount((count3) => count3 + 1);
       return () => setTitleCount((count3) => count3 - 1);
     }, [setTitleCount]);
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
   }, "DialogTitle")
 );
 var DESCRIPTION_NAME = "DialogDescription";
-var DialogDescription = /* @__PURE__ */ React28.forwardRef(
+var DialogDescription = /* @__PURE__ */ forwardRef(
   // blank line to reduce diff noise
   /* @__PURE__ */ __name15(function DialogDescription2(props, forwardedRef) {
     const { __scopeDialog, ...descriptionProps } = props;
@@ -6371,15 +5408,15 @@ var DialogDescription = /* @__PURE__ */ React28.forwardRef(
       setDescriptionCount((count3) => count3 + 1);
       return () => setDescriptionCount((count3) => count3 - 1);
     }, [setDescriptionCount]);
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
   }, "DialogDescription")
 );
 var CLOSE_NAME = "DialogClose";
-var DialogClose = /* @__PURE__ */ React28.forwardRef(
+var DialogClose = /* @__PURE__ */ forwardRef(
   /* @__PURE__ */ __name15(function DialogClose2(props, forwardedRef) {
     const { __scopeDialog, ...closeProps } = props;
     const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+    return /* @__PURE__ */ jsx(
       Primitive.button,
       {
         type: "button",
@@ -6398,7 +5435,7 @@ __name15(getState, "getState");
 // apps/web/src/components/ui/dialog.jsx
 var Dialog2 = Dialog;
 var DialogPortal2 = DialogPortal;
-var DialogOverlay3 = React29.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React29.createElement(
+var DialogOverlay3 = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   DialogOverlay,
   {
     ref,
@@ -6410,9 +5447,9 @@ var DialogOverlay3 = React29.forwardRef(({ className, ...props }, ref) => /* @__
   }
 ));
 DialogOverlay3.displayName = DialogOverlay.displayName;
-var DialogContent3 = React29.forwardRef(({ className, children, ...props }, ref) => {
+var DialogContent3 = forwardRef(({ className, children, ...props }, ref) => {
   const hasLayoutClass = className && (className.includes("flex") || className.includes("grid") || className.includes("block"));
-  return /* @__PURE__ */ React29.createElement(DialogPortal2, null, /* @__PURE__ */ React29.createElement(DialogOverlay3, null), /* @__PURE__ */ React29.createElement(
+  return /* @__PURE__ */ createElement(DialogPortal2, null, /* @__PURE__ */ createElement(DialogOverlay3, null), /* @__PURE__ */ createElement(
     DialogContent,
     {
       ref,
@@ -6424,13 +5461,13 @@ var DialogContent3 = React29.forwardRef(({ className, children, ...props }, ref)
       ...props
     },
     children,
-    /* @__PURE__ */ React29.createElement(
+    /* @__PURE__ */ createElement(
       DialogClose,
       {
         className: "absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
       },
-      /* @__PURE__ */ React29.createElement(X, { className: "h-4 w-4" }),
-      /* @__PURE__ */ React29.createElement("span", { className: "sr-only" }, "Close")
+      /* @__PURE__ */ createElement(X, { className: "h-4 w-4" }),
+      /* @__PURE__ */ createElement("span", { className: "sr-only" }, "Close")
     )
   ));
 });
@@ -6438,7 +5475,7 @@ DialogContent3.displayName = DialogContent.displayName;
 var DialogHeader = ({
   className,
   ...props
-}) => /* @__PURE__ */ React29.createElement(
+}) => /* @__PURE__ */ createElement(
   "div",
   {
     className: cn("flex flex-col space-y-1.5 text-center sm:text-left", className),
@@ -6449,7 +5486,7 @@ DialogHeader.displayName = "DialogHeader";
 var DialogFooter = ({
   className,
   ...props
-}) => /* @__PURE__ */ React29.createElement(
+}) => /* @__PURE__ */ createElement(
   "div",
   {
     className: cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className),
@@ -6457,7 +5494,7 @@ var DialogFooter = ({
   }
 );
 DialogFooter.displayName = "DialogFooter";
-var DialogTitle3 = React29.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React29.createElement(
+var DialogTitle3 = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   DialogTitle,
   {
     ref,
@@ -6466,7 +5503,7 @@ var DialogTitle3 = React29.forwardRef(({ className, ...props }, ref) => /* @__PU
   }
 ));
 DialogTitle3.displayName = DialogTitle.displayName;
-var DialogDescription3 = React29.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ React29.createElement(
+var DialogDescription3 = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ createElement(
   DialogDescription,
   {
     ref,
@@ -6476,8 +5513,43 @@ var DialogDescription3 = React29.forwardRef(({ className, ...props }, ref) => /*
 ));
 DialogDescription3.displayName = DialogDescription.displayName;
 
-// apps/web/src/pages/FleetCalendarPage.jsx
-import { toast as toast2 } from "./vendor-radix-BQCqNqg0.js";
+// apps/web/src/lib/toast-shim.js
+function showFloatingNotification(message, type = "success") {
+  try {
+    const el = document.createElement("div");
+    el.className = `fixed bottom-5 right-5 z-[9999] px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold transition-all transform duration-300 ${type === "error" ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 300);
+    }, 3e3);
+  } catch (e2) {
+  }
+}
+var toast = {
+  success: (msg) => {
+    try {
+      if (window.toast?.success) return window.toast.success(msg);
+    } catch (e2) {
+    }
+    showFloatingNotification(msg, "success");
+  },
+  error: (msg) => {
+    try {
+      if (window.toast?.error) return window.toast.error(msg);
+    } catch (e2) {
+    }
+    showFloatingNotification(msg, "error");
+  },
+  info: (msg) => {
+    try {
+      if (window.toast?.info) return window.toast.info(msg);
+    } catch (e2) {
+    }
+    showFloatingNotification(msg, "info");
+  }
+};
 
 // apps/web/node_modules/pocketbase/dist/pocketbase.es.mjs
 var ClientResponseError = class _ClientResponseError extends Error {
@@ -7680,12 +6752,10 @@ var reservationClient = {
 };
 
 // apps/web/src/contexts/AuthContext.jsx
-import React30, { createContext as createContext4, useContext as useContext3, useState as useState11, useEffect as useEffect13 } from "./vendor-react-Bs5V2qFE.js";
-import { toast } from "./vendor-radix-BQCqNqg0.js";
-var AuthContext = createContext4(null);
+var AuthContext = createContext(null);
 var SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1e3;
 var useAuth = () => {
-  const context = useContext3(AuthContext);
+  const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
@@ -7709,13 +6779,13 @@ var STATUS_CONFIG = {
 };
 function FleetCalendarPage() {
   const { currentUser } = useAuth();
-  const [viewMode, setViewMode] = useState12("weekly");
-  const [timelineData, setTimelineData] = useState12([]);
-  const [loading, setLoading] = useState12(true);
-  const [searchTerm, setSearchTerm] = useState12("");
-  const [selectedTruck, setSelectedTruck] = useState12(null);
-  const [isBlockModalOpen, setIsBlockModalOpen] = useState12(false);
-  const [blockForm, setBlockForm] = useState12({
+  const [viewMode, setViewMode] = useState("weekly");
+  const [timelineData, setTimelineData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTruck, setSelectedTruck] = useState(null);
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [blockForm, setBlockForm] = useState({
     truck_number: "",
     block_type: "Maintenance",
     reason: "",
@@ -7728,18 +6798,18 @@ function FleetCalendarPage() {
       const res = await reservationClient.getCalendar(viewMode);
       setTimelineData(res.timeline || []);
     } catch (err) {
-      toast2.error("Failed to load fleet calendar: " + err.message);
+      toast.error("Failed to load fleet calendar: " + err.message);
     } finally {
       setLoading(false);
     }
   };
-  useEffect14(() => {
+  useEffect(() => {
     loadCalendar();
   }, [viewMode]);
   const handleCreateBlock = async (e2) => {
     e2.preventDefault();
     if (!blockForm.truck_number || !blockForm.reason) {
-      toast2.warning("Please select a truck and enter a reason.");
+      toast.warning("Please select a truck and enter a reason.");
       return;
     }
     try {
@@ -7747,11 +6817,11 @@ function FleetCalendarPage() {
         ...blockForm,
         created_by: currentUser?.full_name || currentUser?.name || "Dispatcher"
       });
-      toast2.success(`Truck ${blockForm.truck_number} blocked for ${blockForm.block_type}.`);
+      toast.success(`Truck ${blockForm.truck_number} blocked for ${blockForm.block_type}.`);
       setIsBlockModalOpen(false);
       loadCalendar();
     } catch (err) {
-      toast2.error(err.message || "Failed to create block");
+      toast.error(err.message || "Failed to create block");
     }
   };
   const filteredTimeline = timelineData.filter(
@@ -7766,7 +6836,7 @@ function FleetCalendarPage() {
       isToday: i2 === 0
     };
   });
-  return /* @__PURE__ */ React31.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ React31.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React31.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, "Module 1: Airline-Style Fleet Schedule"), /* @__PURE__ */ React31.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ React31.createElement(Clock, { className: "w-3 h-3" }), " Live Telematics & Forecast Matrix")), /* @__PURE__ */ React31.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ React31.createElement(Calendar, { className: "w-7 h-7 text-emerald-400" }), "Fleet Availability Calendar"), /* @__PURE__ */ React31.createElement("p", { className: "text-sm text-slate-400" }, "Real-time multi-resource timeline. Schedule bookings, forecast truck movements, and manage fleet downtime.")), /* @__PURE__ */ React31.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React31.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-lg p-1 flex items-center" }, ["daily", "weekly", "monthly"].map((mode) => /* @__PURE__ */ React31.createElement(
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, "Module 1: Airline-Style Fleet Schedule"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-3 h-3" }), " Live Telematics & Forecast Matrix")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(Calendar, { className: "w-7 h-7 text-emerald-400" }), "Fleet Availability Calendar"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm text-slate-400" }, "Real-time multi-resource timeline. Schedule bookings, forecast truck movements, and manage fleet downtime.")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-lg p-1 flex items-center" }, ["daily", "weekly", "monthly"].map((mode) => /* @__PURE__ */ react_shim_default.createElement(
     "button",
     {
       key: mode,
@@ -7774,7 +6844,7 @@ function FleetCalendarPage() {
       className: `px-3 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${viewMode === mode ? "bg-emerald-500 text-slate-950 shadow-sm" : "text-slate-400 hover:text-white"}`
     },
     mode
-  ))), /* @__PURE__ */ React31.createElement(
+  ))), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       variant: "outline",
@@ -7782,9 +6852,9 @@ function FleetCalendarPage() {
       onClick: loadCalendar,
       className: "border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
     },
-    /* @__PURE__ */ React31.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
     "Refresh"
-  ), /* @__PURE__ */ React31.createElement(
+  ), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       size: "sm",
@@ -7796,20 +6866,20 @@ function FleetCalendarPage() {
       },
       className: "bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs shadow-md shadow-amber-600/20"
     },
-    /* @__PURE__ */ React31.createElement(ShieldAlert, { className: "w-3.5 h-3.5 mr-1.5" }),
+    /* @__PURE__ */ react_shim_default.createElement(ShieldAlert, { className: "w-3.5 h-3.5 mr-1.5" }),
     "Block Availability"
-  ))), /* @__PURE__ */ React31.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5" }, Object.entries(STATUS_CONFIG).slice(0, 6).map(([statusKey, cfg]) => {
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5" }, Object.entries(STATUS_CONFIG).slice(0, 6).map(([statusKey, cfg]) => {
     const count3 = timelineData.filter((t2) => t2.current_status === statusKey).length;
-    return /* @__PURE__ */ React31.createElement(
+    return /* @__PURE__ */ react_shim_default.createElement(
       "div",
       {
         key: statusKey,
         className: `p-2.5 rounded-xl border ${cfg.border} ${cfg.bg} flex items-center justify-between transition-all`
       },
-      /* @__PURE__ */ React31.createElement("div", { className: "space-y-0.5" }, /* @__PURE__ */ React31.createElement("p", { className: "text-[11px] font-semibold text-slate-300" }, cfg.label), /* @__PURE__ */ React31.createElement("p", { className: `text-base font-extrabold ${cfg.text}` }, count3, " Trucks")),
-      /* @__PURE__ */ React31.createElement("div", { className: `w-2.5 h-2.5 rounded-full ${cfg.text.replace("text-", "bg-")}` })
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-0.5" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-semibold text-slate-300" }, cfg.label), /* @__PURE__ */ react_shim_default.createElement("p", { className: `text-base font-extrabold ${cfg.text}` }, count3, " Trucks")),
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: `w-2.5 h-2.5 rounded-full ${cfg.text.replace("text-", "bg-")}` })
     );
-  })), /* @__PURE__ */ React31.createElement("div", { className: "flex items-center gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800/80" }, /* @__PURE__ */ React31.createElement(Filter, { className: "w-4 h-4 text-slate-400 shrink-0" }), /* @__PURE__ */ React31.createElement(
+  })), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800/80" }, /* @__PURE__ */ react_shim_default.createElement(Filter, { className: "w-4 h-4 text-slate-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       placeholder: "Filter by truck number, terminal city, or status...",
@@ -7817,27 +6887,27 @@ function FleetCalendarPage() {
       onChange: (e2) => setSearchTerm(e2.target.value),
       className: "bg-slate-950 border-slate-800 text-xs h-9 text-white placeholder:text-slate-500"
     }
-  ), /* @__PURE__ */ React31.createElement("div", { className: "text-xs text-slate-400 shrink-0 font-medium px-2" }, "Showing ", /* @__PURE__ */ React31.createElement("span", { className: "text-emerald-400 font-bold" }, filteredTimeline.length), " of ", timelineData.length, " Fleet Resources")), /* @__PURE__ */ React31.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React31.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React31.createElement("div", { className: "min-w-[900px]" }, /* @__PURE__ */ React31.createElement("div", { className: "grid grid-cols-12 bg-slate-900/90 border-b border-slate-800 text-xs font-bold text-slate-300 py-3 px-4" }, /* @__PURE__ */ React31.createElement("div", { className: "col-span-3 flex items-center gap-2 text-slate-400 uppercase tracking-wider text-[11px]" }, /* @__PURE__ */ React31.createElement(Truck, { className: "w-4 h-4 text-emerald-400" }), "Fleet Resource & Specs"), /* @__PURE__ */ React31.createElement("div", { className: "col-span-9 grid grid-cols-7 gap-1" }, days.map((day, idx) => /* @__PURE__ */ React31.createElement(
+  ), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-xs text-slate-400 shrink-0 font-medium px-2" }, "Showing ", /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-emerald-400 font-bold" }, filteredTimeline.length), " of ", timelineData.length, " Fleet Resources")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "min-w-[900px]" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-12 bg-slate-900/90 border-b border-slate-800 text-xs font-bold text-slate-300 py-3 px-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-3 flex items-center gap-2 text-slate-400 uppercase tracking-wider text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4 text-emerald-400" }), "Fleet Resource & Specs"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-9 grid grid-cols-7 gap-1" }, days.map((day, idx) => /* @__PURE__ */ react_shim_default.createElement(
     "div",
     {
       key: idx,
       className: `text-center py-1 rounded-md ${day.isToday ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "text-slate-400"}`
     },
-    /* @__PURE__ */ React31.createElement("p", { className: "text-[10px] uppercase font-semibold" }, day.label.split(",")[0]),
-    /* @__PURE__ */ React31.createElement("p", { className: "text-xs font-extrabold" }, day.label.split(",")[1] || day.label)
-  )))), loading ? /* @__PURE__ */ React31.createElement("div", { className: "py-16 text-center text-slate-400 flex flex-col items-center gap-3" }, /* @__PURE__ */ React31.createElement(RefreshCw, { className: "w-6 h-6 animate-spin text-emerald-400" }), /* @__PURE__ */ React31.createElement("p", { className: "text-sm" }, "Calculating real-time fleet movement schedules...")) : filteredTimeline.length === 0 ? /* @__PURE__ */ React31.createElement("div", { className: "py-16 text-center text-slate-500" }, /* @__PURE__ */ React31.createElement(Truck, { className: "w-8 h-8 mx-auto mb-2 opacity-40" }), /* @__PURE__ */ React31.createElement("p", { className: "text-sm font-semibold" }, "No fleet resources found matching filter.")) : /* @__PURE__ */ React31.createElement("div", { className: "divide-y divide-slate-850" }, filteredTimeline.map((truck) => {
+    /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[10px] uppercase font-semibold" }, day.label.split(",")[0]),
+    /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs font-extrabold" }, day.label.split(",")[1] || day.label)
+  )))), loading ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-16 text-center text-slate-400 flex flex-col items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-6 h-6 animate-spin text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm" }, "Calculating real-time fleet movement schedules...")) : filteredTimeline.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-16 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-8 h-8 mx-auto mb-2 opacity-40" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-semibold" }, "No fleet resources found matching filter.")) : /* @__PURE__ */ react_shim_default.createElement("div", { className: "divide-y divide-slate-850" }, filteredTimeline.map((truck) => {
     const cfg = STATUS_CONFIG[truck.current_status] || STATUS_CONFIG["Available"];
-    return /* @__PURE__ */ React31.createElement(
+    return /* @__PURE__ */ react_shim_default.createElement(
       "div",
       {
         key: truck.truck_id || truck.truck_number,
         className: "grid grid-cols-12 py-3.5 px-4 items-center hover:bg-slate-900/50 transition-colors cursor-pointer group",
         onClick: () => setSelectedTruck(truck)
       },
-      /* @__PURE__ */ React31.createElement("div", { className: "col-span-3 space-y-1 pr-3" }, /* @__PURE__ */ React31.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React31.createElement("span", { className: "font-black text-sm text-white tracking-wide group-hover:text-emerald-400 transition-colors" }, truck.truck_number), /* @__PURE__ */ React31.createElement(Badge, { variant: "outline", className: "text-[10px] px-1.5 py-0 border-slate-700 bg-slate-900 text-slate-300" }, truck.vehicle_category || "32FT SXL")), /* @__PURE__ */ React31.createElement("div", { className: "flex items-center gap-2 text-[11px] text-slate-400" }, /* @__PURE__ */ React31.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React31.createElement(MapPin, { className: "w-3 h-3 text-emerald-400" }), truck.predicted_location || truck.current_location || "Depot"), /* @__PURE__ */ React31.createElement("span", null, "\u2022"), /* @__PURE__ */ React31.createElement("span", null, truck.capacity_tons || 14.5, " MT"))),
-      /* @__PURE__ */ React31.createElement("div", { className: "col-span-9 grid grid-cols-7 gap-1 h-10 items-center" }, /* @__PURE__ */ React31.createElement("div", { className: `col-span-7 h-8 rounded-lg border ${cfg.border} ${cfg.bg} flex items-center justify-between px-3 relative overflow-hidden shadow-inner` }, /* @__PURE__ */ React31.createElement("div", { className: "flex items-center gap-2 z-10" }, /* @__PURE__ */ React31.createElement("span", { className: `w-2 h-2 rounded-full ${cfg.text.replace("text-", "bg-")} animate-pulse` }), /* @__PURE__ */ React31.createElement("span", { className: `text-xs font-extrabold ${cfg.text}` }, cfg.label), truck.expected_destination && /* @__PURE__ */ React31.createElement("span", { className: "text-[11px] text-slate-300 font-medium" }, "\u2192 ", truck.expected_destination)), /* @__PURE__ */ React31.createElement("div", { className: "flex items-center gap-2 z-10 text-[11px] text-slate-400" }, truck.earliest_next_departure && /* @__PURE__ */ React31.createElement("span", null, "Next Free: ", new Date(truck.earliest_next_departure).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })), /* @__PURE__ */ React31.createElement(Badge, { className: "bg-slate-900/80 text-[10px] text-emerald-400 border border-emerald-500/30" }, truck.prediction_confidence || 85, "% Conf."))))
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-3 space-y-1 pr-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-sm text-white tracking-wide group-hover:text-emerald-400 transition-colors" }, truck.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { variant: "outline", className: "text-[10px] px-1.5 py-0 border-slate-700 bg-slate-900 text-slate-300" }, truck.vehicle_category || "32FT SXL")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 text-[11px] text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3 h-3 text-emerald-400" }), truck.predicted_location || truck.current_location || "Depot"), /* @__PURE__ */ react_shim_default.createElement("span", null, "\u2022"), /* @__PURE__ */ react_shim_default.createElement("span", null, truck.capacity_tons || 14.5, " MT"))),
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "col-span-9 grid grid-cols-7 gap-1 h-10 items-center" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: `col-span-7 h-8 rounded-lg border ${cfg.border} ${cfg.bg} flex items-center justify-between px-3 relative overflow-hidden shadow-inner` }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 z-10" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${cfg.text.replace("text-", "bg-")} animate-pulse` }), /* @__PURE__ */ react_shim_default.createElement("span", { className: `text-xs font-extrabold ${cfg.text}` }, cfg.label), truck.expected_destination && /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[11px] text-slate-300 font-medium" }, "\u2192 ", truck.expected_destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 z-10 text-[11px] text-slate-400" }, truck.earliest_next_departure && /* @__PURE__ */ react_shim_default.createElement("span", null, "Next Free: ", new Date(truck.earliest_next_departure).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-slate-900/80 text-[10px] text-emerald-400 border border-emerald-500/30" }, truck.prediction_confidence || 85, "% Conf."))))
     );
-  }))))), selectedTruck && /* @__PURE__ */ React31.createElement(Dialog2, { open: !!selectedTruck, onOpenChange: () => setSelectedTruck(null) }, /* @__PURE__ */ React31.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg" }, /* @__PURE__ */ React31.createElement(DialogHeader, null, /* @__PURE__ */ React31.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React31.createElement(DialogTitle3, { className: "text-xl font-bold flex items-center gap-2 text-white" }, /* @__PURE__ */ React31.createElement(Truck, { className: "w-5 h-5 text-emerald-400" }), selectedTruck.truck_number, " \u2014 Schedule Details"))), /* @__PURE__ */ React31.createElement("div", { className: "space-y-4 py-2 text-xs" }, /* @__PURE__ */ React31.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("p", { className: "text-slate-400 text-[11px]" }, "Current Scheduled Status"), /* @__PURE__ */ React31.createElement("p", { className: "text-sm font-extrabold text-emerald-400" }, selectedTruck.current_status)), /* @__PURE__ */ React31.createElement("div", { className: "text-right" }, /* @__PURE__ */ React31.createElement("p", { className: "text-slate-400 text-[11px]" }, "Prediction Confidence"), /* @__PURE__ */ React31.createElement("p", { className: "text-sm font-extrabold text-cyan-400" }, selectedTruck.prediction_confidence, "% High"))), /* @__PURE__ */ React31.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ React31.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ React31.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Current Location"), /* @__PURE__ */ React31.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.current_location || "Hyderabad")), /* @__PURE__ */ React31.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ React31.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Predicted Availability Spot"), /* @__PURE__ */ React31.createElement("span", { className: "font-bold text-emerald-400 text-xs" }, selectedTruck.predicted_location || "Hyderabad")), /* @__PURE__ */ React31.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ React31.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Vehicle Specs"), /* @__PURE__ */ React31.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.vehicle_category, " (", selectedTruck.capacity_tons, " MT)")), /* @__PURE__ */ React31.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ React31.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Earliest Next Departure"), /* @__PURE__ */ React31.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.earliest_next_departure ? new Date(selectedTruck.earliest_next_departure).toLocaleString("en-IN") : "Available Immediately"))), /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("h4", { className: "font-bold text-slate-300 mb-2 flex items-center gap-1.5" }, /* @__PURE__ */ React31.createElement(FileText, { className: "w-3.5 h-3.5 text-blue-400" }), "Upcoming Confirmed Bookings (", selectedTruck.reservations?.length || 0, ")"), selectedTruck.reservations?.length > 0 ? /* @__PURE__ */ React31.createElement("div", { className: "space-y-1.5 max-h-36 overflow-y-auto" }, selectedTruck.reservations.map((res) => /* @__PURE__ */ React31.createElement("div", { key: res.id || res.booking_number, className: "p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-[11px]" }, /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("span", { className: "font-bold text-white" }, res.booking_number), /* @__PURE__ */ React31.createElement("p", { className: "text-slate-400" }, res.origin, " \u2192 ", res.destination)), /* @__PURE__ */ React31.createElement(Badge, { className: "bg-blue-500/20 text-blue-400 text-[10px] border-blue-500/30" }, res.status)))) : /* @__PURE__ */ React31.createElement("p", { className: "text-slate-500 italic text-[11px]" }, "No conflicting confirmed bookings on this timeline."))), /* @__PURE__ */ React31.createElement(DialogFooter, null, /* @__PURE__ */ React31.createElement(Button, { variant: "outline", size: "sm", onClick: () => setSelectedTruck(null), className: "border-slate-800" }, "Close"), /* @__PURE__ */ React31.createElement(
+  }))))), selectedTruck && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedTruck, onOpenChange: () => setSelectedTruck(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-xl font-bold flex items-center gap-2 text-white" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-5 h-5 text-emerald-400" }), selectedTruck.truck_number, " \u2014 Schedule Details"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-4 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Current Scheduled Status"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-extrabold text-emerald-400" }, selectedTruck.current_status)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Prediction Confidence"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-extrabold text-cyan-400" }, selectedTruck.prediction_confidence, "% High"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Current Location"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.current_location || "Hyderabad")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Predicted Availability Spot"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-emerald-400 text-xs" }, selectedTruck.predicted_location || "Hyderabad")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Vehicle Specs"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.vehicle_category, " (", selectedTruck.capacity_tons, " MT)")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-slate-950 rounded-lg border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 text-[10px] block" }, "Earliest Next Departure"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white text-xs" }, selectedTruck.earliest_next_departure ? new Date(selectedTruck.earliest_next_departure).toLocaleString("en-IN") : "Available Immediately"))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("h4", { className: "font-bold text-slate-300 mb-2 flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement(FileText, { className: "w-3.5 h-3.5 text-blue-400" }), "Upcoming Confirmed Bookings (", selectedTruck.reservations?.length || 0, ")"), selectedTruck.reservations?.length > 0 ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-1.5 max-h-36 overflow-y-auto" }, selectedTruck.reservations.map((res) => /* @__PURE__ */ react_shim_default.createElement("div", { key: res.id || res.booking_number, className: "p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold text-white" }, res.booking_number), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400" }, res.origin, " \u2192 ", res.destination)), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-blue-500/20 text-blue-400 text-[10px] border-blue-500/30" }, res.status)))) : /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-500 italic text-[11px]" }, "No conflicting confirmed bookings on this timeline."))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, null, /* @__PURE__ */ react_shim_default.createElement(Button, { variant: "outline", size: "sm", onClick: () => setSelectedTruck(null), className: "border-slate-800" }, "Close"), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       size: "sm",
@@ -7848,9 +6918,9 @@ function FleetCalendarPage() {
       },
       className: "bg-amber-600 hover:bg-amber-500 text-white font-semibold"
     },
-    /* @__PURE__ */ React31.createElement(ShieldAlert, { className: "w-3.5 h-3.5 mr-1.5" }),
+    /* @__PURE__ */ react_shim_default.createElement(ShieldAlert, { className: "w-3.5 h-3.5 mr-1.5" }),
     "Block This Truck"
-  )))), /* @__PURE__ */ React31.createElement(Dialog2, { open: isBlockModalOpen, onOpenChange: setIsBlockModalOpen }, /* @__PURE__ */ React31.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ React31.createElement(DialogHeader, null, /* @__PURE__ */ React31.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2" }, /* @__PURE__ */ React31.createElement(ShieldAlert, { className: "w-5 h-5 text-amber-400" }), "Manual Fleet Availability Block")), /* @__PURE__ */ React31.createElement("form", { onSubmit: handleCreateBlock, className: "space-y-3.5 py-2 text-xs" }, /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Select Truck"), /* @__PURE__ */ React31.createElement(
+  )))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isBlockModalOpen, onOpenChange: setIsBlockModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(ShieldAlert, { className: "w-5 h-5 text-amber-400" }), "Manual Fleet Availability Block")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleCreateBlock, className: "space-y-3.5 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Select Truck"), /* @__PURE__ */ react_shim_default.createElement(
     "select",
     {
       value: blockForm.truck_number,
@@ -7858,22 +6928,22 @@ function FleetCalendarPage() {
       className: "w-full bg-slate-950 border border-slate-800 rounded-md p-2 text-white text-xs",
       required: true
     },
-    /* @__PURE__ */ React31.createElement("option", { value: "" }, "-- Choose Truck --"),
-    timelineData.map((t2) => /* @__PURE__ */ React31.createElement("option", { key: t2.truck_number, value: t2.truck_number }, t2.truck_number, " (", t2.vehicle_category, ")"))
-  )), /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Block Reason Category"), /* @__PURE__ */ React31.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "" }, "-- Choose Truck --"),
+    timelineData.map((t2) => /* @__PURE__ */ react_shim_default.createElement("option", { key: t2.truck_number, value: t2.truck_number }, t2.truck_number, " (", t2.vehicle_category, ")"))
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Block Reason Category"), /* @__PURE__ */ react_shim_default.createElement(
     "select",
     {
       value: blockForm.block_type,
       onChange: (e2) => setBlockForm({ ...blockForm, block_type: e2.target.value }),
       className: "w-full bg-slate-950 border border-slate-800 rounded-md p-2 text-white text-xs"
     },
-    /* @__PURE__ */ React31.createElement("option", { value: "Maintenance" }, "Scheduled Workshop Maintenance"),
-    /* @__PURE__ */ React31.createElement("option", { value: "Breakdown" }, "Mechanical Breakdown"),
-    /* @__PURE__ */ React31.createElement("option", { value: "Document Expired" }, "Permit / Insurance Expired"),
-    /* @__PURE__ */ React31.createElement("option", { value: "RTO Inspection" }, "RTO Passing / Fitness Inspection"),
-    /* @__PURE__ */ React31.createElement("option", { value: "Personal Use" }, "Owner / Personal Use"),
-    /* @__PURE__ */ React31.createElement("option", { value: "Operational Hold" }, "Operational Hold")
-  )), /* @__PURE__ */ React31.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Start Date & Time"), /* @__PURE__ */ React31.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Maintenance" }, "Scheduled Workshop Maintenance"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Breakdown" }, "Mechanical Breakdown"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Document Expired" }, "Permit / Insurance Expired"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "RTO Inspection" }, "RTO Passing / Fitness Inspection"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Personal Use" }, "Owner / Personal Use"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Operational Hold" }, "Operational Hold")
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Start Date & Time"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       type: "datetime-local",
@@ -7882,7 +6952,7 @@ function FleetCalendarPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs",
       required: true
     }
-  )), /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "End Date & Time"), /* @__PURE__ */ React31.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "End Date & Time"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       type: "datetime-local",
@@ -7891,7 +6961,7 @@ function FleetCalendarPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs",
       required: true
     }
-  ))), /* @__PURE__ */ React31.createElement("div", null, /* @__PURE__ */ React31.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Specific Reason & Notes"), /* @__PURE__ */ React31.createElement(
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Specific Reason & Notes"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       placeholder: "e.g. Engine overhaul and front axle tyre replacement",
@@ -7900,12 +6970,10 @@ function FleetCalendarPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs",
       required: true
     }
-  )), /* @__PURE__ */ React31.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ React31.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setIsBlockModalOpen(false), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ React31.createElement(Button, { type: "submit", size: "sm", className: "bg-amber-600 hover:bg-amber-500 text-white font-semibold" }, "Lock Availability"))))));
+  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setIsBlockModalOpen(false), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-amber-600 hover:bg-amber-500 text-white font-semibold" }, "Lock Availability"))))));
 }
 
 // apps/web/src/pages/MovementPredictionPage.jsx
-import React32, { useState as useState13, useEffect as useEffect15 } from "./vendor-react-Bs5V2qFE.js";
-import { toast as toast3 } from "./vendor-radix-BQCqNqg0.js";
 var STATE_COORDINATES = {
   "All": { center: [17.385, 78.4867], zoom: 5 },
   "Telangana": { center: [17.8496, 79.1152], zoom: 7 },
@@ -7933,11 +7001,11 @@ function getCityCoords(locName) {
   return { lat: 17.385, lng: 78.4867, state: "Telangana" };
 }
 function MovementPredictionPage() {
-  const [horizonDays, setHorizonDays] = useState13(0);
-  const [selectedState, setSelectedState] = useState13("All");
-  const [forecasts, setForecasts] = useState13([]);
-  const [loading, setLoading] = useState13(true);
-  const [selectedTruck, setSelectedTruck] = useState13(null);
+  const [horizonDays, setHorizonDays] = useState(0);
+  const [selectedState, setSelectedState] = useState("All");
+  const [forecasts, setForecasts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTruck, setSelectedTruck] = useState(null);
   const targetDate = /* @__PURE__ */ new Date();
   targetDate.setDate(targetDate.getDate() + horizonDays);
   const loadForecasts = async () => {
@@ -7946,12 +7014,12 @@ function MovementPredictionPage() {
       const res = await reservationClient.getForecasts(targetDate.toISOString());
       setForecasts(res.forecasts || []);
     } catch (err) {
-      toast3.error("Failed to load movement forecasts: " + err.message);
+      toast.error("Failed to load movement forecasts: " + err.message);
     } finally {
       setLoading(false);
     }
   };
-  useEffect15(() => {
+  useEffect(() => {
     loadForecasts();
   }, [horizonDays]);
   const filteredForecasts = forecasts.filter((f) => {
@@ -7960,7 +7028,7 @@ function MovementPredictionPage() {
     const cityCoords = getCityCoords(loc);
     return cityCoords.state === selectedState;
   });
-  return /* @__PURE__ */ React32.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ React32.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ React32.createElement("div", null, /* @__PURE__ */ React32.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React32.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" }, "Module 2 & 7: Intelligent Movement Engine & Map"), /* @__PURE__ */ React32.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ React32.createElement(Compass, { className: "w-3.5 h-3.5 text-cyan-400" }), "Real Route Corridors & Unloading SLAs")), /* @__PURE__ */ React32.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ React32.createElement(Navigation, { className: "w-7 h-7 text-cyan-400" }), "Predictive Fleet Movement & Distribution"), /* @__PURE__ */ React32.createElement("p", { className: "text-sm text-slate-400" }, "Intelligent forecasts of future truck locations across India. Visualise fleet distribution over 7, 15, and 30-day horizons.")), /* @__PURE__ */ React32.createElement(
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" }, "Module 2 & 7: Intelligent Movement Engine & Map"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Compass, { className: "w-3.5 h-3.5 text-cyan-400" }), "Real Route Corridors & Unloading SLAs")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(Navigation, { className: "w-7 h-7 text-cyan-400" }), "Predictive Fleet Movement & Distribution"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm text-slate-400" }, "Intelligent forecasts of future truck locations across India. Visualise fleet distribution over 7, 15, and 30-day horizons.")), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       variant: "outline",
@@ -7968,9 +7036,9 @@ function MovementPredictionPage() {
       onClick: loadForecasts,
       className: "border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
     },
-    /* @__PURE__ */ React32.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
     "Recalculate Movement"
-  )), /* @__PURE__ */ React32.createElement(Card, { className: "bg-slate-900 border-slate-800 p-4 shadow-xl" }, /* @__PURE__ */ React32.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ React32.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React32.createElement(Calendar, { className: "w-5 h-5 text-cyan-400" }), /* @__PURE__ */ React32.createElement("div", null, /* @__PURE__ */ React32.createElement("p", { className: "text-xs font-bold text-white uppercase tracking-wider" }, "Prediction Target Horizon: ", /* @__PURE__ */ React32.createElement("span", { className: "text-cyan-400 font-extrabold" }, targetDate.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))), /* @__PURE__ */ React32.createElement("p", { className: "text-[11px] text-slate-400" }, horizonDays === 0 ? "Current real-time positioning" : `Forecasting fleet positions ${horizonDays} day(s) into the future`))), /* @__PURE__ */ React32.createElement("div", { className: "flex flex-wrap items-center gap-1.5" }, [
+  )), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900 border-slate-800 p-4 shadow-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(Calendar, { className: "w-5 h-5 text-cyan-400" }), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs font-bold text-white uppercase tracking-wider" }, "Prediction Target Horizon: ", /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-cyan-400 font-extrabold" }, targetDate.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-slate-400" }, horizonDays === 0 ? "Current real-time positioning" : `Forecasting fleet positions ${horizonDays} day(s) into the future`))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-1.5" }, [
     { days: 0, label: "Today" },
     { days: 1, label: "+1 Day" },
     { days: 2, label: "+2 Days" },
@@ -7978,7 +7046,7 @@ function MovementPredictionPage() {
     { days: 7, label: "+7 Days" },
     { days: 15, label: "+15 Days" },
     { days: 30, label: "+30 Days" }
-  ].map((p) => /* @__PURE__ */ React32.createElement(
+  ].map((p) => /* @__PURE__ */ react_shim_default.createElement(
     "button",
     {
       key: p.days,
@@ -7986,7 +7054,7 @@ function MovementPredictionPage() {
       className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${horizonDays === p.days ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20" : "bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`
     },
     p.label
-  ))))), /* @__PURE__ */ React32.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React32.createElement("span", { className: "text-xs font-bold text-slate-400 flex items-center gap-1.5 mr-1" }, /* @__PURE__ */ React32.createElement(Filter, { className: "w-3.5 h-3.5" }), " Filter by State Corridor:"), Object.keys(STATE_COORDINATES).map((stateName) => /* @__PURE__ */ React32.createElement(
+  ))))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 flex items-center gap-1.5 mr-1" }, /* @__PURE__ */ react_shim_default.createElement(Filter, { className: "w-3.5 h-3.5" }), " Filter by State Corridor:"), Object.keys(STATE_COORDINATES).map((stateName) => /* @__PURE__ */ react_shim_default.createElement(
     Badge,
     {
       key: stateName,
@@ -7995,43 +7063,41 @@ function MovementPredictionPage() {
       className: `cursor-pointer px-3 py-1 text-xs font-semibold rounded-lg transition-all ${selectedState === stateName ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm" : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"}`
     },
     stateName
-  ))), /* @__PURE__ */ React32.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ React32.createElement("div", { className: "p-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React32.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React32.createElement(Layers, { className: "w-4 h-4 text-cyan-400" }), /* @__PURE__ */ React32.createElement("h3", { className: "font-bold text-sm text-white" }, "Geographic Fleet Distribution Map")), /* @__PURE__ */ React32.createElement("div", { className: "flex items-center gap-3 text-xs" }, /* @__PURE__ */ React32.createElement("span", { className: "flex items-center gap-1.5 text-emerald-400" }, /* @__PURE__ */ React32.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" }), "Actual Verified GPS"), /* @__PURE__ */ React32.createElement("span", { className: "flex items-center gap-1.5 text-cyan-400" }, /* @__PURE__ */ React32.createElement("span", { className: "w-2.5 h-2.5 rounded-full border-2 border-cyan-400 bg-cyan-400/30 animate-ping inline-block" }), "Predicted Future Position"))), /* @__PURE__ */ React32.createElement("div", { className: "p-6 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 min-h-[280px] flex flex-col justify-center" }, /* @__PURE__ */ React32.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" }, filteredForecasts.map((truck) => {
+  ))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl relative" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Layers, { className: "w-4 h-4 text-cyan-400" }), /* @__PURE__ */ react_shim_default.createElement("h3", { className: "font-bold text-sm text-white" }, "Geographic Fleet Distribution Map")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "flex items-center gap-1.5 text-emerald-400" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" }), "Actual Verified GPS"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "flex items-center gap-1.5 text-cyan-400" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2.5 h-2.5 rounded-full border-2 border-cyan-400 bg-cyan-400/30 animate-ping inline-block" }), "Predicted Future Position"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-6 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 min-h-[280px] flex flex-col justify-center" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" }, filteredForecasts.map((truck) => {
     const coords = getCityCoords(truck.predicted_location);
-    return /* @__PURE__ */ React32.createElement(
+    return /* @__PURE__ */ react_shim_default.createElement(
       "div",
       {
         key: truck.truck_id || truck.truck_number,
         onClick: () => setSelectedTruck(truck),
         className: "p-4 rounded-xl border border-cyan-500/30 bg-slate-900/90 hover:border-cyan-400 hover:bg-slate-850 transition-all cursor-pointer shadow-lg space-y-2.5 group"
       },
-      /* @__PURE__ */ React32.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React32.createElement("span", { className: "font-black text-sm text-white group-hover:text-cyan-400 transition-colors" }, truck.truck_number), /* @__PURE__ */ React32.createElement(Badge, { className: "bg-cyan-500/20 text-cyan-300 text-[10px] border-cyan-500/30" }, truck.prediction_confidence, "% Conf.")),
-      /* @__PURE__ */ React32.createElement("div", { className: "space-y-1 text-xs" }, /* @__PURE__ */ React32.createElement("div", { className: "flex items-center gap-1.5 text-slate-300" }, /* @__PURE__ */ React32.createElement(MapPin, { className: "w-3.5 h-3.5 text-cyan-400" }), /* @__PURE__ */ React32.createElement("span", { className: "font-bold" }, truck.predicted_location || "Hyderabad Hub")), /* @__PURE__ */ React32.createElement("p", { className: "text-[11px] text-slate-500" }, "Region: ", coords.state)),
-      /* @__PURE__ */ React32.createElement("div", { className: "pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400" }, /* @__PURE__ */ React32.createElement("span", null, "Status: ", /* @__PURE__ */ React32.createElement("strong", { className: "text-white" }, truck.prediction_status)), /* @__PURE__ */ React32.createElement("span", { className: "text-cyan-400 font-bold group-hover:translate-x-1 transition-transform" }, "Details \u2192"))
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-sm text-white group-hover:text-cyan-400 transition-colors" }, truck.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-cyan-500/20 text-cyan-300 text-[10px] border-cyan-500/30" }, truck.prediction_confidence, "% Conf.")),
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-1 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 text-slate-300" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3.5 h-3.5 text-cyan-400" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-bold" }, truck.predicted_location || "Hyderabad Hub")), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-slate-500" }, "Region: ", coords.state)),
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Status: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, truck.prediction_status)), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-cyan-400 font-bold group-hover:translate-x-1 transition-transform" }, "Details \u2192"))
     );
-  })))), /* @__PURE__ */ React32.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React32.createElement(CardHeader, { className: "bg-slate-900/90 border-b border-slate-800 py-3.5 px-4 flex flex-row items-center justify-between" }, /* @__PURE__ */ React32.createElement(CardTitle, { className: "text-sm font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ React32.createElement(Radio, { className: "w-4 h-4 text-cyan-400 animate-pulse" }), "Detailed Movement Forecast Matrix (", filteredForecasts.length, " Trucks)"), /* @__PURE__ */ React32.createElement("span", { className: "text-xs text-slate-400" }, "Confidence evaluated across 10 operational parameters")), /* @__PURE__ */ React32.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React32.createElement("table", { className: "w-full text-left text-xs" }, /* @__PURE__ */ React32.createElement("thead", { className: "bg-slate-900 text-slate-400 font-bold uppercase text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React32.createElement("tr", null, /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Truck Number"), /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Current / Stationed Location"), /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Predicted Location (", horizonDays, "d)"), /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Expected Arrival & SLA"), /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Next Available Departure"), /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Confidence"), /* @__PURE__ */ React32.createElement("th", { className: "py-3 px-4" }, "Status"))), /* @__PURE__ */ React32.createElement("tbody", { className: "divide-y divide-slate-850" }, filteredForecasts.map((truck) => /* @__PURE__ */ React32.createElement(
+  })))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement(CardHeader, { className: "bg-slate-900/90 border-b border-slate-800 py-3.5 px-4 flex flex-row items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement(CardTitle, { className: "text-sm font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Radio, { className: "w-4 h-4 text-cyan-400 animate-pulse" }), "Detailed Movement Forecast Matrix (", filteredForecasts.length, " Trucks)"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400" }, "Confidence evaluated across 10 operational parameters")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900 text-slate-400 font-bold uppercase text-[11px] border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Truck Number"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Current / Stationed Location"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Predicted Location (", horizonDays, "d)"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Expected Arrival & SLA"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Next Available Departure"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Confidence"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "Status"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-850" }, filteredForecasts.map((truck) => /* @__PURE__ */ react_shim_default.createElement(
     "tr",
     {
       key: truck.truck_id || truck.truck_number,
       className: "hover:bg-slate-900/60 transition-colors cursor-pointer",
       onClick: () => setSelectedTruck(truck)
     },
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4 font-black text-white" }, truck.truck_number),
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4 text-slate-300" }, truck.vehicle_category),
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4 text-slate-400" }, truck.current_location || "Hyderabad Hub"),
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4 font-bold text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React32.createElement(MapPin, { className: "w-3.5 h-3.5" }), truck.predicted_location || "Hyderabad Hub"),
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4 text-slate-300" }, truck.estimated_arrival ? new Date(truck.estimated_arrival).toLocaleString("en-IN") : "At Depot"),
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4 text-emerald-400 font-semibold" }, truck.earliest_next_departure ? new Date(truck.earliest_next_departure).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "Immediate"),
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ React32.createElement(Badge, { className: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30 font-bold" }, truck.prediction_confidence, "%")),
-    /* @__PURE__ */ React32.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ React32.createElement(Badge, { variant: "outline", className: "border-slate-700 bg-slate-900 text-slate-300" }, truck.prediction_status))
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4 font-black text-white" }, truck.truck_number),
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4 text-slate-300" }, truck.vehicle_category),
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4 text-slate-400" }, truck.current_location || "Hyderabad Hub"),
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4 font-bold text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3.5 h-3.5" }), truck.predicted_location || "Hyderabad Hub"),
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4 text-slate-300" }, truck.estimated_arrival ? new Date(truck.estimated_arrival).toLocaleString("en-IN") : "At Depot"),
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4 text-emerald-400 font-semibold" }, truck.earliest_next_departure ? new Date(truck.earliest_next_departure).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "Immediate"),
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30 font-bold" }, truck.prediction_confidence, "%")),
+    /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { variant: "outline", className: "border-slate-700 bg-slate-900 text-slate-300" }, truck.prediction_status))
   )))))));
 }
 
 // apps/web/src/pages/AvailabilitySearchPage.jsx
-import React33, { useState as useState14 } from "./vendor-react-Bs5V2qFE.js";
-import { toast as toast4 } from "./vendor-radix-BQCqNqg0.js";
 function AvailabilitySearchPage() {
   const { currentUser } = useAuth();
-  const [searchParams, setSearchParams] = useState14({
+  const [searchParams, setSearchParams] = useState({
     origin: "Hyderabad",
     destination: "Hubli",
     loadingDatetime: new Date(Date.now() + 24 * 3600 * 1e3).toISOString().slice(0, 16),
@@ -8039,11 +7105,11 @@ function AvailabilitySearchPage() {
     cargoWeightTons: "14.0",
     specialRequirements: ""
   });
-  const [loading, setLoading] = useState14(false);
-  const [searchResults, setSearchResults] = useState14(null);
-  const [selectedMatch, setSelectedMatch] = useState14(null);
-  const [isBookModalOpen, setIsBookModalOpen] = useState14(false);
-  const [bookForm, setBookForm] = useState14({
+  const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState(null);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+  const [bookForm, setBookForm] = useState({
     customer_name: currentUser?.full_name || currentUser?.name || "",
     customer_phone: currentUser?.phone_number || "",
     customer_email: currentUser?.email || "",
@@ -8054,7 +7120,7 @@ function AvailabilitySearchPage() {
   const handleSearch = async (e2) => {
     e2.preventDefault();
     if (!searchParams.origin || !searchParams.destination || !searchParams.loadingDatetime) {
-      toast4.warning("Please specify origin, destination, and loading date.");
+      toast.warning("Please specify origin, destination, and loading date.");
       return;
     }
     try {
@@ -8067,9 +7133,9 @@ function AvailabilitySearchPage() {
         cargoWeightTons: parseFloat(searchParams.cargoWeightTons) || 14
       });
       setSearchResults(res);
-      toast4.success(`Found ${res.total_matches} candidate vehicles (${res.available_count} feasible).`);
+      toast.success(`Found ${res.total_matches} candidate vehicles (${res.available_count} feasible).`);
     } catch (err) {
-      toast4.error(err.message || "Search failed");
+      toast.error(err.message || "Search failed");
     } finally {
       setLoading(false);
     }
@@ -8077,7 +7143,7 @@ function AvailabilitySearchPage() {
   const handleConfirmBooking = async (e2) => {
     e2.preventDefault();
     if (!bookForm.customer_name || !bookForm.customer_phone) {
-      toast4.warning("Customer name and phone number are required.");
+      toast.warning("Customer name and phone number are required.");
       return;
     }
     try {
@@ -8096,14 +7162,14 @@ function AvailabilitySearchPage() {
         match_reasons: selectedMatch?.match_reasons || [],
         created_by: currentUser?.full_name || currentUser?.name || "Customer"
       });
-      toast4.success(`Booking Confirmed! Unique Reference: ${res.reservation?.booking_number}`);
+      toast.success(`Booking Confirmed! Unique Reference: ${res.reservation?.booking_number}`);
       setIsBookModalOpen(false);
       setSelectedMatch(null);
     } catch (err) {
-      toast4.error(err.message || "Booking submission failed");
+      toast.error(err.message || "Booking submission failed");
     }
   };
-  return /* @__PURE__ */ React33.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React33.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20" }, "Module 3 & 5: Search & Intelligent Availability Matcher"), /* @__PURE__ */ React33.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ React33.createElement(ShieldCheck, { className: "w-3.5 h-3.5 text-blue-400" }), "10-Point Operational Feasibility Engine")), /* @__PURE__ */ React33.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ React33.createElement(Search, { className: "w-7 h-7 text-blue-400" }), "Customer Truck Booking & Availability Search"), /* @__PURE__ */ React33.createElement("p", { className: "text-sm text-slate-400" }, "Search future truck availability, evaluate deadhead distances, review match scores, and lock reservations.")), /* @__PURE__ */ React33.createElement(Card, { className: "bg-slate-900 border-slate-800 p-5 shadow-2xl" }, /* @__PURE__ */ React33.createElement("form", { onSubmit: handleSearch, className: "space-y-4" }, /* @__PURE__ */ React33.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-3 text-xs" }, /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ React33.createElement(MapPin, { className: "w-3.5 h-3.5 text-emerald-400" }), " Origin Hub / City"), /* @__PURE__ */ React33.createElement(
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20" }, "Module 3 & 5: Search & Intelligent Availability Matcher"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(ShieldCheck, { className: "w-3.5 h-3.5 text-blue-400" }), "10-Point Operational Feasibility Engine")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-7 h-7 text-blue-400" }), "Customer Truck Booking & Availability Search"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm text-slate-400" }, "Search future truck availability, evaluate deadhead distances, review match scores, and lock reservations.")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900 border-slate-800 p-5 shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleSearch, className: "space-y-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-3 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3.5 h-3.5 text-emerald-400" }), " Origin Hub / City"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       value: searchParams.origin,
@@ -8112,7 +7178,7 @@ function AvailabilitySearchPage() {
       className: "bg-slate-950 border-slate-800 text-white font-semibold text-xs h-10",
       required: true
     }
-  )), /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ React33.createElement(MapPin, { className: "w-3.5 h-3.5 text-rose-400" }), " Destination Drop Point"), /* @__PURE__ */ React33.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3.5 h-3.5 text-rose-400" }), " Destination Drop Point"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       value: searchParams.destination,
@@ -8121,7 +7187,7 @@ function AvailabilitySearchPage() {
       className: "bg-slate-950 border-slate-800 text-white font-semibold text-xs h-10",
       required: true
     }
-  )), /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ React33.createElement(Calendar, { className: "w-3.5 h-3.5 text-blue-400" }), " Required Loading Date & Time"), /* @__PURE__ */ React33.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Calendar, { className: "w-3.5 h-3.5 text-blue-400" }), " Required Loading Date & Time"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       type: "datetime-local",
@@ -8130,35 +7196,35 @@ function AvailabilitySearchPage() {
       className: "bg-slate-950 border-slate-800 text-white font-semibold text-xs h-10",
       required: true
     }
-  )), /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ React33.createElement(Truck, { className: "w-3.5 h-3.5 text-amber-400" }), " Vehicle Category"), /* @__PURE__ */ React33.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-3.5 h-3.5 text-amber-400" }), " Vehicle Category"), /* @__PURE__ */ react_shim_default.createElement(
     "select",
     {
       value: searchParams.vehicleCategory,
       onChange: (e2) => setSearchParams({ ...searchParams, vehicleCategory: e2.target.value }),
       className: "w-full bg-slate-950 border border-slate-800 rounded-md px-3 text-white font-semibold text-xs h-10"
     },
-    /* @__PURE__ */ React33.createElement("option", { value: "32FT SXL" }, "32FT Single Axle (SXL) \u2014 14.5 MT"),
-    /* @__PURE__ */ React33.createElement("option", { value: "32FT MXL" }, "32FT Multi-Axle (MXL) \u2014 18.5 MT"),
-    /* @__PURE__ */ React33.createElement("option", { value: "20FT Container" }, "20FT Container \u2014 9.0 MT"),
-    /* @__PURE__ */ React33.createElement("option", { value: "24FT Container" }, "24FT Container \u2014 11.0 MT")
-  ))), /* @__PURE__ */ React33.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ React33.createElement("div", { className: "flex items-center gap-4 text-xs text-slate-400" }, /* @__PURE__ */ React33.createElement("span", null, "Payload: ", /* @__PURE__ */ React33.createElement("strong", { className: "text-white" }, "14.0 Metric Tons (FTL)")), /* @__PURE__ */ React33.createElement("span", null, "\u2022"), /* @__PURE__ */ React33.createElement("span", null, "Buffer SLA: ", /* @__PURE__ */ React33.createElement("strong", { className: "text-emerald-400" }, "4 Hours Turnaround"))), /* @__PURE__ */ React33.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT SXL" }, "32FT Single Axle (SXL) \u2014 14.5 MT"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT MXL" }, "32FT Multi-Axle (MXL) \u2014 18.5 MT"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "20FT Container" }, "20FT Container \u2014 9.0 MT"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "24FT Container" }, "24FT Container \u2014 11.0 MT")
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-4 text-xs text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Payload: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, "14.0 Metric Tons (FTL)")), /* @__PURE__ */ react_shim_default.createElement("span", null, "\u2022"), /* @__PURE__ */ react_shim_default.createElement("span", null, "Buffer SLA: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400" }, "4 Hours Turnaround"))), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       type: "submit",
       disabled: loading,
       className: "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs h-10 px-6 shadow-lg shadow-blue-500/20"
     },
-    /* @__PURE__ */ React33.createElement(Search, { className: "w-4 h-4 mr-2" }),
+    /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-4 h-4 mr-2" }),
     loading ? "Evaluating Fleet Availabilities..." : "Find Matching Trucks"
-  )))), searchResults && /* @__PURE__ */ React33.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React33.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React33.createElement("h2", { className: "text-lg font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ React33.createElement(Sparkles, { className: "w-5 h-5 text-amber-400" }), "Available Truck Matches (", searchResults.total_matches, " Evaluated)"), /* @__PURE__ */ React33.createElement("span", { className: "text-xs text-slate-400" }, "Ranked by Feasibility & Deadhead Proximity")), /* @__PURE__ */ React33.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, searchResults.results.map((match, idx) => /* @__PURE__ */ React33.createElement(
+  )))), searchResults && /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("h2", { className: "text-lg font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Sparkles, { className: "w-5 h-5 text-amber-400" }), "Available Truck Matches (", searchResults.total_matches, " Evaluated)"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400" }, "Ranked by Feasibility & Deadhead Proximity")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, searchResults.results.map((match, idx) => /* @__PURE__ */ react_shim_default.createElement(
     Card,
     {
       key: match.truck_id || match.truck_number || idx,
       className: `p-5 border transition-all ${match.is_feasible ? "bg-slate-900 border-slate-800 hover:border-blue-500/50" : "bg-slate-950/60 border-slate-850 opacity-70"}`
     },
-    /* @__PURE__ */ React33.createElement("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React33.createElement("span", { className: "text-base font-black text-white" }, match.truck_number), /* @__PURE__ */ React33.createElement(Badge, { className: "bg-slate-800 text-slate-300 text-[10px] border-slate-700" }, match.vehicle_category)), /* @__PURE__ */ React33.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Capacity: ", /* @__PURE__ */ React33.createElement("strong", { className: "text-white" }, match.capacity_tons, " MT"), " | Deadhead: ", /* @__PURE__ */ React33.createElement("strong", { className: "text-emerald-400" }, "~", match.deadhead_km, " km"))), /* @__PURE__ */ React33.createElement("div", { className: "text-right" }, /* @__PURE__ */ React33.createElement("span", { className: "text-xs text-slate-400 block text-[10px] font-semibold" }, "Match Score"), /* @__PURE__ */ React33.createElement("span", { className: `text-xl font-black ${match.match_score >= 80 ? "text-emerald-400" : match.match_score >= 50 ? "text-amber-400" : "text-rose-400"}` }, match.match_score, "%"))),
-    /* @__PURE__ */ React33.createElement("div", { className: "my-3.5 p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-1" }, match.match_reasons?.map((reason, i2) => /* @__PURE__ */ React33.createElement("div", { key: i2, className: "flex items-center gap-2 text-slate-300 text-[11px]" }, /* @__PURE__ */ React33.createElement(CircleCheck, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0" }), /* @__PURE__ */ React33.createElement("span", null, reason))), match.disqualifications?.map((disq, i2) => /* @__PURE__ */ React33.createElement("div", { key: i2, className: "flex items-center gap-2 text-rose-400 text-[11px]" }, /* @__PURE__ */ React33.createElement(CircleAlert, { className: "w-3.5 h-3.5 text-rose-400 shrink-0" }), /* @__PURE__ */ React33.createElement("span", null, disq)))),
-    /* @__PURE__ */ React33.createElement("div", { className: "flex items-center justify-between pt-2 border-t border-slate-800" }, /* @__PURE__ */ React33.createElement(Badge, { className: match.booking_mode === "Instant Confirmed" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30" }, match.booking_mode), /* @__PURE__ */ React33.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-white" }, match.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-slate-800 text-slate-300 text-[10px] border-slate-700" }, match.vehicle_category)), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Capacity: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, match.capacity_tons, " MT"), " | Deadhead: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400" }, "~", match.deadhead_km, " km"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 block text-[10px] font-semibold" }, "Match Score"), /* @__PURE__ */ react_shim_default.createElement("span", { className: `text-xl font-black ${match.match_score >= 80 ? "text-emerald-400" : match.match_score >= 50 ? "text-amber-400" : "text-rose-400"}` }, match.match_score, "%"))),
+    /* @__PURE__ */ react_shim_default.createElement("div", { className: "my-3.5 p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-1" }, match.match_reasons?.map((reason, i2) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i2, className: "flex items-center gap-2 text-slate-300 text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement(CircleCheck, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", null, reason))), match.disqualifications?.map((disq, i2) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i2, className: "flex items-center gap-2 text-rose-400 text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement(CircleAlert, { className: "w-3.5 h-3.5 text-rose-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", null, disq)))),
+    /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between pt-2 border-t border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: match.booking_mode === "Instant Confirmed" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30" }, match.booking_mode), /* @__PURE__ */ react_shim_default.createElement(
       Button,
       {
         size: "sm",
@@ -8171,7 +7237,7 @@ function AvailabilitySearchPage() {
       },
       "Select & Reserve \u2192"
     ))
-  )))), /* @__PURE__ */ React33.createElement(Dialog2, { open: isBookModalOpen, onOpenChange: setIsBookModalOpen }, /* @__PURE__ */ React33.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg" }, /* @__PURE__ */ React33.createElement(DialogHeader, null, /* @__PURE__ */ React33.createElement(DialogTitle3, { className: "text-xl font-bold flex items-center gap-2" }, /* @__PURE__ */ React33.createElement(FileText, { className: "w-5 h-5 text-blue-400" }), "Confirm Truck Reservation (", selectedMatch?.truck_number, ")")), /* @__PURE__ */ React33.createElement("form", { onSubmit: handleConfirmBooking, className: "space-y-3.5 py-2 text-xs" }, /* @__PURE__ */ React33.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center" }, /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("p", { className: "text-slate-400 text-[11px]" }, "Selected Corridor"), /* @__PURE__ */ React33.createElement("p", { className: "font-extrabold text-white text-sm" }, searchParams.origin, " \u2192 ", searchParams.destination)), /* @__PURE__ */ React33.createElement("div", { className: "text-right" }, /* @__PURE__ */ React33.createElement("p", { className: "text-slate-400 text-[11px]" }, "Indicative Freight"), /* @__PURE__ */ React33.createElement("p", { className: "font-extrabold text-emerald-400 text-sm" }, "\u20B9", bookForm.indicative_freight.toLocaleString("en-IN")))), /* @__PURE__ */ React33.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Customer / Company Name"), /* @__PURE__ */ React33.createElement(
+  )))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isBookModalOpen, onOpenChange: setIsBookModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-xl font-bold flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(FileText, { className: "w-5 h-5 text-blue-400" }), "Confirm Truck Reservation (", selectedMatch?.truck_number, ")")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleConfirmBooking, className: "space-y-3.5 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Selected Corridor"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-extrabold text-white text-sm" }, searchParams.origin, " \u2192 ", searchParams.destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Indicative Freight"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-extrabold text-emerald-400 text-sm" }, "\u20B9", bookForm.indicative_freight.toLocaleString("en-IN")))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Customer / Company Name"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       value: bookForm.customer_name,
@@ -8180,7 +7246,7 @@ function AvailabilitySearchPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs",
       required: true
     }
-  )), /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Contact Phone Number"), /* @__PURE__ */ React33.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Contact Phone Number"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       value: bookForm.customer_phone,
@@ -8189,48 +7255,46 @@ function AvailabilitySearchPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs",
       required: true
     }
-  ))), /* @__PURE__ */ React33.createElement("div", null, /* @__PURE__ */ React33.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Cargo Description"), /* @__PURE__ */ React33.createElement(
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Cargo Description"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       value: bookForm.cargo_description,
       onChange: (e2) => setBookForm({ ...bookForm, cargo_description: e2.target.value }),
       className: "bg-slate-950 border-slate-800 text-white text-xs"
     }
-  )), /* @__PURE__ */ React33.createElement("div", { className: "p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-300 text-[11px]" }, "\u{1F512} ", /* @__PURE__ */ React33.createElement("strong", null, "Server-Side Concurrency Lock Active:"), " Truck schedule will be immediately reserved upon confirmation."), /* @__PURE__ */ React33.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ React33.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setIsBookModalOpen(false), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ React33.createElement(Button, { type: "submit", size: "sm", className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold" }, "Confirm & Lock Booking"))))));
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-300 text-[11px]" }, "\u{1F512} ", /* @__PURE__ */ react_shim_default.createElement("strong", null, "Server-Side Concurrency Lock Active:"), " Truck schedule will be immediately reserved upon confirmation."), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setIsBookModalOpen(false), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold" }, "Confirm & Lock Booking"))))));
 }
 
 // apps/web/src/pages/BookingManagementPage.jsx
-import React34, { useState as useState15, useEffect as useEffect16 } from "./vendor-react-Bs5V2qFE.js";
-import { toast as toast5 } from "./vendor-radix-BQCqNqg0.js";
 function BookingManagementPage() {
   const { currentUser } = useAuth();
-  const [reservations, setReservations] = useState15([]);
-  const [loading, setLoading] = useState15(true);
-  const [activeTab, setActiveTab] = useState15("All");
-  const [searchTerm, setSearchTerm] = useState15("");
-  const [selectedForApproval, setSelectedForApproval] = useState15(null);
-  const [allocTruckNumber, setAllocTruckNumber] = useState15("");
-  const [agreedFreight, setAgreedFreight] = useState15("");
-  const [selectedForRejection, setSelectedForRejection] = useState15(null);
-  const [rejectReason, setRejectReason] = useState15("");
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedForApproval, setSelectedForApproval] = useState(null);
+  const [allocTruckNumber, setAllocTruckNumber] = useState("");
+  const [agreedFreight, setAgreedFreight] = useState("");
+  const [selectedForRejection, setSelectedForRejection] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
   const loadReservations = async () => {
     try {
       setLoading(true);
       const res = await reservationClient.listReservations();
       setReservations(res.reservations || []);
     } catch (err) {
-      toast5.error("Failed to load reservations: " + err.message);
+      toast.error("Failed to load reservations: " + err.message);
     } finally {
       setLoading(false);
     }
   };
-  useEffect16(() => {
+  useEffect(() => {
     loadReservations();
   }, []);
   const handleApprove = async (e2) => {
     e2.preventDefault();
     if (!allocTruckNumber) {
-      toast5.warning("Please specify truck number for allocation.");
+      toast.warning("Please specify truck number for allocation.");
       return;
     }
     try {
@@ -8239,17 +7303,17 @@ function BookingManagementPage() {
         agreed_freight: agreedFreight,
         approved_by: currentUser?.full_name || currentUser?.name || "Dispatcher"
       });
-      toast5.success(`Booking ${selectedForApproval.booking_number} approved and allocated to ${allocTruckNumber}!`);
+      toast.success(`Booking ${selectedForApproval.booking_number} approved and allocated to ${allocTruckNumber}!`);
       setSelectedForApproval(null);
       loadReservations();
     } catch (err) {
-      toast5.error(err.message || "Approval failed");
+      toast.error(err.message || "Approval failed");
     }
   };
   const handleReject = async (e2) => {
     e2.preventDefault();
     if (!rejectReason) {
-      toast5.warning("Documented reason is required for rejection.");
+      toast.warning("Documented reason is required for rejection.");
       return;
     }
     try {
@@ -8258,11 +7322,11 @@ function BookingManagementPage() {
         rejectReason,
         currentUser?.full_name || currentUser?.name || "Dispatcher"
       );
-      toast5.success(`Booking ${selectedForRejection.booking_number} rejected.`);
+      toast.success(`Booking ${selectedForRejection.booking_number} rejected.`);
       setSelectedForRejection(null);
       loadReservations();
     } catch (err) {
-      toast5.error(err.message || "Rejection failed");
+      toast.error(err.message || "Rejection failed");
     }
   };
   const filteredReservations = reservations.filter((r3) => {
@@ -8271,7 +7335,7 @@ function BookingManagementPage() {
     const matchesSearch = !searchTerm || (r3.booking_number || "").toLowerCase().includes(searchLower) || (r3.customer_name || "").toLowerCase().includes(searchLower) || (r3.truck_number || "").toLowerCase().includes(searchLower) || (r3.origin || "").toLowerCase().includes(searchLower) || (r3.destination || "").toLowerCase().includes(searchLower);
     return matchesTab && matchesSearch;
   });
-  return /* @__PURE__ */ React34.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ React34.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ React34.createElement("div", null, /* @__PURE__ */ React34.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React34.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20" }, "Module 4 & 9: 3-Tier Reservations & Control Center"), /* @__PURE__ */ React34.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ React34.createElement(ClipboardCheck, { className: "w-3.5 h-3.5 text-violet-400" }), "Confirmed, Provisional & Request Lifecycle")), /* @__PURE__ */ React34.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ React34.createElement(FileText, { className: "w-7 h-7 text-violet-400" }), "Fleet Reservation Management"), /* @__PURE__ */ React34.createElement("p", { className: "text-sm text-slate-400" }, "Review incoming booking requests, allocate trucks, approve provisional reservations, and monitor schedules.")), /* @__PURE__ */ React34.createElement(
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20" }, "Module 4 & 9: 3-Tier Reservations & Control Center"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(ClipboardCheck, { className: "w-3.5 h-3.5 text-violet-400" }), "Confirmed, Provisional & Request Lifecycle")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(FileText, { className: "w-7 h-7 text-violet-400" }), "Fleet Reservation Management"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm text-slate-400" }, "Review incoming booking requests, allocate trucks, approve provisional reservations, and monitor schedules.")), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       variant: "outline",
@@ -8279,9 +7343,9 @@ function BookingManagementPage() {
       onClick: loadReservations,
       className: "border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
     },
-    /* @__PURE__ */ React34.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
     "Refresh"
-  )), /* @__PURE__ */ React34.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ React34.createElement("div", { className: "flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-850" }, ["All", "Confirmed", "Pending", "Provisional"].map((tab) => /* @__PURE__ */ React34.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-850" }, ["All", "Confirmed", "Pending", "Provisional"].map((tab) => /* @__PURE__ */ react_shim_default.createElement(
     "button",
     {
       key: tab,
@@ -8289,7 +7353,7 @@ function BookingManagementPage() {
       className: `px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === tab ? "bg-violet-600 text-white shadow-sm" : "text-slate-400 hover:text-white"}`
     },
     tab
-  ))), /* @__PURE__ */ React34.createElement(
+  ))), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       placeholder: "Filter by booking number, customer, truck, or city...",
@@ -8297,7 +7361,7 @@ function BookingManagementPage() {
       onChange: (e2) => setSearchTerm(e2.target.value),
       className: "bg-slate-950 border-slate-800 text-xs h-9 text-white placeholder:text-slate-500 max-w-xs"
     }
-  )), /* @__PURE__ */ React34.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl" }, /* @__PURE__ */ React34.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React34.createElement("table", { className: "w-full text-left text-xs" }, /* @__PURE__ */ React34.createElement("thead", { className: "bg-slate-900 text-slate-400 font-bold uppercase text-[11px] border-b border-slate-800" }, /* @__PURE__ */ React34.createElement("tr", null, /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4" }, "Booking Ref"), /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4" }, "Customer Details"), /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4" }, "Allocated Truck"), /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4" }, "Corridor Route"), /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4" }, "Loading Date & SLA"), /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4" }, "Freight (\u20B9)"), /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4" }, "Booking Type"), /* @__PURE__ */ React34.createElement("th", { className: "py-3.5 px-4 text-right" }, "Actions"))), /* @__PURE__ */ React34.createElement("tbody", { className: "divide-y divide-slate-850" }, loading ? /* @__PURE__ */ React34.createElement("tr", null, /* @__PURE__ */ React34.createElement("td", { colSpan: "8", className: "py-12 text-center text-slate-500" }, /* @__PURE__ */ React34.createElement(RefreshCw, { className: "w-5 h-5 animate-spin mx-auto mb-2 text-violet-400" }), "Loading reservations registry...")) : filteredReservations.length === 0 ? /* @__PURE__ */ React34.createElement("tr", null, /* @__PURE__ */ React34.createElement("td", { colSpan: "8", className: "py-12 text-center text-slate-500" }, "No reservations found in this view.")) : filteredReservations.map((res) => /* @__PURE__ */ React34.createElement("tr", { key: res.id || res.booking_number, className: "hover:bg-slate-900/60 transition-colors" }, /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4 font-black text-white" }, res.booking_number), /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ React34.createElement("p", { className: "font-bold text-white" }, res.customer_name), /* @__PURE__ */ React34.createElement("p", { className: "text-[11px] text-slate-400" }, res.customer_phone)), /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4" }, res.truck_number ? /* @__PURE__ */ React34.createElement("div", { className: "flex items-center gap-1.5 font-bold text-emerald-400" }, /* @__PURE__ */ React34.createElement(CircleCheck, { className: "w-3.5 h-3.5 text-emerald-400" }), res.truck_number) : /* @__PURE__ */ React34.createElement("span", { className: "text-amber-400 font-semibold italic" }, "Unallocated")), /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4 font-medium text-slate-300" }, res.origin, " \u2192 ", res.destination), /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4 text-slate-400" }, new Date(res.loading_datetime).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })), /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4 font-extrabold text-white" }, "\u20B9", (res.final_agreed_freight || res.indicative_freight || 0).toLocaleString("en-IN")), /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ React34.createElement(Badge, { className: res.status === "Confirmed" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : res.status === "Pending" ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-rose-500/20 text-rose-400 border-rose-500/30" }, res.status)), /* @__PURE__ */ React34.createElement("td", { className: "py-3.5 px-4 text-right" }, res.status === "Pending" || !res.truck_number ? /* @__PURE__ */ React34.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React34.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border-slate-800 overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900 text-slate-400 font-bold uppercase text-[11px] border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "Booking Ref"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "Customer Details"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "Allocated Truck"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "Corridor Route"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "Loading Date & SLA"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "Freight (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "Booking Type"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 text-right" }, "Actions"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-850" }, loading ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: "8", className: "py-12 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-5 h-5 animate-spin mx-auto mb-2 text-violet-400" }), "Loading reservations registry...")) : filteredReservations.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: "8", className: "py-12 text-center text-slate-500" }, "No reservations found in this view.")) : filteredReservations.map((res) => /* @__PURE__ */ react_shim_default.createElement("tr", { key: res.id || res.booking_number, className: "hover:bg-slate-900/60 transition-colors" }, /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-black text-white" }, res.booking_number), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-white" }, res.customer_name), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-slate-400" }, res.customer_phone)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4" }, res.truck_number ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 font-bold text-emerald-400" }, /* @__PURE__ */ react_shim_default.createElement(CircleCheck, { className: "w-3.5 h-3.5 text-emerald-400" }), res.truck_number) : /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-amber-400 font-semibold italic" }, "Unallocated")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-medium text-slate-300" }, res.origin, " \u2192 ", res.destination), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-slate-400" }, new Date(res.loading_datetime).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-extrabold text-white" }, "\u20B9", (res.final_agreed_freight || res.indicative_freight || 0).toLocaleString("en-IN")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: res.status === "Confirmed" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : res.status === "Pending" ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-rose-500/20 text-rose-400 border-rose-500/30" }, res.status)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right" }, res.status === "Pending" || !res.truck_number ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       size: "sm",
@@ -8309,7 +7373,7 @@ function BookingManagementPage() {
       className: "bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] h-7 px-2.5 font-bold"
     },
     "Allocate"
-  ), /* @__PURE__ */ React34.createElement(
+  ), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       size: "sm",
@@ -8318,17 +7382,17 @@ function BookingManagementPage() {
       className: "border-rose-900/60 text-rose-400 hover:bg-rose-950 text-[11px] h-7 px-2"
     },
     "Reject"
-  )) : /* @__PURE__ */ React34.createElement(
+  )) : /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       size: "sm",
       variant: "ghost",
-      onClick: () => toast5.info(`Printing voucher for ${res.booking_number}`),
+      onClick: () => toast.info(`Printing voucher for ${res.booking_number}`),
       className: "text-slate-400 hover:text-white text-[11px] h-7 px-2"
     },
-    /* @__PURE__ */ React34.createElement(Printer, { className: "w-3.5 h-3.5 mr-1" }),
+    /* @__PURE__ */ react_shim_default.createElement(Printer, { className: "w-3.5 h-3.5 mr-1" }),
     " Slip"
-  )))))))), selectedForApproval && /* @__PURE__ */ React34.createElement(Dialog2, { open: !!selectedForApproval, onOpenChange: () => setSelectedForApproval(null) }, /* @__PURE__ */ React34.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ React34.createElement(DialogHeader, null, /* @__PURE__ */ React34.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2" }, /* @__PURE__ */ React34.createElement(CircleCheck, { className: "w-5 h-5 text-emerald-400" }), "Allocate Truck to Booking ", selectedForApproval.booking_number)), /* @__PURE__ */ React34.createElement("form", { onSubmit: handleApprove, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ React34.createElement("div", null, /* @__PURE__ */ React34.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Enter / Select Truck Number"), /* @__PURE__ */ React34.createElement(
+  )))))))), selectedForApproval && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedForApproval, onOpenChange: () => setSelectedForApproval(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(CircleCheck, { className: "w-5 h-5 text-emerald-400" }), "Allocate Truck to Booking ", selectedForApproval.booking_number)), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleApprove, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Enter / Select Truck Number"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       placeholder: "e.g. TS08 UJ 5428",
@@ -8337,7 +7401,7 @@ function BookingManagementPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs font-bold",
       required: true
     }
-  )), /* @__PURE__ */ React34.createElement("div", null, /* @__PURE__ */ React34.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Final Agreed Freight (\u20B9)"), /* @__PURE__ */ React34.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Final Agreed Freight (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       type: "number",
@@ -8346,7 +7410,7 @@ function BookingManagementPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs font-bold",
       required: true
     }
-  )), /* @__PURE__ */ React34.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ React34.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setSelectedForApproval(null), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ React34.createElement(Button, { type: "submit", size: "sm", className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold" }, "Approve & Lock Schedule"))))), selectedForRejection && /* @__PURE__ */ React34.createElement(Dialog2, { open: !!selectedForRejection, onOpenChange: () => setSelectedForRejection(null) }, /* @__PURE__ */ React34.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ React34.createElement(DialogHeader, null, /* @__PURE__ */ React34.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2 text-rose-400" }, /* @__PURE__ */ React34.createElement(CircleX, { className: "w-5 h-5" }), "Reject Booking Request ", selectedForRejection.booking_number)), /* @__PURE__ */ React34.createElement("form", { onSubmit: handleReject, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ React34.createElement("div", null, /* @__PURE__ */ React34.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Documented Rejection Reason (Mandatory Audit)"), /* @__PURE__ */ React34.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setSelectedForApproval(null), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold" }, "Approve & Lock Schedule"))))), selectedForRejection && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedForRejection, onOpenChange: () => setSelectedForRejection(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2 text-rose-400" }, /* @__PURE__ */ react_shim_default.createElement(CircleX, { className: "w-5 h-5" }), "Reject Booking Request ", selectedForRejection.booking_number)), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleReject, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Documented Rejection Reason (Mandatory Audit)"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       placeholder: "e.g. No available fleet within 100km deadhead for requested date",
@@ -8355,33 +7419,31 @@ function BookingManagementPage() {
       className: "bg-slate-950 border-slate-800 text-white text-xs",
       required: true
     }
-  )), /* @__PURE__ */ React34.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ React34.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setSelectedForRejection(null), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ React34.createElement(Button, { type: "submit", size: "sm", className: "bg-rose-600 hover:bg-rose-500 text-white font-bold" }, "Confirm Rejection"))))));
+  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setSelectedForRejection(null), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-rose-600 hover:bg-rose-500 text-white font-bold" }, "Confirm Rejection"))))));
 }
 
 // apps/web/src/pages/ReturnLoadPage.jsx
-import React35, { useState as useState16, useEffect as useEffect17 } from "./vendor-react-Bs5V2qFE.js";
-import { toast as toast6 } from "./vendor-radix-BQCqNqg0.js";
 function ReturnLoadPage() {
-  const [opportunities, setOpportunities] = useState16([]);
-  const [loading, setLoading] = useState16(true);
+  const [opportunities, setOpportunities] = useState([]);
+  const [loading, setLoading] = useState(true);
   const loadOpportunities = async () => {
     try {
       setLoading(true);
       const res = await reservationClient.getReturnLoads();
       setOpportunities(res.opportunities || []);
     } catch (err) {
-      toast6.error("Failed to load return-load opportunities: " + err.message);
+      toast.error("Failed to load return-load opportunities: " + err.message);
     } finally {
       setLoading(false);
     }
   };
-  useEffect17(() => {
+  useEffect(() => {
     loadOpportunities();
   }, []);
   const handleAssignBackhaul = (opp) => {
-    toast6.success(`Assigned return load for truck ${opp.truck_number}! Opening trip configuration...`);
+    toast.success(`Assigned return load for truck ${opp.truck_number}! Opening trip configuration...`);
   };
-  return /* @__PURE__ */ React35.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ React35.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ React35.createElement("div", null, /* @__PURE__ */ React35.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React35.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, "Module 8: Backhaul Revenue Maximizer"), /* @__PURE__ */ React35.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ React35.createElement(TrendingUp, { className: "w-3.5 h-3.5 text-emerald-400" }), "Empty-Running & Deadhead Kilometer Reduction")), /* @__PURE__ */ React35.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ React35.createElement(Repeat, { className: "w-7 h-7 text-emerald-400" }), "Return-Load Opportunity Engine"), /* @__PURE__ */ React35.createElement("p", { className: "text-sm text-slate-400" }, "Automatically pairs trucks terminating in outer terminals with matching return loads heading back to base.")), /* @__PURE__ */ React35.createElement(
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, "Module 8: Backhaul Revenue Maximizer"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(TrendingUp, { className: "w-3.5 h-3.5 text-emerald-400" }), "Empty-Running & Deadhead Kilometer Reduction")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(Repeat, { className: "w-7 h-7 text-emerald-400" }), "Return-Load Opportunity Engine"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm text-slate-400" }, "Automatically pairs trucks terminating in outer terminals with matching return loads heading back to base.")), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       variant: "outline",
@@ -8389,9 +7451,9 @@ function ReturnLoadPage() {
       onClick: loadOpportunities,
       className: "border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
     },
-    /* @__PURE__ */ React35.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
     "Scan Backhauls"
-  )), loading ? /* @__PURE__ */ React35.createElement("div", { className: "py-20 text-center text-slate-500" }, /* @__PURE__ */ React35.createElement(RefreshCw, { className: "w-7 h-7 animate-spin mx-auto mb-3 text-emerald-400" }), /* @__PURE__ */ React35.createElement("p", { className: "text-sm font-semibold" }, "Scanning return corridors, quotes, and contract backhauls...")) : opportunities.length === 0 ? /* @__PURE__ */ React35.createElement(Card, { className: "bg-slate-900 border-slate-800 p-12 text-center shadow-xl" }, /* @__PURE__ */ React35.createElement("div", { className: "w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto mb-3" }, /* @__PURE__ */ React35.createElement(ShieldCheck, { className: "w-6 h-6" })), /* @__PURE__ */ React35.createElement("h3", { className: "text-base font-bold text-white mb-1" }, "Zero Empty Running Detected"), /* @__PURE__ */ React35.createElement("p", { className: "text-xs text-slate-400 max-w-md mx-auto" }, "All active fleet units are currently scheduled on round-trip corridors or stationed at primary operating depots.")) : /* @__PURE__ */ React35.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, opportunities.map((opp) => /* @__PURE__ */ React35.createElement(Card, { key: opp.id, className: "bg-slate-900 border-slate-800 p-5 shadow-2xl hover:border-emerald-500/40 transition-all space-y-3.5" }, /* @__PURE__ */ React35.createElement("div", { className: "flex items-start justify-between" }, /* @__PURE__ */ React35.createElement("div", null, /* @__PURE__ */ React35.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React35.createElement("span", { className: "font-black text-base text-white" }, opp.truck_number), /* @__PURE__ */ React35.createElement(Badge, { className: "bg-emerald-500/20 text-emerald-400 text-[10px] border-emerald-500/30" }, opp.opportunity_type)), /* @__PURE__ */ React35.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Finishing at: ", /* @__PURE__ */ React35.createElement("strong", { className: "text-cyan-400" }, opp.current_terminal))), /* @__PURE__ */ React35.createElement("div", { className: "text-right" }, /* @__PURE__ */ React35.createElement("span", { className: "text-[10px] text-slate-400 font-semibold block" }, "Net Margin"), /* @__PURE__ */ React35.createElement("span", { className: "text-lg font-extrabold text-emerald-400" }, "+\u20B9", opp.net_margin?.toLocaleString("en-IN")))), /* @__PURE__ */ React35.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs" }, /* @__PURE__ */ React35.createElement("div", null, /* @__PURE__ */ React35.createElement("p", { className: "text-slate-400 text-[10px]" }, "Return Route"), /* @__PURE__ */ React35.createElement("p", { className: "font-bold text-white flex items-center gap-1.5" }, opp.origin, " ", /* @__PURE__ */ React35.createElement(ArrowRight, { className: "w-3.5 h-3.5 text-emerald-400" }), " ", opp.destination)), /* @__PURE__ */ React35.createElement("div", { className: "text-right" }, /* @__PURE__ */ React35.createElement("p", { className: "text-slate-400 text-[10px]" }, "Deadhead Haulage"), /* @__PURE__ */ React35.createElement("p", { className: "font-bold text-emerald-400" }, "~", opp.deadhead_km, " km"))), /* @__PURE__ */ React35.createElement("div", { className: "grid grid-cols-3 gap-2 text-center text-xs" }, /* @__PURE__ */ React35.createElement("div", { className: "p-2 bg-slate-950 rounded border border-slate-850" }, /* @__PURE__ */ React35.createElement("span", { className: "text-[10px] text-slate-400 block" }, "Gross Freight"), /* @__PURE__ */ React35.createElement("span", { className: "font-extrabold text-white" }, "\u20B9", opp.indicative_revenue?.toLocaleString("en-IN"))), /* @__PURE__ */ React35.createElement("div", { className: "p-2 bg-slate-950 rounded border border-slate-850" }, /* @__PURE__ */ React35.createElement("span", { className: "text-[10px] text-slate-400 block" }, "Fuel & Toll"), /* @__PURE__ */ React35.createElement("span", { className: "font-extrabold text-rose-400" }, "\u20B9", opp.estimated_operating_cost?.toLocaleString("en-IN"))), /* @__PURE__ */ React35.createElement("div", { className: "p-2 bg-slate-950 rounded border border-slate-850" }, /* @__PURE__ */ React35.createElement("span", { className: "text-[10px] text-slate-400 block" }, "Cargo Payload"), /* @__PURE__ */ React35.createElement("span", { className: "font-extrabold text-slate-200" }, opp.cargo_weight, " MT"))), /* @__PURE__ */ React35.createElement(
+  )), loading ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-20 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-7 h-7 animate-spin mx-auto mb-3 text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm font-semibold" }, "Scanning return corridors, quotes, and contract backhauls...")) : opportunities.length === 0 ? /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900 border-slate-800 p-12 text-center shadow-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto mb-3" }, /* @__PURE__ */ react_shim_default.createElement(ShieldCheck, { className: "w-6 h-6" })), /* @__PURE__ */ react_shim_default.createElement("h3", { className: "text-base font-bold text-white mb-1" }, "Zero Empty Running Detected"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs text-slate-400 max-w-md mx-auto" }, "All active fleet units are currently scheduled on round-trip corridors or stationed at primary operating depots.")) : /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, opportunities.map((opp) => /* @__PURE__ */ react_shim_default.createElement(Card, { key: opp.id, className: "bg-slate-900 border-slate-800 p-5 shadow-2xl hover:border-emerald-500/40 transition-all space-y-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-start justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-base text-white" }, opp.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-emerald-500/20 text-emerald-400 text-[10px] border-emerald-500/30" }, opp.opportunity_type)), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Finishing at: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-cyan-400" }, opp.current_terminal))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 font-semibold block" }, "Net Margin"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-lg font-extrabold text-emerald-400" }, "+\u20B9", opp.net_margin?.toLocaleString("en-IN")))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[10px]" }, "Return Route"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-white flex items-center gap-1.5" }, opp.origin, " ", /* @__PURE__ */ react_shim_default.createElement(ArrowRight, { className: "w-3.5 h-3.5 text-emerald-400" }), " ", opp.destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[10px]" }, "Deadhead Haulage"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-emerald-400" }, "~", opp.deadhead_km, " km"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-3 gap-2 text-center text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2 bg-slate-950 rounded border border-slate-850" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 block" }, "Gross Freight"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-white" }, "\u20B9", opp.indicative_revenue?.toLocaleString("en-IN"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2 bg-slate-950 rounded border border-slate-850" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 block" }, "Fuel & Toll"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-rose-400" }, "\u20B9", opp.estimated_operating_cost?.toLocaleString("en-IN"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2 bg-slate-950 rounded border border-slate-850" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 block" }, "Cargo Payload"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-slate-200" }, opp.cargo_weight, " MT"))), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       onClick: () => handleAssignBackhaul(opp),
@@ -8409,44 +7471,51 @@ var SUBMODULES = [
   { id: "manage", label: "Booking Management", icon: ClipboardCheck, description: "Confirmed, provisional & requests" },
   { id: "return-loads", label: "Return-Load Opportunities", icon: Repeat, description: "Backhaul revenue maximizer" }
 ];
+function getUrlTab() {
+  try {
+    if (typeof window === "undefined") return "calendar";
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get("tab") || "calendar";
+  } catch (e2) {
+    return "calendar";
+  }
+}
 function FleetReservationHub({ initialTab = "calendar" }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState17(urlTab || initialTab);
+  const [activeTab, setActiveTab] = useState(getUrlTab);
+  useEffect(() => {
+    const onPop = () => setActiveTab(getUrlTab());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const handleSelectTab = (tabId) => {
     setActiveTab(tabId);
-    setSearchParams({ tab: tabId });
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      sp.set("tab", tabId);
+      const newUrl = `${window.location.pathname}?${sp.toString()}`;
+      window.history.pushState(null, "", newUrl);
+    } catch (e2) {
+    }
   };
-  return /* @__PURE__ */ React36.createElement("div", { className: "min-h-screen bg-slate-950 text-white font-sans" }, /* @__PURE__ */ React36.createElement("div", { className: "bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md px-4 md:px-6 py-2.5" }, /* @__PURE__ */ React36.createElement("div", { className: "max-w-7xl mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React36.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React36.createElement("div", { className: "w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xs" }, /* @__PURE__ */ React36.createElement(Truck, { className: "w-4 h-4" })), /* @__PURE__ */ React36.createElement("span", { className: "font-extrabold text-sm tracking-tight text-white hidden sm:inline" }, "Fleet Reservation")), /* @__PURE__ */ React36.createElement("div", { className: "flex items-center gap-1.5 shrink-0 bg-slate-950 p-1 rounded-xl border border-slate-800" }, SUBMODULES.map((tab) => {
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "min-h-screen bg-slate-950 text-white font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md px-4 md:px-6 py-2.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "max-w-7xl mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xs" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-sm tracking-tight text-white hidden sm:inline" }, "Fleet Reservation")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 shrink-0 bg-slate-950 p-1 rounded-xl border border-slate-800" }, SUBMODULES.map((tab) => {
     const Icon2 = tab.icon;
     const isActive = activeTab === tab.id;
-    return /* @__PURE__ */ React36.createElement(
+    return /* @__PURE__ */ react_shim_default.createElement(
       "button",
       {
         key: tab.id,
         onClick: () => handleSelectTab(tab.id),
         className: `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20" : "text-slate-400 hover:text-white hover:bg-slate-900"}`
       },
-      /* @__PURE__ */ React36.createElement(Icon2, { className: "w-3.5 h-3.5" }),
-      /* @__PURE__ */ React36.createElement("span", null, tab.label)
+      /* @__PURE__ */ react_shim_default.createElement(Icon2, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ react_shim_default.createElement("span", null, tab.label)
     );
-  })))), /* @__PURE__ */ React36.createElement("div", { className: "py-2" }, activeTab === "calendar" && /* @__PURE__ */ React36.createElement(FleetCalendarPage, null), activeTab === "prediction" && /* @__PURE__ */ React36.createElement(MovementPredictionPage, null), activeTab === "search" && /* @__PURE__ */ React36.createElement(AvailabilitySearchPage, null), activeTab === "manage" && /* @__PURE__ */ React36.createElement(BookingManagementPage, null), activeTab === "return-loads" && /* @__PURE__ */ React36.createElement(ReturnLoadPage, null)));
+  })))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-2" }, activeTab === "calendar" && /* @__PURE__ */ react_shim_default.createElement(FleetCalendarPage, null), activeTab === "prediction" && /* @__PURE__ */ react_shim_default.createElement(MovementPredictionPage, null), activeTab === "search" && /* @__PURE__ */ react_shim_default.createElement(AvailabilitySearchPage, null), activeTab === "manage" && /* @__PURE__ */ react_shim_default.createElement(BookingManagementPage, null), activeTab === "return-loads" && /* @__PURE__ */ react_shim_default.createElement(ReturnLoadPage, null)));
 }
 export {
   FleetReservationHub as default
 };
 /*! Bundled license information:
-
-react/cjs/react-jsx-runtime.development.js:
-  (**
-   * @license React
-   * react-jsx-runtime.development.js
-   *
-   * Copyright (c) Facebook, Inc. and its affiliates.
-   *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-   *)
 
 lucide-react/dist/esm/shared/src/utils.js:
 lucide-react/dist/esm/defaultAttributes.js:
