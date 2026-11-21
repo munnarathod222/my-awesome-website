@@ -17680,5 +17680,403 @@
     "createRule": "",
     "updateRule": "",
     "deleteRule": ""
+  },
+  {
+    "name": "truck_reservations",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "booking_number",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "reservation_type",
+        "type": "select",
+        "values": [
+          "Confirmed",
+          "Provisional",
+          "Booking Request"
+        ],
+        "required": true
+      },
+      {
+        "name": "status",
+        "type": "select",
+        "values": [
+          "Pending",
+          "Approved",
+          "Confirmed",
+          "Allocated",
+          "In Transit",
+          "Completed",
+          "Cancelled",
+          "Rejected"
+        ],
+        "required": true
+      },
+      {
+        "name": "customer_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "customer_name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "customer_phone",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "customer_email",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "truck_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "truck_number",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "vehicle_category",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "origin",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "destination",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "loading_datetime",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "expected_unloading_datetime",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "reserved_from",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "reserved_to",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "cargo_weight_tons",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "cargo_description",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "special_requirements",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "indicative_freight",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "final_agreed_freight",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "payment_status",
+        "type": "select",
+        "values": [
+          "Pending",
+          "Partial Advance",
+          "Confirmed",
+          "Paid",
+          "Credit Billed"
+        ],
+        "required": false
+      },
+      {
+        "name": "advance_amount",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "linked_trip_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "upstream_trip_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "match_score",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "match_reasons",
+        "type": "json",
+        "required": false
+      },
+      {
+        "name": "approval_history",
+        "type": "json",
+        "required": false
+      },
+      {
+        "name": "rejection_reason",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "cancellation_reason",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "created_by",
+        "type": "text",
+        "required": false
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
+  },
+  {
+    "name": "truck_availability_blocks",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "truck_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "truck_number",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "block_type",
+        "type": "select",
+        "values": [
+          "Maintenance",
+          "Breakdown",
+          "Document Expired",
+          "Personal Use",
+          "Operational Hold",
+          "RTO Inspection",
+          "Other"
+        ],
+        "required": true
+      },
+      {
+        "name": "reason",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "start_time",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "end_time",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "created_by",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "notes",
+        "type": "text",
+        "required": false
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
+  },
+  {
+    "name": "truck_availability_forecasts",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "truck_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "truck_number",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "vehicle_category",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "current_location",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "predicted_location",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "current_trip_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "expected_destination",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "estimated_arrival",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "expected_unloading_completed",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "earliest_next_departure",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "prediction_confidence",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "prediction_status",
+        "type": "select",
+        "values": [
+          "Available",
+          "Booked",
+          "Booking Requested",
+          "In Transit",
+          "Loading",
+          "Unloading",
+          "Waiting",
+          "Expected Available",
+          "Maintenance",
+          "Breakdown",
+          "Documents Expired",
+          "Schedule Conflict"
+        ],
+        "required": false
+      },
+      {
+        "name": "data_sources",
+        "type": "json",
+        "required": false
+      },
+      {
+        "name": "last_recalculated_at",
+        "type": "text",
+        "required": false
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
+  },
+  {
+    "name": "prediction_logs",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "truck_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "truck_number",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "trip_id",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "predicted_arrival",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "actual_arrival",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "variance_minutes",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "accuracy_rate",
+        "type": "number",
+        "required": false
+      },
+      {
+        "name": "logged_at",
+        "type": "text",
+        "required": false
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
   }
 ]

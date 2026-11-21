@@ -26,6 +26,7 @@ import bidsRouter from './bids.js';
 import whatsappRouter from './whatsapp.js';
 import ownerInboxRouter from './ownerInbox.js';
 import ticketsRouter from './tickets.js';
+import reservationsRouter from './reservations.js';
 
 const router = Router();
 
@@ -69,6 +70,8 @@ export default () => {
     router.use('/api/user', userRouter);
     router.use('/shared', sharedRouter);
     router.use('/api/shared', sharedRouter);
+    router.use('/reservations', reservationsRouter);
+    router.use('/api/reservations', reservationsRouter);
     router.use('/bandwidth', bandwidthRouter);
     router.use('/api/bandwidth', bandwidthRouter);
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import {
-  LayoutDashboard, Users, Inbox, ClipboardCheck, Truck, CalendarDays, FileText, Settings,
+  LayoutDashboard, Users, Inbox, Compass, Repeat, Search, ClipboardCheck, Truck, CalendarDays, FileText, Settings,
   ChevronLeft, ChevronRight, LogOut, MapPin, ClipboardList, CreditCard,
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const GROUP_ICON = {
   'Main & Analytics': LayoutDashboard,
+  'Fleet Reservation': CalendarDays,
   'Fleet & Operations': Truck,
   'Finance & Accounts': CreditCard,
   'Staff & HR': Users,
@@ -26,6 +27,7 @@ const GROUP_ICON = {
 
 const GROUP_COLOR = {
   'Main & Analytics': 'text-cyan-400',
+  'Fleet Reservation': 'text-cyan-400',
   'Fleet & Operations': 'text-emerald-400',
   'Finance & Accounts': 'text-amber-400',
   'Staff & HR': 'text-violet-400',
@@ -81,6 +83,16 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: Calculator,      label: 'Vehicle TCO & ROI',     path: '/vehicle-tco',             roles: ['super_admin','admin','manager'] },
         { icon: PieChart,        label: 'Client Analysis',       path: '/client-analysis',         roles: ['super_admin','admin','manager'] },
         { icon: Trophy,          label: 'Leaderboard',           path: '/leaderboard',             roles: ['super_admin','admin','manager'] },
+      ]
+    },
+        {
+      title: 'Fleet Reservation',
+      items: [
+        { icon: CalendarDays,   label: 'Fleet Calendar',           path: '/reservations/calendar',     roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Compass,        label: 'Movement Prediction',      path: '/reservations/prediction',   roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Search,         label: 'Availability Search',      path: '/reservations/search',       roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { icon: ClipboardCheck, label: 'Booking Management',       path: '/reservations/manage',       roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Repeat,         label: 'Return-Load Opportunities',path: '/reservations/return-loads', roles: ['super_admin','admin','manager','dispatcher'] },
       ]
     },
     { title: 'Fleet & Operations', items: fleetOperationsItems },

@@ -49,6 +49,13 @@ import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
 import IdCardGeneratorPage from './pages/IdCardGeneratorPage.jsx';
 import TruckManagerPage from './pages/TruckManagerPage.jsx';
+// Fleet Reservation Pages
+import FleetCalendarPage from './pages/FleetCalendarPage.jsx';
+import MovementPredictionPage from './pages/MovementPredictionPage.jsx';
+import AvailabilitySearchPage from './pages/AvailabilitySearchPage.jsx';
+import BookingManagementPage from './pages/BookingManagementPage.jsx';
+import ReturnLoadPage from './pages/ReturnLoadPage.jsx';
+
 import GPSPage from './pages/GPSPage.jsx';
 import TripManagerPage from './pages/TripManagerPage.jsx';
 import AttendanceManagerPage from './pages/AttendanceManagerPage.jsx';
@@ -253,7 +260,14 @@ function App() {
                   <Route path="/dashboard/requests" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><AdminSignupRequestsPage /></ProtectedRoute>} />
                   
                   {/* Truck & Tyre Management */}
-                  <Route path="/truck-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'supervisor']}><TruckManagerPage /></ProtectedRoute>} />
+                  
+            {/* Fleet Reservation & Movement Prediction Routes */}
+            <Route path="/reservations/calendar" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher','supervisor']}><FleetCalendarPage /></ProtectedRoute>} />
+            <Route path="/reservations/prediction" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher','supervisor']}><MovementPredictionPage /></ProtectedRoute>} />
+            <Route path="/reservations/search" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher','supervisor','user']}><AvailabilitySearchPage /></ProtectedRoute>} />
+            <Route path="/reservations/manage" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher']}><BookingManagementPage /></ProtectedRoute>} />
+            <Route path="/reservations/return-loads" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher']}><ReturnLoadPage /></ProtectedRoute>} />
+            <Route path="/truck-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'supervisor']}><TruckManagerPage /></ProtectedRoute>} />
             <Route path="/gps" element={<ProtectedRoute><GPSPage /></ProtectedRoute>} />
                   <Route path="/tyres" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor']}><TyreManagementPage /></ProtectedRoute>} />
                   <Route path="/tyres/:truckId" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor']}><TyreManagementPage /></ProtectedRoute>} />

@@ -548,3 +548,106 @@ CREATE TRIGGER trg_ops_workflows_update
   BEFORE UPDATE ON operations_workflows
   FOR EACH ROW
   EXECUTE FUNCTION update_operations_timestamp();
+
+
+-- ============================================================================
+-- 16. JAI BHAVANI CARGO — FLEET RESERVATION & PREDICTIVE AVAILABILITY SCHEMA
+-- ============================================================================
+
+-- 1. Truck Availability Blocks
+CREATE TABLE IF NOT EXISTS truck_availability_blocks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  truck_id VARCHAR(50) NOT NULL,
+  truck_number VARCHAR(30) NOT NULL,
+  block_type VARCHAR(40) NOT NULL CHECK (block_type IN ('Maintenance', 'Breakdown', 'Document Expired', 'Personal Use', 'Operational Hold', 'RTO Inspection', 'Other')),
+  reason TEXT NOT NULL,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_by VARCHAR(100) NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_avail_block_truck ON truck_availability_blocks(truck_number);
+CREATE INDEX IF NOT EXISTS idx_avail_block_dates ON truck_availability_blocks(start_time, end_time);
+
+-- 2. Truck Reservations Table
+CREATE TABLE IF NOT EXISTS truck_reservations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_number VARCHAR(50) UNIQUE NOT NULL,
+  reservation_type VARCHAR(30) NOT NULL CHECK (reservation_type IN ('Confirmed', 'Provisional', 'Booking Request')),
+  status VARCHAR(30) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Confirmed', 'Allocated', 'In Transit', 'Completed', 'Cancelled', 'Rejected')),
+  customer_id VARCHAR(50),
+  customer_name VARCHAR(255) NOT NULL,
+  customer_phone VARCHAR(30) NOT NULL,
+  customer_email VARCHAR(255),
+  truck_id VARCHAR(50),
+  truck_number VARCHAR(30),
+  vehicle_category VARCHAR(100) NOT NULL DEFAULT '32FT SXL',
+  origin VARCHAR(255) NOT NULL,
+  destination VARCHAR(255) NOT NULL,
+  loading_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  expected_unloading_datetime TIMESTAMP WITH TIME ZONE,
+  reserved_from TIMESTAMP WITH TIME ZONE,
+  reserved_to TIMESTAMP WITH TIME ZONE,
+  cargo_weight_tons NUMERIC(6, 2),
+  cargo_description TEXT,
+  special_requirements TEXT,
+  indicative_freight NUMERIC(12, 2) DEFAULT 0.00,
+  final_agreed_freight NUMERIC(12, 2) DEFAULT 0.00,
+  payment_status VARCHAR(30) DEFAULT 'Pending' CHECK (payment_status IN ('Pending', 'Partial Advance', 'Confirmed', 'Paid', 'Credit Billed')),
+  advance_amount NUMERIC(12, 2) DEFAULT 0.00,
+  linked_trip_id VARCHAR(50),
+  upstream_trip_id VARCHAR(50),
+  match_score NUMERIC(5, 2),
+  match_reasons JSONB DEFAULT '[]'::jsonb,
+  approval_history JSONB DEFAULT '[]'::jsonb,
+  rejection_reason TEXT,
+  cancellation_reason TEXT,
+  created_by VARCHAR(100),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_res_booking_num ON truck_reservations(booking_number);
+CREATE INDEX IF NOT EXISTS idx_res_truck ON truck_reservations(truck_number);
+CREATE INDEX IF NOT EXISTS idx_res_dates ON truck_reservations(reserved_from, reserved_to);
+CREATE INDEX IF NOT EXISTS idx_res_status ON truck_reservations(status);
+
+-- 3. Predictive Availability Forecast Cache
+CREATE TABLE IF NOT EXISTS truck_availability_forecasts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  truck_id VARCHAR(50),
+  truck_number VARCHAR(30) NOT NULL,
+  vehicle_category VARCHAR(100),
+  current_location VARCHAR(255),
+  predicted_location VARCHAR(255),
+  current_trip_id VARCHAR(50),
+  expected_destination VARCHAR(255),
+  estimated_arrival TIMESTAMP WITH TIME ZONE,
+  expected_unloading_completed TIMESTAMP WITH TIME ZONE,
+  earliest_next_departure TIMESTAMP WITH TIME ZONE,
+  prediction_confidence SMALLINT CHECK (prediction_confidence BETWEEN 0 AND 100),
+  prediction_status VARCHAR(40),
+  data_sources JSONB DEFAULT '[]'::jsonb,
+  last_recalculated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_forecast_truck ON truck_availability_forecasts(truck_number);
+
+-- 4. Prediction Logs & Variance Tracking
+CREATE TABLE IF NOT EXISTS prediction_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  truck_id VARCHAR(50),
+  truck_number VARCHAR(30) NOT NULL,
+  trip_id VARCHAR(50),
+  predicted_arrival TIMESTAMP WITH TIME ZONE NOT NULL,
+  actual_arrival TIMESTAMP WITH TIME ZONE,
+  variance_minutes INTEGER,
+  accuracy_rate NUMERIC(5, 2),
+  logged_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_pred_log_truck ON prediction_logs(truck_number);
+CREATE INDEX IF NOT EXISTS idx_pred_log_trip ON prediction_logs(trip_id);
