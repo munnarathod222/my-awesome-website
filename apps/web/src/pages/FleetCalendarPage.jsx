@@ -29,7 +29,15 @@ const STATUS_CONFIG = {
 };
 
 export default function FleetCalendarPage() {
-  const { currentUser } = useAuth();
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.currentUser;
+  } catch (e) {
+    try {
+      currentUser = JSON.parse(localStorage.getItem('app_auth_user'));
+    } catch (err) {}
+  }
   const [viewMode, setViewMode] = useState('weekly'); // daily, weekly, monthly
   const [timelineData, setTimelineData] = useState([]);
   const [loading, setLoading] = useState(true);

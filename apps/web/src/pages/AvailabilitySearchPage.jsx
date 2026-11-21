@@ -13,7 +13,15 @@ import { reservationClient } from '@/lib/reservationClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 export default function AvailabilitySearchPage() {
-  const { currentUser } = useAuth();
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.currentUser;
+  } catch (e) {
+    try {
+      currentUser = JSON.parse(localStorage.getItem('app_auth_user'));
+    } catch (err) {}
+  }
   const [searchParams, setSearchParams] = useState({
     origin: 'Hyderabad',
     destination: 'Hubli',

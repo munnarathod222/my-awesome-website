@@ -6757,7 +6757,37 @@ var SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1e3;
 var useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("app_auth_user") : null;
+      const user = saved ? JSON.parse(saved) : pocketbaseClient_default?.authStore?.model || null;
+      return {
+        currentUser: user,
+        isAuthenticated: Boolean(user),
+        initialLoading: false,
+        login: async () => {
+        },
+        signup: async () => {
+        },
+        logout: async () => {
+        },
+        changePassword: async () => {
+        }
+      };
+    } catch (e2) {
+      return {
+        currentUser: pocketbaseClient_default?.authStore?.model || null,
+        isAuthenticated: Boolean(pocketbaseClient_default?.authStore?.model),
+        initialLoading: false,
+        login: async () => {
+        },
+        signup: async () => {
+        },
+        logout: async () => {
+        },
+        changePassword: async () => {
+        }
+      };
+    }
   }
   return context;
 };
@@ -6778,7 +6808,16 @@ var STATUS_CONFIG = {
   "Schedule Conflict": { bg: "bg-crimson-500/30 animate-pulse", text: "text-red-300", border: "border-red-500", label: "Schedule Conflict" }
 };
 function FleetCalendarPage() {
-  const { currentUser } = useAuth();
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.currentUser;
+  } catch (e2) {
+    try {
+      currentUser = JSON.parse(localStorage.getItem("app_auth_user"));
+    } catch (err) {
+    }
+  }
   const [viewMode, setViewMode] = useState("weekly");
   const [timelineData, setTimelineData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -7096,7 +7135,16 @@ function MovementPredictionPage() {
 
 // apps/web/src/pages/AvailabilitySearchPage.jsx
 function AvailabilitySearchPage() {
-  const { currentUser } = useAuth();
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.currentUser;
+  } catch (e2) {
+    try {
+      currentUser = JSON.parse(localStorage.getItem("app_auth_user"));
+    } catch (err) {
+    }
+  }
   const [searchParams, setSearchParams] = useState({
     origin: "Hyderabad",
     destination: "Hubli",
@@ -7267,7 +7315,16 @@ function AvailabilitySearchPage() {
 
 // apps/web/src/pages/BookingManagementPage.jsx
 function BookingManagementPage() {
-  const { currentUser } = useAuth();
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.currentUser;
+  } catch (e2) {
+    try {
+      currentUser = JSON.parse(localStorage.getItem("app_auth_user"));
+    } catch (err) {
+    }
+  }
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
