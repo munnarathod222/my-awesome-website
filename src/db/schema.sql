@@ -651,3 +651,95 @@ CREATE TABLE IF NOT EXISTS prediction_logs (
 
 CREATE INDEX IF NOT EXISTS idx_pred_log_truck ON prediction_logs(truck_number);
 CREATE INDEX IF NOT EXISTS idx_pred_log_trip ON prediction_logs(trip_id);
+
+-- 5. Dedicated Vehicle Subscriptions (Module 12)
+CREATE TABLE IF NOT EXISTS dedicated_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subscription_code VARCHAR(50) UNIQUE NOT NULL,
+  customer_id VARCHAR(50),
+  customer_name VARCHAR(255) NOT NULL,
+  company_name VARCHAR(255) NOT NULL,
+  customer_phone VARCHAR(30) NOT NULL,
+  customer_email VARCHAR(255),
+  vehicle_category VARCHAR(100) NOT NULL DEFAULT '32FT SXL',
+  assigned_truck_number VARCHAR(30),
+  assigned_truck_id VARCHAR(50),
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  monthly_retainer_fee NUMERIC(12, 2) NOT NULL,
+  included_km_or_trips NUMERIC(10, 2) DEFAULT 0.00,
+  overage_rate_per_km NUMERIC(8, 2) DEFAULT 0.00,
+  billing_cycle VARCHAR(50) DEFAULT 'Monthly Advance' CHECK (billing_cycle IN ('Monthly Advance', 'Bi-Weekly', 'Per Trip Drawdown')),
+  status VARCHAR(40) NOT NULL DEFAULT 'Pending Dispatch Review' CHECK (status IN ('Pending Dispatch Review', 'Active', 'Suspended', 'Completed', 'Cancelled')),
+  primary_operating_corridor VARCHAR(255),
+  special_sla_notes TEXT,
+  assigned_drivers JSONB DEFAULT '[]'::jsonb,
+  created_by VARCHAR(100),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sub_code ON dedicated_subscriptions(subscription_code);
+CREATE INDEX IF NOT EXISTS idx_sub_truck ON dedicated_subscriptions(assigned_truck_number);
+CREATE INDEX IF NOT EXISTS idx_sub_status ON dedicated_subscriptions(status);
+
+-- 6. Recurring Truck Reservations (Module 11)
+CREATE TABLE IF NOT EXISTS recurring_reservations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recurrence_code VARCHAR(50) UNIQUE NOT NULL,
+  customer_name VARCHAR(255) NOT NULL,
+  customer_phone VARCHAR(30) NOT NULL,
+  customer_email VARCHAR(255),
+  origin VARCHAR(255) NOT NULL,
+  destination VARCHAR(255) NOT NULL,
+  vehicle_category VARCHAR(100) NOT NULL DEFAULT '32FT SXL',
+  assigned_truck_number VARCHAR(30),
+  assigned_truck_id VARCHAR(50),
+  recurring_days JSONB NOT NULL, -- ['Monday', 'Wednesday', 'Friday']
+  preferred_time VARCHAR(20) DEFAULT '18:00',
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  rate_per_trip NUMERIC(12, 2) NOT NULL,
+  status VARCHAR(40) NOT NULL DEFAULT 'Pending Dispatch Review' CHECK (status IN ('Pending Dispatch Review', 'Active', 'Paused', 'Completed', 'Cancelled')),
+  trips_generated_count INTEGER DEFAULT 0,
+  special_instructions TEXT,
+  created_by VARCHAR(100),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_rec_code ON recurring_reservations(recurrence_code);
+CREATE INDEX IF NOT EXISTS idx_rec_truck ON recurring_reservations(assigned_truck_number);
+CREATE INDEX IF NOT EXISTS idx_rec_status ON recurring_reservations(status);
+
+-- 7. Partner Trucks & Attached Owner Portal (Module 6)
+CREATE TABLE IF NOT EXISTS partner_trucks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_name VARCHAR(255) NOT NULL,
+  owner_phone VARCHAR(30) NOT NULL,
+  owner_email VARCHAR(255),
+  owner_pan VARCHAR(20),
+  bank_account_number VARCHAR(50),
+  bank_ifsc VARCHAR(20),
+  truck_number VARCHAR(30) UNIQUE NOT NULL,
+  truck_type VARCHAR(100) NOT NULL,
+  capacity_tons NUMERIC(6, 2) NOT NULL,
+  rc_number VARCHAR(50),
+  fitness_expiry DATE,
+  insurance_expiry DATE,
+  verification_status VARCHAR(40) NOT NULL DEFAULT 'Pending Verification' CHECK (verification_status IN ('Verified Active', 'Pending Verification', 'Inactive', 'Blacklisted')),
+  current_availability VARCHAR(40) NOT NULL DEFAULT 'Available for Trips' CHECK (current_availability IN ('Available for Trips', 'On Assigned Trip', 'Maintenance', 'Not Available')),
+  declared_empty_location VARCHAR(255),
+  available_from_date TIMESTAMP WITH TIME ZONE,
+  preferred_return_destination VARCHAR(255),
+  agreed_payout_rate NUMERIC(10, 2),
+  total_trips_completed INTEGER DEFAULT 0,
+  total_net_payout NUMERIC(12, 2) DEFAULT 0.00,
+  remarks TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_partner_truck ON partner_trucks(truck_number);
+CREATE INDEX IF NOT EXISTS idx_partner_phone ON partner_trucks(owner_phone);
+CREATE INDEX IF NOT EXISTS idx_partner_status ON partner_trucks(verification_status);

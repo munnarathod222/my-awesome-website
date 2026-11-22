@@ -58,8 +58,8 @@ export async function validateTruckReservationAvailability(truckNumber, startTim
   }
 
   try {
-    // 1. Check for overlapping confirmed reservations
-    let resFilter = `truck_number = "${truckNumber}" && status = "Confirmed"`;
+    // 1. Check for overlapping reservations (Confirmed, Allocated, or Held)
+    let resFilter = `truck_number = "${truckNumber}" && status != "Cancelled" && status != "Rejected"`;
     if (excludeReservationId) {
       resFilter += ` && id != "${excludeReservationId}"`;
     }
@@ -71,13 +71,30 @@ export async function validateTruckReservationAvailability(truckNumber, startTim
 
     for (const res of confirmedReservations) {
       const resFrom = res.reserved_from || res.loading_datetime;
-      const resTo = res.reserved_to || res.expected_unloading_datetime;
+      const resTo = res.reserved_to || res.expected_unloading_datetime || res.loading_datetime;
       if (intervalsOverlap(requestedStart, requestedEnd, resFrom, resTo)) {
         return {
           available: false,
           conflictType: 'CONFIRMED_RESERVATION',
           conflictingBooking: res.booking_number,
-          reason: `Truck ${truckNumber} is already confirmed for booking ${res.booking_number} from ${resFrom} to ${resTo}.`
+          reason: `Truck ${truckNumber} is already held/assigned for booking ${res.booking_number} (${res.status}) from ${resFrom} to ${resTo}.`
+        };
+      }
+    }
+
+    // 1b. Check for active Dedicated Subscriptions on this truck
+    const activeSubs = await pb.collection('dedicated_subscriptions').getFullList({
+      filter: `assigned_truck_number = "${truckNumber}" && status = "Active"`,
+      $autoCancel: false
+    }).catch(() => []);
+
+    for (const sub of activeSubs) {
+      if (intervalsOverlap(requestedStart, requestedEnd, sub.start_date, sub.end_date)) {
+        return {
+          available: false,
+          conflictType: 'DEDICATED_SUBSCRIPTION_HELD',
+          conflictingBooking: sub.subscription_code,
+          reason: `Truck ${truckNumber} is reserved under Dedicated Subscription ${sub.subscription_code} (${sub.company_name}) from ${sub.start_date} to ${sub.end_date}.`
         };
       }
     }

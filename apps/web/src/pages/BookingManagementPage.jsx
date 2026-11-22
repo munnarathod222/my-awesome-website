@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ClipboardCheck, Clock, CheckCircle2, XCircle, FileText, 
-  Printer, User, Phone, MapPin, DollarSign, Filter, RefreshCw, AlertTriangle
+  Printer, User, Phone, MapPin, DollarSign, Filter, RefreshCw, AlertTriangle, Lock, Truck
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import { reservationClient } from '@/lib/reservationClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import pb from '@/lib/pocketbaseClient.js';
 
 export default function BookingManagementPage() {
   let currentUser = null;
@@ -23,6 +24,7 @@ export default function BookingManagementPage() {
     } catch (err) {}
   }
   const [reservations, setReservations] = useState([]);
+  const [fleetTrucks, setFleetTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,8 +41,12 @@ export default function BookingManagementPage() {
   const loadReservations = async () => {
     try {
       setLoading(true);
-      const res = await reservationClient.listReservations();
+      const [res, trucks] = await Promise.all([
+        reservationClient.listReservations(),
+        pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }).catch(() => [])
+      ]);
       setReservations(res.reservations || []);
+      setFleetTrucks(trucks);
     } catch (err) {
       toast.error('Failed to load reservations: ' + err.message);
     } finally {
@@ -55,21 +61,24 @@ export default function BookingManagementPage() {
   const handleApprove = async (e) => {
     e.preventDefault();
     if (!allocTruckNumber) {
-      toast.warning('Please specify truck number for allocation.');
+      toast.warning('Please select a truck number for allocation.');
       return;
     }
 
     try {
-      await reservationClient.approveReservation(selectedForApproval.id, {
+      const selectedTruckObj = fleetTrucks.find(t => t.truck_number === allocTruckNumber);
+      await reservationClient.assignTruckAndLock({
+        reservation_id: selectedForApproval.id,
         truck_number: allocTruckNumber,
+        truck_id: selectedTruckObj?.id || '',
         agreed_freight: agreedFreight,
-        approved_by: currentUser?.full_name || currentUser?.name || 'Dispatcher'
+        assigned_by: currentUser?.full_name || currentUser?.name || 'Dispatcher'
       });
-      toast.success(`Booking ${selectedForApproval.booking_number} approved and allocated to ${allocTruckNumber}!`);
+      toast.success(`Booking ${selectedForApproval.booking_number} approved and truck ${allocTruckNumber} schedule locked as BUSY!`);
       setSelectedForApproval(null);
       loadReservations();
     } catch (err) {
-      toast.error(err.message || 'Approval failed');
+      toast.error(err.message || 'Approval & schedule lock failed');
     }
   };
 
@@ -294,14 +303,24 @@ export default function BookingManagementPage() {
 
             <form onSubmit={handleApprove} className="space-y-3 py-2 text-xs">
               <div>
-                <label className="text-slate-400 font-semibold block mb-1">Enter / Select Truck Number</label>
-                <Input 
-                  placeholder="e.g. TS08 UJ 5428"
+                <label className="text-slate-400 font-semibold block mb-1">Select Fleet Vehicle to Allocate & Lock *</label>
+                <select
                   value={allocTruckNumber}
                   onChange={(e) => setAllocTruckNumber(e.target.value)}
-                  className="bg-slate-950 border-slate-800 text-white text-xs font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono font-bold text-xs"
                   required
-                />
+                >
+                  <option value="">-- Choose Active Truck from Fleet --</option>
+                  {fleetTrucks.map(t => (
+                    <option key={t.id} value={t.truck_number}>
+                      {t.truck_number} ({t.vehicle_class || t.truck_size || '32FT SXL'}) - {t.driver_name || 'Driver Available'}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-amber-400/90 mt-1 flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5" />
+                  Allocating will immediately mark this truck's schedule as BUSY for the requested dates.
+                </p>
               </div>
 
               <div>
@@ -310,7 +329,7 @@ export default function BookingManagementPage() {
                   type="number"
                   value={agreedFreight}
                   onChange={(e) => setAgreedFreight(e.target.value)}
-                  className="bg-slate-950 border-slate-800 text-white text-xs font-bold"
+                  className="bg-slate-950 border-slate-800 text-white text-xs font-bold font-mono text-emerald-400"
                   required
                 />
               </div>
@@ -319,7 +338,8 @@ export default function BookingManagementPage() {
                 <Button type="button" variant="outline" size="sm" onClick={() => setSelectedForApproval(null)} className="border-slate-800">
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+                <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" />
                   Approve & Lock Schedule
                 </Button>
               </DialogFooter>

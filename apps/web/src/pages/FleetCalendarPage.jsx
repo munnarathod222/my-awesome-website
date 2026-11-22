@@ -284,19 +284,21 @@ export default function FleetCalendarPage() {
       }
     }
 
-    // 2. Check for confirmed reservations on this date
+    // 2. Check for reservations (Confirmed, Allocated, Booking Requested, or Held)
     if (truck.reservations && truck.reservations.length > 0) {
       const res = truck.reservations.find(r => {
-        const loadD = (r.loading_datetime || '').slice(0, 10);
-        const unloadD = (r.expected_unloading_datetime || loadD).slice(0, 10);
+        if (r.status === 'Cancelled' || r.status === 'Rejected') return false;
+        const loadD = (r.loading_datetime || r.reserved_from || '').slice(0, 10);
+        const unloadD = (r.expected_unloading_datetime || r.reserved_to || loadD).slice(0, 10);
         return dayStr >= loadD && dayStr <= unloadD;
       });
       if (res) {
+        const isRequest = res.status === 'Pending' || res.reservation_type === 'Booking Request' || res.status === 'Booking Requested';
         return {
           type: 'reservation',
-          label: `🔒 Booked → ${res.destination || 'Unload'}`,
-          sub: res.customer_name || 'Client Order',
-          status: 'Booked',
+          label: isRequest ? `⚡ Held: ${res.destination || 'Requested'}` : `🔒 Booked → ${res.destination || 'Unload'}`,
+          sub: `${res.customer_name || 'Client'} (${isRequest ? 'Busy Held' : 'Confirmed'})`,
+          status: isRequest ? 'Booking Requested' : 'Booked',
           reservation: res,
           clickable: true
         };

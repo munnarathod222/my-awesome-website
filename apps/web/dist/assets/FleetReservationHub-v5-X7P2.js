@@ -120,10 +120,45 @@ var createLucideIcon = (iconName, iconNode) => {
   return Component;
 };
 
+// apps/web/node_modules/lucide-react/dist/esm/icons/arrow-left-right.js
+var ArrowLeftRight = createLucideIcon("ArrowLeftRight", [
+  ["path", { d: "M8 3 4 7l4 4", key: "9rb6wj" }],
+  ["path", { d: "M4 7h16", key: "6tx8e3" }],
+  ["path", { d: "m16 21 4-4-4-4", key: "siv7j2" }],
+  ["path", { d: "M20 17H4", key: "h6l3hr" }]
+]);
+
 // apps/web/node_modules/lucide-react/dist/esm/icons/arrow-right.js
 var ArrowRight = createLucideIcon("ArrowRight", [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/award.js
+var Award = createLucideIcon("Award", [
+  [
+    "path",
+    {
+      d: "m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526",
+      key: "1yiouv"
+    }
+  ],
+  ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/building.js
+var Building = createLucideIcon("Building", [
+  ["rect", { width: "16", height: "20", x: "4", y: "2", rx: "2", ry: "2", key: "76otgf" }],
+  ["path", { d: "M9 22v-4h6v4", key: "r93iot" }],
+  ["path", { d: "M8 6h.01", key: "1dz90k" }],
+  ["path", { d: "M16 6h.01", key: "1x0f13" }],
+  ["path", { d: "M12 6h.01", key: "1vi96p" }],
+  ["path", { d: "M12 10h.01", key: "1nrarc" }],
+  ["path", { d: "M12 14h.01", key: "1etili" }],
+  ["path", { d: "M16 10h.01", key: "1m94wz" }],
+  ["path", { d: "M16 14h.01", key: "1gbofw" }],
+  ["path", { d: "M8 10h.01", key: "19clt8" }],
+  ["path", { d: "M8 14h.01", key: "6423bh" }]
 ]);
 
 // apps/web/node_modules/lucide-react/dist/esm/icons/calendar-days.js
@@ -147,6 +182,9 @@ var Calendar = createLucideIcon("Calendar", [
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/check.js
+var Check = createLucideIcon("Check", [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]);
 
 // apps/web/node_modules/lucide-react/dist/esm/icons/chevron-left.js
 var ChevronLeft = createLucideIcon("ChevronLeft", [
@@ -209,6 +247,12 @@ var Compass = createLucideIcon("Compass", [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
 ]);
 
+// apps/web/node_modules/lucide-react/dist/esm/icons/dollar-sign.js
+var DollarSign = createLucideIcon("DollarSign", [
+  ["line", { x1: "12", x2: "12", y1: "2", y2: "22", key: "7eqyqh" }],
+  ["path", { d: "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6", key: "1b0p4s" }]
+]);
+
 // apps/web/node_modules/lucide-react/dist/esm/icons/file-text.js
 var FileText = createLucideIcon("FileText", [
   ["path", { d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", key: "1rqfz7" }],
@@ -248,6 +292,12 @@ var Layers = createLucideIcon("Layers", [
   ]
 ]);
 
+// apps/web/node_modules/lucide-react/dist/esm/icons/lock.js
+var Lock = createLucideIcon("Lock", [
+  ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
+  ["path", { d: "M7 11V7a5 5 0 0 1 10 0v4", key: "fwvmzm" }]
+]);
+
 // apps/web/node_modules/lucide-react/dist/esm/icons/map-pin.js
 var MapPin = createLucideIcon("MapPin", [
   [
@@ -260,9 +310,37 @@ var MapPin = createLucideIcon("MapPin", [
   ["circle", { cx: "12", cy: "10", r: "3", key: "ilqhr7" }]
 ]);
 
+// apps/web/node_modules/lucide-react/dist/esm/icons/maximize-2.js
+var Maximize2 = createLucideIcon("Maximize2", [
+  ["polyline", { points: "15 3 21 3 21 9", key: "mznyad" }],
+  ["polyline", { points: "9 21 3 21 3 15", key: "1avn1i" }],
+  ["line", { x1: "21", x2: "14", y1: "3", y2: "10", key: "ota7mn" }],
+  ["line", { x1: "3", x2: "10", y1: "21", y2: "14", key: "1atl0r" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/minimize-2.js
+var Minimize2 = createLucideIcon("Minimize2", [
+  ["polyline", { points: "4 14 10 14 10 20", key: "11kfnr" }],
+  ["polyline", { points: "20 10 14 10 14 4", key: "rlmsce" }],
+  ["line", { x1: "14", x2: "21", y1: "10", y2: "3", key: "o5lafz" }],
+  ["line", { x1: "3", x2: "10", y1: "21", y2: "14", key: "1atl0r" }]
+]);
+
 // apps/web/node_modules/lucide-react/dist/esm/icons/navigation.js
 var Navigation = createLucideIcon("Navigation", [
   ["polygon", { points: "3 11 22 2 13 21 11 13 3 11", key: "1ltx0t" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/plane-takeoff.js
+var PlaneTakeoff = createLucideIcon("PlaneTakeoff", [
+  ["path", { d: "M2 22h20", key: "272qi7" }],
+  [
+    "path",
+    {
+      d: "M6.36 17.4 4 17l-2-4 1.1-.55a2 2 0 0 1 1.8 0l.17.1a2 2 0 0 0 1.8 0L8 12 5 6l.9-.45a2 2 0 0 1 2.09.2l4.02 3a2 2 0 0 0 2.1.2l4.19-2.06a2.41 2.41 0 0 1 1.73-.17L21 7a1.4 1.4 0 0 1 .87 1.99l-.38.76c-.23.46-.6.84-1.07 1.08L7.58 17.2a2 2 0 0 1-1.22.18Z",
+      key: "fkigj9"
+    }
+  ]
 ]);
 
 // apps/web/node_modules/lucide-react/dist/esm/icons/plus.js
@@ -355,10 +433,29 @@ var Sparkles = createLucideIcon("Sparkles", [
   ["path", { d: "M5 18H3", key: "zchphs" }]
 ]);
 
+// apps/web/node_modules/lucide-react/dist/esm/icons/trending-down.js
+var TrendingDown = createLucideIcon("TrendingDown", [
+  ["polyline", { points: "22 17 13.5 8.5 8.5 13.5 2 7", key: "1r2t7k" }],
+  ["polyline", { points: "16 17 22 17 22 11", key: "11uiuu" }]
+]);
+
 // apps/web/node_modules/lucide-react/dist/esm/icons/trending-up.js
 var TrendingUp = createLucideIcon("TrendingUp", [
   ["polyline", { points: "22 7 13.5 15.5 8.5 10.5 2 17", key: "126l90" }],
   ["polyline", { points: "16 7 22 7 22 13", key: "kwv8wd" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/triangle-alert.js
+var TriangleAlert = createLucideIcon("TriangleAlert", [
+  [
+    "path",
+    {
+      d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",
+      key: "wmoenq"
+    }
+  ],
+  ["path", { d: "M12 9v4", key: "juzpu7" }],
+  ["path", { d: "M12 17h.01", key: "p32p05" }]
 ]);
 
 // apps/web/node_modules/lucide-react/dist/esm/icons/truck.js
@@ -374,6 +471,19 @@ var Truck = createLucideIcon("Truck", [
   ],
   ["circle", { cx: "17", cy: "18", r: "2", key: "332jqn" }],
   ["circle", { cx: "7", cy: "18", r: "2", key: "19iecd" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/user-check.js
+var UserCheck = createLucideIcon("UserCheck", [
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
+  ["polyline", { points: "16 11 18 13 22 9", key: "1pwet4" }]
+]);
+
+// apps/web/node_modules/lucide-react/dist/esm/icons/user.js
+var User = createLucideIcon("User", [
+  ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
+  ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
 ]);
 
 // apps/web/node_modules/lucide-react/dist/esm/icons/x.js
@@ -6764,6 +6874,198 @@ var reservationClient = {
     } catch (_) {
     }
     return { success: true, count: 0, opportunities: [] };
+  },
+  /**
+   * Airport Flight-Style Truck Departure Board (FIDS)
+   */
+  async getDepartures() {
+    try {
+      const res = await fetch(`${API_BASE}/departures`);
+      if (res.ok) return await res.json();
+    } catch (_) {
+    }
+    return { success: true, active_bays_count: 0, departures: [] };
+  },
+  async updateDepartureBay(payload) {
+    const res = await fetch(`${API_BASE}/departures/update-bay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to update bay status");
+    return data;
+  },
+  /**
+   * Route Net Profit Ranking
+   */
+  async getRouteProfitRanking() {
+    try {
+      const res = await fetch(`${API_BASE}/route-profit`);
+      if (res.ok) return await res.json();
+    } catch (_) {
+    }
+    return { success: true, routes_count: 0, routes: [] };
+  },
+  /**
+   * Assign truck to reservation and immediately lock its schedule as BUSY
+   */
+  async assignTruckAndLock(payload) {
+    const res = await fetch(`${API_BASE}/assign-and-lock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to assign truck and lock schedule");
+    return data;
+  },
+  /**
+   * Flexible Date Booking & Economic Date Suggestion Matrix
+   */
+  async getFlexibleMatrix(origin = "Hyderabad", destination = "Hubli", targetDate = null, daysAhead = 6) {
+    try {
+      const q = new URLSearchParams({ origin, destination, daysAhead });
+      if (targetDate) q.append("targetDate", targetDate);
+      const res = await fetch(`${API_BASE}/flexible-matrix?${q.toString()}`);
+      if (res.ok) return await res.json();
+    } catch (_) {
+    }
+    const baseDate = targetDate ? new Date(targetDate) : /* @__PURE__ */ new Date();
+    const matrix = [];
+    for (let i2 = 0; i2 < daysAhead; i2++) {
+      const d = new Date(baseDate.getTime() + i2 * 24 * 60 * 60 * 1e3);
+      const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+      const monthDay = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const isMid = d.getDay() === 2 || d.getDay() === 3 || d.getDay() === 4;
+      const rate = isMid ? 24500 : 28e3;
+      matrix.push({
+        date: d.toISOString().slice(0, 10),
+        day_label: `${dayName}, ${monthDay}`,
+        weekday: dayName,
+        available_trucks: isMid ? 3 : 2,
+        rate,
+        base_rate: 28e3,
+        discount_pct: isMid ? 12.5 : 0,
+        has_return_backhaul: isMid,
+        is_economical: isMid && i2 === 1
+      });
+    }
+    return {
+      success: true,
+      origin,
+      destination,
+      matrix,
+      suggested_date: matrix.find((m) => m.is_economical)?.date || matrix[0].date,
+      savings_amount: 3500,
+      message: "Most economical loading date found."
+    };
+  },
+  /**
+   * Dedicated Vehicle Subscriptions (Module 12)
+   */
+  async getSubscriptions() {
+    try {
+      const res = await fetch(`${API_BASE}/subscriptions`);
+      if (res.ok) return await res.json();
+    } catch (_) {
+    }
+    const list = await pocketbaseClient_default.collection("dedicated_subscriptions").getFullList({ sort: "-created", $autoCancel: false }).catch(() => []);
+    return { success: true, count: list.length, subscriptions: list };
+  },
+  async createSubscription(payload) {
+    const res = await fetch(`${API_BASE}/subscriptions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to create subscription");
+    return data;
+  },
+  async assignTruckToSubscription(payload) {
+    const res = await fetch(`${API_BASE}/subscriptions/assign-truck`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to assign truck to subscription");
+    return data;
+  },
+  /**
+   * Recurring Truck Reservations (Module 11)
+   */
+  async getRecurringBookings() {
+    try {
+      const res = await fetch(`${API_BASE}/recurring`);
+      if (res.ok) return await res.json();
+    } catch (_) {
+    }
+    const list = await pocketbaseClient_default.collection("recurring_reservations").getFullList({ sort: "-created", $autoCancel: false }).catch(() => []);
+    return { success: true, count: list.length, recurring: list };
+  },
+  async createRecurringBooking(payload) {
+    const res = await fetch(`${API_BASE}/recurring`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to create recurring booking");
+    return data;
+  },
+  async assignTruckToRecurring(payload) {
+    const res = await fetch(`${API_BASE}/recurring/assign-truck`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to assign truck to recurring schedule");
+    return data;
+  },
+  /**
+   * Attached Truck Owner Portal (Module 6)
+   */
+  async getPartnerTrucks() {
+    try {
+      const res = await fetch(`${API_BASE}/partner-trucks`);
+      if (res.ok) return await res.json();
+    } catch (_) {
+    }
+    const list = await pocketbaseClient_default.collection("partner_trucks").getFullList({ sort: "-created", $autoCancel: false }).catch(() => []);
+    return { success: true, count: list.length, trucks: list };
+  },
+  async registerPartnerTruck(payload) {
+    const res = await fetch(`${API_BASE}/partner-trucks/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to register partner truck");
+    return data;
+  },
+  async declarePartnerAvailability(payload) {
+    const res = await fetch(`${API_BASE}/partner-trucks/declare-availability`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to declare availability");
+    return data;
+  },
+  async verifyPartnerTruck(payload) {
+    const res = await fetch(`${API_BASE}/partner-trucks/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to update partner verification status");
+    return data;
   }
 };
 
@@ -7051,16 +7353,18 @@ function FleetCalendarPage() {
     }
     if (truck.reservations && truck.reservations.length > 0) {
       const res = truck.reservations.find((r3) => {
-        const loadD = (r3.loading_datetime || "").slice(0, 10);
-        const unloadD = (r3.expected_unloading_datetime || loadD).slice(0, 10);
+        if (r3.status === "Cancelled" || r3.status === "Rejected") return false;
+        const loadD = (r3.loading_datetime || r3.reserved_from || "").slice(0, 10);
+        const unloadD = (r3.expected_unloading_datetime || r3.reserved_to || loadD).slice(0, 10);
         return dayStr >= loadD && dayStr <= unloadD;
       });
       if (res) {
+        const isRequest = res.status === "Pending" || res.reservation_type === "Booking Request" || res.status === "Booking Requested";
         return {
           type: "reservation",
-          label: `\u{1F512} Booked \u2192 ${res.destination || "Unload"}`,
-          sub: res.customer_name || "Client Order",
-          status: "Booked",
+          label: isRequest ? `\u26A1 Held: ${res.destination || "Requested"}` : `\u{1F512} Booked \u2192 ${res.destination || "Unload"}`,
+          sub: `${res.customer_name || "Client"} (${isRequest ? "Busy Held" : "Confirmed"})`,
+          status: isRequest ? "Booking Requested" : "Booked",
           reservation: res,
           clickable: true
         };
@@ -7602,36 +7906,77 @@ function AvailabilitySearchPage() {
   const [searchResults, setSearchResults] = useState(null);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+  const [matrixLoading, setMatrixLoading] = useState(false);
+  const [flexibleMatrix, setFlexibleMatrix] = useState([]);
+  const [suggestedDateInfo, setSuggestedDateInfo] = useState(null);
   const [bookForm, setBookForm] = useState({
     customer_name: currentUser?.full_name || currentUser?.name || "",
     customer_phone: currentUser?.phone_number || "",
     customer_email: currentUser?.email || "",
-    cargo_description: "Industrial Equipment & FMCG Goods",
+    cargo_description: "Industrial Heavy Equipment & FMCG Goods",
     special_requirements: "",
     indicative_freight: 28e3
   });
-  const handleSearch = async (e2) => {
-    e2.preventDefault();
-    if (!searchParams.origin || !searchParams.destination || !searchParams.loadingDatetime) {
-      toast.warning("Please specify origin, destination, and loading date.");
-      return;
+  const loadFlexibleMatrix = async (baseDate) => {
+    try {
+      setMatrixLoading(true);
+      const res = await reservationClient.getFlexibleMatrix(
+        searchParams.origin,
+        searchParams.destination,
+        baseDate || searchParams.loadingDatetime.slice(0, 10),
+        6
+      );
+      setFlexibleMatrix(res.matrix || []);
+      setSuggestedDateInfo(res);
+    } catch (err) {
+      console.warn("Matrix error:", err);
+    } finally {
+      setMatrixLoading(false);
     }
+  };
+  useEffect(() => {
+    loadFlexibleMatrix();
+    executeSearch();
+  }, []);
+  const executeSearch = async (targetDateStr = null) => {
     try {
       setLoading(true);
+      const reqDate = targetDateStr || searchParams.loadingDatetime;
       const res = await reservationClient.searchAvailability({
         origin: searchParams.origin,
         destination: searchParams.destination,
-        loadingDatetime: searchParams.loadingDatetime,
+        loadingDatetime: reqDate,
         vehicleCategory: searchParams.vehicleCategory,
         cargoWeightTons: parseFloat(searchParams.cargoWeightTons) || 14
       });
       setSearchResults(res);
-      toast.success(`Found ${res.total_matches} candidate vehicles (${res.available_count} feasible).`);
     } catch (err) {
       toast.error(err.message || "Search failed");
     } finally {
       setLoading(false);
     }
+  };
+  const handleSearchSubmit = async (e2) => {
+    e2.preventDefault();
+    if (!searchParams.origin || !searchParams.destination || !searchParams.loadingDatetime) {
+      toast.warning("Please specify origin, destination, and loading date.");
+      return;
+    }
+    loadFlexibleMatrix(searchParams.loadingDatetime.slice(0, 10));
+    executeSearch();
+  };
+  const handleSelectFlexibleDate = (dayItem) => {
+    const newDateTime = `${dayItem.date}T18:00`;
+    setSearchParams((prev) => ({
+      ...prev,
+      loadingDatetime: newDateTime
+    }));
+    setBookForm((prev) => ({
+      ...prev,
+      indicative_freight: dayItem.rate
+    }));
+    executeSearch(newDateTime);
+    toast.info(`Selected ${dayItem.day_label} (Fare: \u20B9${dayItem.rate.toLocaleString("en-IN")})`);
   };
   const handleConfirmBooking = async (e2) => {
     e2.preventDefault();
@@ -7649,25 +7994,29 @@ function AvailabilitySearchPage() {
         destination: searchParams.destination,
         loading_datetime: searchParams.loadingDatetime,
         cargo_weight_tons: parseFloat(searchParams.cargoWeightTons) || 14,
-        reservation_type: selectedMatch?.booking_mode === "Instant Confirmed" ? "Confirmed" : "Provisional",
-        status: selectedMatch?.booking_mode === "Instant Confirmed" ? "Confirmed" : "Pending",
+        reservation_type: selectedMatch?.booking_mode === "Instant Confirmed" ? "Confirmed" : "Booking Request",
+        status: selectedMatch?.truck_number ? "Confirmed" : "Pending",
         match_score: selectedMatch?.match_score || 90,
         match_reasons: selectedMatch?.match_reasons || [],
         created_by: currentUser?.full_name || currentUser?.name || "Customer"
       });
-      toast.success(`Booking Confirmed! Unique Reference: ${res.reservation?.booking_number}`);
+      const truckAssignedMsg = selectedMatch?.truck_number ? ` Truck ${selectedMatch.truck_number} schedule is now LOCKED as BUSY.` : "";
+      toast.success(`Booking Confirmed! Ref: ${res.reservation?.booking_number}.${truckAssignedMsg}`);
       setIsBookModalOpen(false);
       setSelectedMatch(null);
+      loadFlexibleMatrix();
+      executeSearch();
     } catch (err) {
       toast.error(err.message || "Booking submission failed");
     }
   };
-  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-7xl mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20" }, "Module 3 & 5: Search & Intelligent Availability Matcher"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-muted-foreground flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(ShieldCheck, { className: "w-3.5 h-3.5 text-blue-400" }), "10-Point Operational Feasibility Engine")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-7 h-7 text-blue-400" }), "Customer Truck Booking & Availability Search"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-sm text-slate-400" }, "Search future truck availability, evaluate deadhead distances, review match scores, and lock reservations.")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900 border-slate-800 p-5 shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleSearch, className: "space-y-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-3 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3.5 h-3.5 text-emerald-400" }), " Origin Hub / City"), /* @__PURE__ */ react_shim_default.createElement(
+  const currentDateOnly = searchParams.loadingDatetime.slice(0, 10);
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-[1500px] mx-auto font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/25" }, "Module 3 & 4: Availability Engine & Flexible Date Booking"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1.5 font-medium" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-blue-400 animate-ping" }), "Dynamic Rate Optimizer & Instant Busy Lock")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-7 h-7 text-blue-400" }), "Flexible Date Truck Booking & Availability"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs md:text-sm text-slate-400" }, "Compare multi-date truck availability, view recommended economic backhaul dates, and instantly lock assigned vehicles as busy."))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900 border-slate-800 p-5 shadow-2xl rounded-2xl" }, /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleSearchSubmit, className: "space-y-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-3 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3.5 h-3.5 text-emerald-400" }), " Origin Hub / City"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       value: searchParams.origin,
       onChange: (e2) => setSearchParams({ ...searchParams, origin: e2.target.value }),
-      placeholder: "e.g. Hyderabad (Patancheru)",
+      placeholder: "e.g. Hyderabad",
       className: "bg-slate-950 border-slate-800 text-white font-semibold text-xs h-10",
       required: true
     }
@@ -7676,11 +8025,11 @@ function AvailabilitySearchPage() {
     {
       value: searchParams.destination,
       onChange: (e2) => setSearchParams({ ...searchParams, destination: e2.target.value }),
-      placeholder: "e.g. Hubli / Belgaum",
+      placeholder: "e.g. Hubli",
       className: "bg-slate-950 border-slate-800 text-white font-semibold text-xs h-10",
       required: true
     }
-  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Calendar, { className: "w-3.5 h-3.5 text-blue-400" }), " Required Loading Date & Time"), /* @__PURE__ */ react_shim_default.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-bold block mb-1.5 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Calendar, { className: "w-3.5 h-3.5 text-blue-400" }), " Target Loading Date & Time"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       type: "datetime-local",
@@ -7698,9 +8047,9 @@ function AvailabilitySearchPage() {
     },
     /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT SXL" }, "32FT Single Axle (SXL) \u2014 14.5 MT"),
     /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT MXL" }, "32FT Multi-Axle (MXL) \u2014 18.5 MT"),
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "20FT Container" }, "20FT Container \u2014 9.0 MT"),
-    /* @__PURE__ */ react_shim_default.createElement("option", { value: "24FT Container" }, "24FT Container \u2014 11.0 MT")
-  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-4 text-xs text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Payload: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, "14.0 Metric Tons (FTL)")), /* @__PURE__ */ react_shim_default.createElement("span", null, "\u2022"), /* @__PURE__ */ react_shim_default.createElement("span", null, "Buffer SLA: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400" }, "4 Hours Turnaround"))), /* @__PURE__ */ react_shim_default.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "24FT Container" }, "24FT Container \u2014 8.5 MT"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "40FT High Cube" }, "40FT High Cube \u2014 28.0 MT")
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-4 text-xs text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Payload: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, "14.0 MT (Full Truck Load)")), /* @__PURE__ */ react_shim_default.createElement("span", null, "\u2022"), /* @__PURE__ */ react_shim_default.createElement("span", null, "Lane: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400" }, searchParams.origin, " \u2192 ", searchParams.destination))), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       type: "submit",
@@ -7709,53 +8058,86 @@ function AvailabilitySearchPage() {
     },
     /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-4 h-4 mr-2" }),
     loading ? "Evaluating Fleet Availabilities..." : "Find Matching Trucks"
-  )))), searchResults && /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("h2", { className: "text-lg font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Sparkles, { className: "w-5 h-5 text-amber-400" }), "Available Truck Matches (", searchResults.total_matches, " Evaluated)"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400" }, "Ranked by Feasibility & Deadhead Proximity")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, searchResults.results.map((match, idx) => /* @__PURE__ */ react_shim_default.createElement(
-    Card,
-    {
-      key: match.truck_id || match.truck_number || idx,
-      className: `p-5 border transition-all ${match.is_feasible ? "bg-slate-900 border-slate-800 hover:border-blue-500/50" : "bg-slate-950/60 border-slate-850 opacity-70"}`
-    },
-    /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-white" }, match.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-slate-800 text-slate-300 text-[10px] border-slate-700" }, match.vehicle_category)), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Capacity: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, match.capacity_tons, " MT"), " | Deadhead: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400" }, "~", match.deadhead_km, " km"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 block text-[10px] font-semibold" }, "Match Score"), /* @__PURE__ */ react_shim_default.createElement("span", { className: `text-xl font-black ${match.match_score >= 80 ? "text-emerald-400" : match.match_score >= 50 ? "text-amber-400" : "text-rose-400"}` }, match.match_score, "%"))),
-    /* @__PURE__ */ react_shim_default.createElement("div", { className: "my-3.5 p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs space-y-1" }, match.match_reasons?.map((reason, i2) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i2, className: "flex items-center gap-2 text-slate-300 text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement(CircleCheck, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", null, reason))), match.disqualifications?.map((disq, i2) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i2, className: "flex items-center gap-2 text-rose-400 text-[11px]" }, /* @__PURE__ */ react_shim_default.createElement(CircleAlert, { className: "w-3.5 h-3.5 text-rose-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", null, disq)))),
-    /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between pt-2 border-t border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: match.booking_mode === "Instant Confirmed" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30" }, match.booking_mode), /* @__PURE__ */ react_shim_default.createElement(
-      Button,
+  )))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Sparkles, { className: "w-4 h-4 text-amber-400" }), /* @__PURE__ */ react_shim_default.createElement("h2", { className: "text-sm font-extrabold text-white" }, "Flexible Date Matrix (Economic Fare & Availability Suggestion)")), suggestedDateInfo?.savings_amount > 0 && /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement(TrendingDown, { className: "w-3.5 h-3.5" }), "Save up to \u20B9", suggestedDateInfo.savings_amount.toLocaleString("en-IN"), " on backhaul dates!")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" }, flexibleMatrix.map((item, idx) => {
+    const isSelected = item.date === currentDateOnly;
+    const isEconomical = item.is_economical;
+    return /* @__PURE__ */ react_shim_default.createElement(
+      "button",
       {
-        size: "sm",
-        disabled: !match.is_feasible,
-        onClick: () => {
-          setSelectedMatch(match);
-          setIsBookModalOpen(true);
-        },
-        className: "bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
+        key: idx,
+        type: "button",
+        onClick: () => handleSelectFlexibleDate(item),
+        className: `relative text-left p-3.5 rounded-2xl border transition-all text-xs flex flex-col justify-between ${isSelected ? "bg-blue-950/60 border-blue-400 shadow-lg shadow-blue-500/10 ring-1 ring-blue-400" : isEconomical ? "bg-emerald-950/40 border-emerald-500/60 hover:border-emerald-400" : "bg-slate-900/60 border-slate-800 hover:border-slate-700"}`
       },
-      "Select & Reserve \u2192"
-    ))
-  )))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isBookModalOpen, onOpenChange: setIsBookModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-xl font-bold flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(FileText, { className: "w-5 h-5 text-blue-400" }), "Confirm Truck Reservation (", selectedMatch?.truck_number, ")")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleConfirmBooking, className: "space-y-3.5 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Selected Corridor"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-extrabold text-white text-sm" }, searchParams.origin, " \u2192 ", searchParams.destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-right" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-slate-400 text-[11px]" }, "Indicative Freight"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-extrabold text-emerald-400 text-sm" }, "\u20B9", bookForm.indicative_freight.toLocaleString("en-IN")))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Customer / Company Name"), /* @__PURE__ */ react_shim_default.createElement(
+      isEconomical && /* @__PURE__ */ react_shim_default.createElement("div", { className: "absolute -top-2.5 left-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Sparkles, { className: "w-3 h-3" }), "BEST FARE"),
+      /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-extrabold text-white text-sm" }, item.day_label), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${item.available_trucks > 0 ? "bg-emerald-400" : "bg-rose-400"}` }), /* @__PURE__ */ react_shim_default.createElement("span", null, item.available_trucks, " ", item.available_trucks === 1 ? "Truck" : "Trucks", " Free"))),
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-3 pt-2 border-t border-slate-800/80 flex items-baseline justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-white" }, "\u20B9", item.rate.toLocaleString("en-IN")), item.discount_pct > 0 && /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-emerald-400 ml-1.5 font-bold" }, "-", item.discount_pct, "%")), isSelected && /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Check, { className: "w-3 h-3" })))
+    );
+  }))), searchResults && /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("h2", { className: "text-base font-extrabold text-white flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-5 h-5 text-emerald-400" }), "Available Candidate Vehicles for ", new Date(searchParams.loadingDatetime).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Found ", searchResults.total_matches, " candidate vehicles (", searchResults.available_count, " feasible)")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" }, searchResults.results?.map((match, idx) => {
+    const isInstant = match.booking_mode === "Instant Confirmed";
+    return /* @__PURE__ */ react_shim_default.createElement(
+      Card,
+      {
+        key: idx,
+        className: "bg-slate-900 border-slate-800 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all shadow-xl"
+      },
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-start justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-mono font-black text-white text-base bg-slate-950 px-2 py-0.5 rounded border border-slate-800" }, match.truck_number)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-xs text-slate-400 mt-1 font-semibold" }, match.vehicle_category, " \u2022 ", match.capacity_tons, " MT Capacity")), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: `text-[10px] font-black ${isInstant ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30"}` }, match.booking_mode)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-950 p-3 rounded-xl border border-slate-800/80 text-xs space-y-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400" }, "Current/Predicted Hub:"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-white font-bold" }, match.predicted_location || "Hyderabad Hub")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400" }, "Deadhead Distance:"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-emerald-400 font-bold" }, match.deadhead_km || 15, " km")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400" }, "Match Feasibility Score:"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-blue-400 font-black" }, match.match_score || 95, "%"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400 space-y-1" }, (match.match_reasons || []).slice(0, 2).map((r3, i2) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i2, className: "flex items-center gap-1 text-emerald-400" }, /* @__PURE__ */ react_shim_default.createElement(CircleCheck, { className: "w-3 h-3 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "truncate" }, r3))))),
+      /* @__PURE__ */ react_shim_default.createElement("div", { className: "pt-4 mt-4 border-t border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-500 uppercase tracking-wider block" }, "Estimated Freight"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-lg font-black text-white" }, "\u20B9", parseFloat(bookForm.indicative_freight || 28e3).toLocaleString("en-IN"))), /* @__PURE__ */ react_shim_default.createElement(
+        Button,
+        {
+          onClick: () => {
+            setSelectedMatch(match);
+            setIsBookModalOpen(true);
+          },
+          className: "bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs gap-1.5 shadow-md shadow-emerald-500/20"
+        },
+        /* @__PURE__ */ react_shim_default.createElement(Lock, { className: "w-3.5 h-3.5" }),
+        "Reserve & Lock"
+      ))
+    );
+  }))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isBookModalOpen, onOpenChange: setIsBookModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-950 border border-slate-800 text-white max-w-lg" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "flex items-center gap-2 text-lg font-black text-white" }, /* @__PURE__ */ react_shim_default.createElement(Lock, { className: "w-5 h-5 text-emerald-400" }), "Confirm Reservation & Lock Truck Schedule")), selectedMatch && /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleConfirmBooking, className: "space-y-4 text-xs font-medium" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900 p-3.5 rounded-xl border border-slate-800 space-y-1.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-mono font-black text-white text-base" }, selectedMatch.truck_number), /* @__PURE__ */ react_shim_default.createElement(Badge, { className: "bg-emerald-500/20 text-emerald-400 text-[10px] font-bold" }, "Schedule Lock Armed")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-slate-300" }, "Route: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, searchParams.origin, " \u2192 ", searchParams.destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-slate-400 text-[11px]" }, "Loading: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, new Date(searchParams.loadingDatetime).toLocaleString()))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Customer / Shipper Name *"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
+      required: true,
       value: bookForm.customer_name,
       onChange: (e2) => setBookForm({ ...bookForm, customer_name: e2.target.value }),
-      placeholder: "e.g. Acme Logistics Pvt Ltd",
-      className: "bg-slate-950 border-slate-800 text-white text-xs",
-      required: true
+      placeholder: "e.g. Vinod Rathod",
+      className: "bg-slate-900 border-slate-800 text-white"
     }
-  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Contact Phone Number"), /* @__PURE__ */ react_shim_default.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Contact Phone Number *"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
+      required: true,
       value: bookForm.customer_phone,
       onChange: (e2) => setBookForm({ ...bookForm, customer_phone: e2.target.value }),
-      placeholder: "e.g. +91 98765 43210",
-      className: "bg-slate-950 border-slate-800 text-white text-xs",
-      required: true
+      placeholder: "+91 98765 43210",
+      className: "bg-slate-900 border-slate-800 text-white"
     }
-  ))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Cargo Description"), /* @__PURE__ */ react_shim_default.createElement(
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Customer Email"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "email",
+      value: bookForm.customer_email,
+      onChange: (e2) => setBookForm({ ...bookForm, customer_email: e2.target.value }),
+      placeholder: "operations@company.com",
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Agreed Indicative Freight (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "number",
+      value: bookForm.indicative_freight,
+      onChange: (e2) => setBookForm({ ...bookForm, indicative_freight: parseFloat(e2.target.value) || 0 }),
+      className: "bg-slate-900 border-slate-800 text-white font-bold text-emerald-400"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Cargo Description"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       value: bookForm.cargo_description,
       onChange: (e2) => setBookForm({ ...bookForm, cargo_description: e2.target.value }),
-      className: "bg-slate-950 border-slate-800 text-white text-xs"
+      className: "bg-slate-900 border-slate-800 text-white"
     }
-  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-300 text-[11px]" }, "\u{1F512} ", /* @__PURE__ */ react_shim_default.createElement("strong", null, "Server-Side Concurrency Lock Active:"), " Truck schedule will be immediately reserved upon confirmation."), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setIsBookModalOpen(false), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold" }, "Confirm & Lock Booking"))))));
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-amber-300 text-[11px] flex items-start gap-2" }, /* @__PURE__ */ react_shim_default.createElement(CircleAlert, { className: "w-4 h-4 shrink-0 mt-0.5" }), /* @__PURE__ */ react_shim_default.createElement("span", null, "Confirming this reservation will atomically lock ", /* @__PURE__ */ react_shim_default.createElement("strong", null, selectedMatch.truck_number), "'s schedule as ", /* @__PURE__ */ react_shim_default.createElement("strong", null, "BUSY"), " in the Fleet Calendar, preventing any conflicting allocations.")), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsBookModalOpen(false) }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black" }, "Confirm & Lock Schedule"))))));
 }
 
 // apps/web/src/pages/BookingManagementPage.jsx
@@ -7771,6 +8153,7 @@ function BookingManagementPage() {
     }
   }
   const [reservations, setReservations] = useState([]);
+  const [fleetTrucks, setFleetTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
@@ -7782,8 +8165,12 @@ function BookingManagementPage() {
   const loadReservations = async () => {
     try {
       setLoading(true);
-      const res = await reservationClient.listReservations();
+      const [res, trucks] = await Promise.all([
+        reservationClient.listReservations(),
+        pocketbaseClient_default.collection("trucks").getFullList({ sort: "truck_number", $autoCancel: false }).catch(() => [])
+      ]);
       setReservations(res.reservations || []);
+      setFleetTrucks(trucks);
     } catch (err) {
       toast.error("Failed to load reservations: " + err.message);
     } finally {
@@ -7796,20 +8183,23 @@ function BookingManagementPage() {
   const handleApprove = async (e2) => {
     e2.preventDefault();
     if (!allocTruckNumber) {
-      toast.warning("Please specify truck number for allocation.");
+      toast.warning("Please select a truck number for allocation.");
       return;
     }
     try {
-      await reservationClient.approveReservation(selectedForApproval.id, {
+      const selectedTruckObj = fleetTrucks.find((t2) => t2.truck_number === allocTruckNumber);
+      await reservationClient.assignTruckAndLock({
+        reservation_id: selectedForApproval.id,
         truck_number: allocTruckNumber,
+        truck_id: selectedTruckObj?.id || "",
         agreed_freight: agreedFreight,
-        approved_by: currentUser?.full_name || currentUser?.name || "Dispatcher"
+        assigned_by: currentUser?.full_name || currentUser?.name || "Dispatcher"
       });
-      toast.success(`Booking ${selectedForApproval.booking_number} approved and allocated to ${allocTruckNumber}!`);
+      toast.success(`Booking ${selectedForApproval.booking_number} approved and truck ${allocTruckNumber} schedule locked as BUSY!`);
       setSelectedForApproval(null);
       loadReservations();
     } catch (err) {
-      toast.error(err.message || "Approval failed");
+      toast.error(err.message || "Approval & schedule lock failed");
     }
   };
   const handleReject = async (e2) => {
@@ -7894,25 +8284,26 @@ function BookingManagementPage() {
     },
     /* @__PURE__ */ react_shim_default.createElement(Printer, { className: "w-3.5 h-3.5 mr-1" }),
     " Slip"
-  )))))))), selectedForApproval && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedForApproval, onOpenChange: () => setSelectedForApproval(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(CircleCheck, { className: "w-5 h-5 text-emerald-400" }), "Allocate Truck to Booking ", selectedForApproval.booking_number)), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleApprove, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Enter / Select Truck Number"), /* @__PURE__ */ react_shim_default.createElement(
-    Input,
+  )))))))), selectedForApproval && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedForApproval, onOpenChange: () => setSelectedForApproval(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(CircleCheck, { className: "w-5 h-5 text-emerald-400" }), "Allocate Truck to Booking ", selectedForApproval.booking_number)), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleApprove, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Select Fleet Vehicle to Allocate & Lock *"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
     {
-      placeholder: "e.g. TS08 UJ 5428",
       value: allocTruckNumber,
       onChange: (e2) => setAllocTruckNumber(e2.target.value),
-      className: "bg-slate-950 border-slate-800 text-white text-xs font-bold",
+      className: "w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono font-bold text-xs",
       required: true
-    }
-  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Final Agreed Freight (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "" }, "-- Choose Active Truck from Fleet --"),
+    fleetTrucks.map((t2) => /* @__PURE__ */ react_shim_default.createElement("option", { key: t2.id, value: t2.truck_number }, t2.truck_number, " (", t2.vehicle_class || t2.truck_size || "32FT SXL", ") - ", t2.driver_name || "Driver Available"))
+  ), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-amber-400/90 mt-1 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(Lock, { className: "w-3.5 h-3.5" }), "Allocating will immediately mark this truck's schedule as BUSY for the requested dates.")), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Final Agreed Freight (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       type: "number",
       value: agreedFreight,
       onChange: (e2) => setAgreedFreight(e2.target.value),
-      className: "bg-slate-950 border-slate-800 text-white text-xs font-bold",
+      className: "bg-slate-950 border-slate-800 text-white text-xs font-bold font-mono text-emerald-400",
       required: true
     }
-  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setSelectedForApproval(null), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold" }, "Approve & Lock Schedule"))))), selectedForRejection && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedForRejection, onOpenChange: () => setSelectedForRejection(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2 text-rose-400" }, /* @__PURE__ */ react_shim_default.createElement(CircleX, { className: "w-5 h-5" }), "Reject Booking Request ", selectedForRejection.booking_number)), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleReject, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Documented Rejection Reason (Mandatory Audit)"), /* @__PURE__ */ react_shim_default.createElement(
+  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setSelectedForApproval(null), className: "border-slate-800" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", size: "sm", className: "bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement(Lock, { className: "w-3.5 h-3.5" }), "Approve & Lock Schedule"))))), selectedForRejection && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: !!selectedForRejection, onOpenChange: () => setSelectedForRejection(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-bold flex items-center gap-2 text-rose-400" }, /* @__PURE__ */ react_shim_default.createElement(CircleX, { className: "w-5 h-5" }), "Reject Booking Request ", selectedForRejection.booking_number)), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleReject, className: "space-y-3 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 font-semibold block mb-1" }, "Documented Rejection Reason (Mandatory Audit)"), /* @__PURE__ */ react_shim_default.createElement(
     Input,
     {
       placeholder: "e.g. No available fleet within 100km deadhead for requested date",
@@ -7965,13 +8356,986 @@ function ReturnLoadPage() {
   )))));
 }
 
+// apps/web/src/pages/DepartureBoardPage.jsx
+var STATUS_THEME = {
+  "DEPARTED": {
+    badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+    dot: "bg-emerald-400",
+    text: "text-emerald-400",
+    label: "DEPARTED"
+  },
+  "BOARDING": {
+    badge: "bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse",
+    dot: "bg-amber-400",
+    text: "text-amber-400",
+    label: "BOARDING / LOADING"
+  },
+  "GATE OPEN": {
+    badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+    dot: "bg-cyan-400",
+    text: "text-cyan-400",
+    label: "GATE OPEN (BAY READY)"
+  },
+  "DELAYED": {
+    badge: "bg-rose-500/25 text-rose-300 border-rose-500/50 animate-pulse",
+    dot: "bg-rose-400",
+    text: "text-rose-400",
+    label: "DELAYED"
+  },
+  "SCHEDULED": {
+    badge: "bg-slate-800 text-slate-300 border-slate-700",
+    dot: "bg-slate-400",
+    text: "text-slate-300",
+    label: "SCHEDULED"
+  },
+  "HELD": {
+    badge: "bg-amber-600/20 text-amber-300 border-amber-600/40",
+    dot: "bg-amber-500",
+    text: "text-amber-300",
+    label: "BUSY / HELD"
+  }
+};
+function DepartureBoardPage() {
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.currentUser;
+  } catch (e2) {
+    try {
+      currentUser = JSON.parse(localStorage.getItem("app_auth_user"));
+    } catch (err) {
+    }
+  }
+  const [departures, setDepartures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(/* @__PURE__ */ new Date());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedHub, setSelectedHub] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [isKioskMode, setIsKioskMode] = useState(false);
+  const [activeDeparture, setActiveDeparture] = useState(null);
+  const [newBay, setNewBay] = useState("");
+  const [newStatus, setNewStatus] = useState("");
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(/* @__PURE__ */ new Date()), 1e3);
+    return () => clearInterval(timer);
+  }, []);
+  const loadDepartures = async () => {
+    try {
+      setLoading(true);
+      const res = await reservationClient.getDepartures();
+      setDepartures(res.departures || []);
+    } catch (err) {
+      toast.error("Failed to load departure board: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadDepartures();
+    const interval = setInterval(loadDepartures, 3e4);
+    return () => clearInterval(interval);
+  }, []);
+  const handleUpdateBay = async (e2) => {
+    e2.preventDefault();
+    if (!activeDeparture) return;
+    try {
+      await reservationClient.updateDepartureBay({
+        id: activeDeparture.id,
+        dock_bay: newBay || activeDeparture.dock_bay,
+        status: newStatus || activeDeparture.status
+      });
+      toast.success(`Departure for ${activeDeparture.truck_number} updated to ${newStatus || activeDeparture.status}!`);
+      setActiveDeparture(null);
+      loadDepartures();
+    } catch (err) {
+      toast.error(err.message || "Failed to update departure");
+    }
+  };
+  const filtered = departures.filter((dep) => {
+    const matchesSearch = (dep.truck_number || "").toLowerCase().includes(searchTerm.toLowerCase()) || (dep.destination || "").toLowerCase().includes(searchTerm.toLowerCase()) || (dep.driver_name || "").toLowerCase().includes(searchTerm.toLowerCase()) || (dep.dock_bay || "").toLowerCase().includes(searchTerm.toLowerCase()) || (dep.lr_pod_number || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesHub = selectedHub === "All" || dep.origin.toLowerCase().includes(selectedHub.toLowerCase());
+    const matchesStatus = selectedStatus === "All" || dep.status === selectedStatus;
+    return matchesSearch && matchesHub && matchesStatus;
+  });
+  const activeCount = departures.filter((d) => d.status !== "DEPARTED").length;
+  const delayedCount = departures.filter((d) => d.status === "DELAYED").length;
+  const boardingCount = departures.filter((d) => d.status === "BOARDING").length;
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: `p-4 md:p-6 space-y-5 font-sans transition-all ${isKioskMode ? "fixed inset-0 z-50 bg-slate-950 overflow-y-auto p-8" : "max-w-[1600px] mx-auto"}` }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/95 border border-slate-800 p-4 md:p-5 rounded-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement(PlaneTakeoff, { className: "w-6 h-6" })), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30" }, "FIDS \xB7 CENTRAL DISPATCH TERMINAL"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1 font-mono" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-ping" }), "LIVE BOARD")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-xl md:text-2xl font-black text-white tracking-tight mt-0.5 font-mono" }, "TRUCK DEPARTURE BOARD"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-2.5 font-mono shadow-inner" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-4 h-4 text-emerald-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-lg md:text-xl font-black text-emerald-400 tracking-wider" }, currentTime.toLocaleTimeString("en-IN", { hour12: false })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-bold text-slate-500 ml-1" }, "IST")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 font-bold border-l border-slate-800 pl-2 hidden sm:inline" }, currentTime.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }))), /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      variant: "outline",
+      size: "sm",
+      onClick: loadDepartures,
+      className: "border-slate-800 bg-slate-950 text-slate-300 hover:text-white hover:bg-slate-800 text-xs h-10 rounded-xl"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
+    "Refresh"
+  ), /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      size: "sm",
+      onClick: () => setIsKioskMode(!isKioskMode),
+      className: "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs h-10 rounded-xl shadow-lg shadow-emerald-500/20"
+    },
+    isKioskMode ? /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(Minimize2, { className: "w-3.5 h-3.5 mr-1.5" }), "Exit Kiosk Mode") : /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(Maximize2, { className: "w-3.5 h-3.5 mr-1.5" }), "Fullscreen TV Kiosk")
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3" }, [
+    { label: "Active Departure Bays", count: activeCount, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", dot: "bg-cyan-400" },
+    { label: "Boarding / Loading", count: boardingCount, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", dot: "bg-amber-400" },
+    { label: "SLA Delayed Trucks", count: delayedCount, color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20", dot: "bg-rose-400" },
+    { label: "Total Scheduled Departures", count: departures.length, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", dot: "bg-emerald-400" }
+  ].map((kpi, idx) => /* @__PURE__ */ react_shim_default.createElement("div", { key: idx, className: `p-3 rounded-2xl border ${kpi.bg} flex items-center justify-between` }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-bold text-slate-400" }, kpi.label), /* @__PURE__ */ react_shim_default.createElement("p", { className: `text-2xl font-black ${kpi.color} font-mono mt-0.5` }, kpi.count)), /* @__PURE__ */ react_shim_default.createElement("div", { className: `w-3 h-3 rounded-full ${kpi.dot}` })))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-2 flex-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "relative flex-1 min-w-[200px]" }, /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" }), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "Filter by Truck # (TG12, TS08), City, Dock Bay, or LR...",
+      value: searchTerm,
+      onChange: (e2) => setSearchTerm(e2.target.value),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 pl-9 text-white placeholder:text-slate-500 rounded-xl font-mono"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1" }, ["All", "Hyderabad", "Hubli", "Pune", "Bangalore"].map((hub) => /* @__PURE__ */ react_shim_default.createElement(
+    "button",
+    {
+      key: hub,
+      onClick: () => setSelectedHub(hub),
+      className: `px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${selectedHub === hub ? "bg-emerald-500 text-slate-950 font-black" : "bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`
+    },
+    hub
+  )))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-xs text-slate-400 font-medium" }, "Showing ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400 font-mono" }, filtered.length), " of ", departures.length, " Departures")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs font-mono" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900 text-slate-400 font-black text-[11px] tracking-wider uppercase border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "SCHED. TIME"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "TRUCK #"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "DESTINATION ROUTE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "VEHICLE TYPE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-center" }, "DOCK BAY"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "DRIVER PILOT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "LR / CONSIGNMENT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "CARGO / WT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "DEPARTURE STATUS"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-850" }, loading ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 9, className: "py-20 text-center text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-8 h-8 animate-spin text-emerald-400 mx-auto mb-2" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "Syncing with warehouse telematics & dock bay sensors..."))) : filtered.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 9, className: "py-20 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-10 h-10 mx-auto mb-2 opacity-30 text-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "No scheduled departures found"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-slate-500 mt-0.5" }, "Try clearing filter parameters."))) : filtered.map((dep, idx) => {
+    const theme = STATUS_THEME[dep.status] || STATUS_THEME["SCHEDULED"];
+    const schedTimeFormatted = dep.scheduled_departure ? new Date(dep.scheduled_departure).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "18:00";
+    return /* @__PURE__ */ react_shim_default.createElement(
+      "tr",
+      {
+        key: dep.id || idx,
+        onClick: () => {
+          setActiveDeparture(dep);
+          setNewBay(dep.dock_bay);
+          setNewStatus(dep.status);
+        },
+        className: "hover:bg-slate-900/60 transition-colors cursor-pointer group"
+      },
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-black text-emerald-400 text-sm whitespace-nowrap" }, schedTimeFormatted),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-white text-sm tracking-wider group-hover:text-emerald-400 transition-colors" }, dep.truck_number), /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${theme.dot}` }))),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-0.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 text-white font-bold text-xs" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400" }, dep.origin), /* @__PURE__ */ react_shim_default.createElement(ArrowRight, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-emerald-300 font-extrabold" }, dep.destination)))),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 text-[11px] font-bold" }, dep.vehicle_category)),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-center whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-black text-xs" }, dep.dock_bay)),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 text-slate-300 font-bold" }, /* @__PURE__ */ react_shim_default.createElement(User, { className: "w-3 h-3 text-slate-500 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", null, dep.driver_name))),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-bold text-slate-400 whitespace-nowrap" }, dep.lr_pod_number),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-bold text-slate-300 whitespace-nowrap" }, dep.cargo_weight),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `px-3 py-1 rounded-lg border font-black text-xs ${theme.badge}` }, dep.status === "DELAYED" ? `DELAYED (+${dep.delay_minutes || 25}m)` : theme.label))
+    );
+  }))))), activeDeparture && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: Boolean(activeDeparture), onOpenChange: () => setActiveDeparture(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl shadow-2xl font-sans" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-black text-white flex items-center justify-between font-mono" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Gate Control: ", activeDeparture.truck_number), /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" }, activeDeparture.trip_code))), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleUpdateBay, className: "space-y-4 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Destination Route:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, activeDeparture.origin, " \u2192 ", activeDeparture.destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Assigned Driver:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400" }, activeDeparture.driver_name)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "E-Way / LR #:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-slate-300 font-mono" }, activeDeparture.lr_pod_number))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Warehouse Dock Bay"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      value: newBay,
+      onChange: (e2) => setNewBay(e2.target.value),
+      className: "w-full bg-slate-950 border border-slate-800 text-xs h-9 mt-1 px-3 rounded-xl text-white font-bold"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Bay #01" }, "Bay #01 (Primary FTL Loading)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Bay #02" }, "Bay #02 (Secondary FTL Loading)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Bay #03" }, "Bay #03 (Heavy Container Bay)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Bay #04" }, "Bay #04 (Express Cross-Dock)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Bay #05" }, "Bay #05 (Unloading & Verification)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Bay #06" }, "Bay #06 (Inspection Bay)")
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Departure Gate Status"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      value: newStatus,
+      onChange: (e2) => setNewStatus(e2.target.value),
+      className: "w-full bg-slate-950 border border-slate-800 text-xs h-9 mt-1 px-3 rounded-xl text-white font-bold"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "GATE OPEN" }, "GATE OPEN (Dock ready, awaiting truck)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "BOARDING" }, "BOARDING / LOADING (Cargo loading in progress)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "DEPARTED" }, "DEPARTED (Truck left warehouse on highway)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "DELAYED" }, "DELAYED (SLA departure delayed)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "SCHEDULED" }, "SCHEDULED (Normal queue)")
+  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setActiveDeparture(null), className: "border-slate-800 rounded-xl text-xs" }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs" }, "Save Dock Assignment"))))));
+}
+
+// apps/web/src/pages/RouteProfitPage.jsx
+function RouteProfitPage() {
+  let currentUser = null;
+  try {
+    const auth = useAuth();
+    currentUser = auth?.currentUser;
+  } catch (e2) {
+    try {
+      currentUser = JSON.parse(localStorage.getItem("app_auth_user"));
+    } catch (err) {
+    }
+  }
+  const [routes, setRoutes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("All");
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const loadRouteProfitability = async () => {
+    try {
+      setLoading(true);
+      const res = await reservationClient.getRouteProfitRanking();
+      setRoutes(res.routes || []);
+    } catch (err) {
+      toast.error("Failed to load route profitability: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadRouteProfitability();
+  }, []);
+  const filteredRoutes = routes.filter((r3) => {
+    const matchesSearch = (r3.route_name || "").toLowerCase().includes(searchTerm.toLowerCase());
+    if (selectedFilter === "High Yield") return matchesSearch && r3.margin_pct >= 20;
+    if (selectedFilter === "Standard") return matchesSearch && r3.margin_pct >= 12 && r3.margin_pct < 20;
+    if (selectedFilter === "Underperforming") return matchesSearch && r3.margin_pct < 12;
+    return matchesSearch;
+  });
+  const totalGrossRevenue = routes.reduce((sum, r3) => sum + (r3.total_revenue || 0), 0);
+  const totalNetProfit = routes.reduce((sum, r3) => sum + (r3.net_profit || 0), 0);
+  const overallMargin = totalGrossRevenue > 0 ? (totalNetProfit / totalGrossRevenue * 100).toFixed(1) : 0;
+  const bestRoute = routes[0];
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-5 max-w-[1600px] mx-auto font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/95 border border-slate-800 p-4 md:p-5 rounded-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30" }, "MODULE 18: FINANCIAL LANE INTELLIGENCE"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-ping" }), "Audited P&L Math")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-xl md:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement(TrendingUp, { className: "w-7 h-7 text-emerald-400" }), "Route Net Profitability & Lane Ranking"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs md:text-sm text-slate-400" }, "Ranks every freight corridor by actual net profit, fuel slips, Fastag tolls, and driver bhatta. Identifies high-yield vs. deadhead drag lanes.")), /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      variant: "outline",
+      size: "sm",
+      onClick: loadRouteProfitability,
+      className: "border-slate-800 bg-slate-950 text-slate-300 hover:text-white hover:bg-slate-800 text-xs h-10 rounded-xl"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: `w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}` }),
+    "Recalculate P&L"
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3.5 rounded-2xl border bg-slate-900 border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-bold text-slate-400" }, "Total Corridor Revenue"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-2xl font-black text-white font-mono mt-0.5" }, "\u20B9", totalGrossRevenue.toLocaleString("en-IN")), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[10px] text-slate-500 mt-1" }, "Across ", routes.length, " active lanes")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3.5 rounded-2xl border bg-emerald-500/10 border-emerald-500/20" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-bold text-emerald-400" }, "Total Net Operating Profit"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-2xl font-black text-emerald-300 font-mono mt-0.5" }, "\u20B9", totalNetProfit.toLocaleString("en-IN")), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[10px] text-emerald-400/70 mt-1" }, "Net after fuel, tolls & bhatta")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3.5 rounded-2xl border bg-cyan-500/10 border-cyan-500/20" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-bold text-cyan-400" }, "Average Fleet Margin"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-2xl font-black text-cyan-300 font-mono mt-0.5" }, overallMargin, "%"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[10px] text-cyan-400/70 mt-1" }, "Target benchmark: >18%")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-3.5 rounded-2xl border bg-purple-500/10 border-purple-500/20" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] font-bold text-purple-400" }, "#1 Top Ranked Corridor"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-base font-black text-purple-200 truncate mt-0.5" }, bestRoute ? bestRoute.route_name : "Hyderabad to Hubli"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[10px] text-purple-300 mt-1" }, bestRoute ? `${bestRoute.margin_pct}% Margin (\u20B9${bestRoute.profit_per_km}/km)` : "Evaluating..."))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-2 flex-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "relative flex-1 min-w-[220px]" }, /* @__PURE__ */ react_shim_default.createElement(Search, { className: "w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" }), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "Search route (e.g. Hyderabad, Hubli, Pune, Bangalore)...",
+      value: searchTerm,
+      onChange: (e2) => setSearchTerm(e2.target.value),
+      className: "bg-slate-950 border-slate-800 text-xs h-9 pl-9 text-white placeholder:text-slate-500 rounded-xl"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1" }, ["All", "High Yield", "Standard", "Underperforming"].map((filter) => /* @__PURE__ */ react_shim_default.createElement(
+    "button",
+    {
+      key: filter,
+      onClick: () => setSelectedFilter(filter),
+      className: `px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${selectedFilter === filter ? "bg-emerald-500 text-slate-950 font-black" : "bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`
+    },
+    filter
+  )))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-xs text-slate-400 font-medium" }, "Showing ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-emerald-400 font-mono" }, filteredRoutes.length), " Corridors")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs font-sans" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900 text-slate-400 font-bold text-[11px] uppercase tracking-wider border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "RANK"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "FREIGHT CORRIDOR"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "TOTAL TRIPS"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "GROSS FREIGHT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "DIESEL COST"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "TOLLS & FASTAG"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "DRIVER BHATTA"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "ACTUAL NET PROFIT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-center" }, "MARGIN %"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "PROFIT / KM"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-850" }, loading ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 10, className: "py-20 text-center text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-8 h-8 animate-spin text-emerald-400 mx-auto mb-2" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "Auditing diesel invoices & Fastag plaza charges..."))) : filteredRoutes.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 10, className: "py-20 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "No route financial data matching filters."))) : filteredRoutes.map((route, idx) => {
+    const isHighYield = route.margin_pct >= 20;
+    const isUnderperforming = route.margin_pct < 12;
+    return /* @__PURE__ */ react_shim_default.createElement(
+      "tr",
+      {
+        key: route.route_name || idx,
+        onClick: () => setSelectedRoute(route),
+        className: "hover:bg-slate-900/60 transition-colors cursor-pointer group"
+      },
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-black" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-black ${idx === 0 ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : idx === 1 ? "bg-slate-400/20 text-slate-200 border border-slate-500/40" : idx === 2 ? "bg-orange-700/20 text-orange-400 border border-orange-700/40" : "bg-slate-900 text-slate-400"}` }, "#", idx + 1)),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 font-bold text-sm text-white group-hover:text-emerald-400 transition-colors" }, /* @__PURE__ */ react_shim_default.createElement("span", null, route.route_name), idx === 0 && /* @__PURE__ */ react_shim_default.createElement(Award, { className: "w-3.5 h-3.5 text-amber-400 shrink-0" }))),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-mono font-bold text-slate-300" }, route.total_trips, " Trips"),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right font-mono font-bold text-slate-200" }, "\u20B9", route.total_revenue.toLocaleString("en-IN")),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right font-mono text-slate-400" }, "\u20B9", route.fuel_cost.toLocaleString("en-IN")),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right font-mono text-slate-400" }, "\u20B9", route.toll_cost.toLocaleString("en-IN")),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right font-mono text-slate-400" }, "\u20B9", route.driver_bhatta.toLocaleString("en-IN")),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right font-mono font-black text-sm text-emerald-400" }, "\u20B9", route.net_profit.toLocaleString("en-IN")),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `px-2.5 py-1 rounded-lg text-xs font-black font-mono border ${isHighYield ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : isUnderperforming ? "bg-rose-500/20 text-rose-300 border-rose-500/40" : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"}` }, route.margin_pct, "%")),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right font-mono font-bold text-emerald-300" }, "\u20B9", route.profit_per_km, "/km")
+    );
+  }))))), selectedRoute && /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: Boolean(selectedRoute), onOpenChange: () => setSelectedRoute(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-900 border-slate-800 text-white max-w-lg rounded-2xl shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "text-lg font-black text-white flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Lane Financial Breakdown: ", selectedRoute.route_name), /* @__PURE__ */ react_shim_default.createElement("span", { className: `px-2 py-0.5 rounded text-xs font-mono font-bold ${selectedRoute.margin_pct >= 20 ? "bg-emerald-500/20 text-emerald-400" : "bg-cyan-500/20 text-cyan-400"}` }, selectedRoute.margin_pct, "% Margin"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-3.5 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 font-bold block text-[10px] uppercase" }, "Total Route Revenue"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-white font-extrabold text-base font-mono" }, "\u20B9", selectedRoute.total_revenue.toLocaleString("en-IN"))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400 font-bold block text-[10px] uppercase" }, "Net Operating Profit"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-emerald-400 font-extrabold text-base font-mono" }, "\u20B9", selectedRoute.net_profit.toLocaleString("en-IN")))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-2 bg-slate-950/70 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300 text-[11px] uppercase tracking-wide" }, "Expense Deductions Breakdown"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Diesel Fuel Allocation:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white font-mono" }, "\u20B9", selectedRoute.fuel_cost.toLocaleString("en-IN"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Fastag / Toll Charges:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white font-mono" }, "\u20B9", selectedRoute.toll_cost.toLocaleString("en-IN"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Driver Advance & Bhatta:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white font-mono" }, "\u20B9", selectedRoute.driver_bhatta.toLocaleString("en-IN"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "pt-2 border-t border-slate-800 flex justify-between font-bold text-emerald-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Operating Yield per Km:"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-mono" }, "\u20B9", selectedRoute.profit_per_km, " / km"))), selectedRoute.margin_pct < 12 && /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-rose-950/30 border border-rose-500/30 p-3 rounded-xl flex items-start gap-2 text-rose-300 text-xs" }, /* @__PURE__ */ react_shim_default.createElement(TriangleAlert, { className: "w-4 h-4 text-rose-400 shrink-0 mt-0.5" }), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold" }, "Tariff Optimization Recommended"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-slate-400 mt-0.5" }, "This corridor is operating below target margin (18%). Consider increasing base freight quotation by 8\u201310% or bundling with guaranteed return-load contracts."))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { onClick: () => setSelectedRoute(null), className: "bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs" }, "Close Breakdown"))))));
+}
+
+// apps/web/src/pages/SubscriptionsPage.jsx
+function SubscriptionsPage() {
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [trucks, setTrucks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedSub, setSelectedSub] = useState(null);
+  const [subForm, setSubForm] = useState({
+    company_name: "",
+    customer_name: "",
+    customer_phone: "",
+    customer_email: "",
+    vehicle_category: "32FT SXL",
+    primary_operating_corridor: "Hyderabad to Hubli Corridor",
+    start_date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+    end_date: new Date(Date.now() + 30 * 24 * 3600 * 1e3).toISOString().slice(0, 10),
+    monthly_retainer_fee: 145e3,
+    included_km_or_trips: 4500,
+    overage_rate_per_km: 28,
+    billing_cycle: "Monthly Advance",
+    special_sla_notes: "Dedicated 24/7 round-the-clock driver availability, zero co-loading"
+  });
+  const [assignForm, setAssignForm] = useState({
+    truck_number: "",
+    monthly_rate: 145e3
+  });
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [subsRes, fleetTrucks] = await Promise.all([
+        reservationClient.getSubscriptions(),
+        pocketbaseClient_default.collection("trucks").getFullList({ sort: "truck_number", $autoCancel: false }).catch(() => [])
+      ]);
+      setSubscriptions(subsRes.subscriptions || []);
+      setTrucks(fleetTrucks);
+    } catch (err) {
+      toast.error("Failed to load subscriptions: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadData();
+  }, []);
+  const handleCreateRequest = async (e2) => {
+    e2.preventDefault();
+    if (!subForm.company_name || !subForm.customer_name || !subForm.customer_phone) {
+      toast.warning("Company name, customer name, and phone are required.");
+      return;
+    }
+    try {
+      await reservationClient.createSubscription(subForm);
+      toast.success("Dedicated Vehicle Subscription request submitted! Awaiting dispatch allocation.");
+      setIsRequestModalOpen(false);
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Failed to submit subscription request");
+    }
+  };
+  const handleAssignTruck = async (e2) => {
+    e2.preventDefault();
+    if (!assignForm.truck_number) {
+      toast.warning("Please select a truck to allocate.");
+      return;
+    }
+    try {
+      await reservationClient.assignTruckToSubscription({
+        id: selectedSub.id,
+        truck_number: assignForm.truck_number,
+        monthly_rate: assignForm.monthly_rate
+      });
+      toast.success(`Truck ${assignForm.truck_number} allocated to ${selectedSub.company_name}! Schedule locked.`);
+      setIsAssignModalOpen(false);
+      setSelectedSub(null);
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Truck allocation failed");
+    }
+  };
+  const totalRetainerRevenue = subscriptions.filter((s2) => s2.status === "Active").reduce((sum, s2) => sum + (parseFloat(s2.monthly_retainer_fee) || 0), 0);
+  const activeCount = subscriptions.filter((s2) => s2.status === "Active").length;
+  const pendingCount = subscriptions.filter((s2) => s2.status === "Pending Dispatch Review").length;
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-[1500px] mx-auto font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/25" }, "Module 12: Enterprise Fleet Retainers"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1.5 font-medium" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-purple-400 animate-ping" }), "Dedicated Vehicle Subscriptions")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement(ShieldCheck, { className: "w-7 h-7 text-purple-400" }), "Dedicated Vehicle Subscriptions"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs md:text-sm text-slate-400" }, "Reserve dedicated trucks for an entire month at an agreed retainer rate. Dynamic truck assignment locks the vehicle schedule as busy.")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      onClick: loadData,
+      variant: "outline",
+      className: "border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-300 gap-1.5 text-xs font-bold"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-3.5 h-3.5" }),
+    "Refresh"
+  ), /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      onClick: () => setIsRequestModalOpen(true),
+      className: "bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold gap-2 text-xs shadow-lg shadow-purple-500/20"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(Plus, { className: "w-4 h-4" }),
+    "New Dedicated Retainer Request"
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" }, /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Active Retainers"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-white" }, activeCount), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-emerald-400 font-bold" }, "Trucks Dedicated"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Pending Review"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-amber-400" }, pendingCount), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Awaiting Vehicle Allocation"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Monthly Retainer Inflow"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(DollarSign, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-white" }, "\u20B9", totalRetainerRevenue.toLocaleString("en-IN")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-purple-400 font-bold" }, "Guaranteed/Mo"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Fleet Utilization"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Lock, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-blue-400" }, trucks.length > 0 ? Math.round(activeCount / trucks.length * 100) : 0, "%"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "On Contract Locked")))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 bg-slate-900/70 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Building, { className: "w-4 h-4 text-purple-400" }), /* @__PURE__ */ react_shim_default.createElement("h2", { className: "text-sm font-extrabold text-white" }, "Active & Requested Subscriptions")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Showing ", subscriptions.length, " Contract Agreements")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900/90 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Contract Code"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Company & Client"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Corridor / Spec"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Contract Term"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Monthly Retainer"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Assigned Truck"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Status"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5 text-right" }, "Actions"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-800/60 font-medium text-slate-300" }, subscriptions.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: "8", className: "p-8 text-center text-slate-500" }, 'No active or pending subscriptions found. Click "New Dedicated Retainer Request" to register one.')) : subscriptions.map((sub) => {
+    const isActive = sub.status === "Active";
+    const isPending = sub.status === "Pending Dispatch Review";
+    return /* @__PURE__ */ react_shim_default.createElement("tr", { key: sub.id, className: "hover:bg-slate-900/40 transition-colors" }, /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 font-mono font-bold text-purple-400" }, sub.subscription_code), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-extrabold text-white" }, sub.company_name), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400 flex items-center gap-2 mt-0.5" }, /* @__PURE__ */ react_shim_default.createElement("span", null, sub.customer_name), /* @__PURE__ */ react_shim_default.createElement("span", null, "\u2022"), /* @__PURE__ */ react_shim_default.createElement("span", null, sub.customer_phone))), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-white font-bold" }, sub.primary_operating_corridor || "All-India Logistics"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400" }, sub.vehicle_category)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-white font-bold" }, sub.start_date), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400" }, "to ", sub.end_date)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-emerald-400 font-black text-sm" }, "\u20B9", parseFloat(sub.monthly_retainer_fee || 0).toLocaleString("en-IN")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[10px] text-slate-500" }, sub.billing_cycle || "Monthly Advance")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, sub.assigned_truck_number ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-mono font-extrabold text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-800" }, sub.assigned_truck_number)) : /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-amber-400 text-xs italic" }, "Unassigned")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: `text-[10px] font-black ${isActive ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : isPending ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-slate-800 text-slate-400"}` }, sub.status)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 text-right" }, isPending && /* @__PURE__ */ react_shim_default.createElement(
+      Button,
+      {
+        onClick: () => {
+          setSelectedSub(sub);
+          setAssignForm({
+            truck_number: "",
+            monthly_rate: sub.monthly_retainer_fee || 145e3
+          });
+          setIsAssignModalOpen(true);
+        },
+        className: "bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-1 px-2.5 h-auto rounded-lg shadow-sm"
+      },
+      "Assign Truck & Lock"
+    ), isActive && /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-500 font-medium" }, "Locked in Schedule")));
+  }))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isRequestModalOpen, onOpenChange: setIsRequestModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-950 border border-slate-800 text-white max-w-xl" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "flex items-center gap-2 text-lg font-black text-white" }, /* @__PURE__ */ react_shim_default.createElement(ShieldCheck, { className: "w-5 h-5 text-purple-400" }), "New Dedicated Vehicle Retainer Request")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleCreateRequest, className: "space-y-4 text-xs font-medium" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Company / Shipper Name *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. UltraTech Cement / DHL Supply Chain",
+      value: subForm.company_name,
+      onChange: (e2) => setSubForm({ ...subForm, company_name: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Primary Contact Person *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Rajesh Sharma",
+      value: subForm.customer_name,
+      onChange: (e2) => setSubForm({ ...subForm, customer_name: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Phone Number *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "+91 98765 43210",
+      value: subForm.customer_phone,
+      onChange: (e2) => setSubForm({ ...subForm, customer_phone: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Email"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "email",
+      placeholder: "logistics@company.com",
+      value: subForm.customer_email,
+      onChange: (e2) => setSubForm({ ...subForm, customer_email: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Vehicle Category"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      value: subForm.vehicle_category,
+      onChange: (e2) => setSubForm({ ...subForm, vehicle_category: e2.target.value }),
+      className: "w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT SXL" }, "32FT Single Axle (14.5 MT)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT MXL" }, "32FT Multi Axle (18.5 MT)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "24FT Container" }, "24FT Container (8.5 MT)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "40FT High Cube" }, "40FT High Cube Container")
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Operating Corridor"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "e.g. Hyderabad to Hubli Dedicated Lane",
+      value: subForm.primary_operating_corridor,
+      onChange: (e2) => setSubForm({ ...subForm, primary_operating_corridor: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Start Date"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "date",
+      value: subForm.start_date,
+      onChange: (e2) => setSubForm({ ...subForm, start_date: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "End Date"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "date",
+      value: subForm.end_date,
+      onChange: (e2) => setSubForm({ ...subForm, end_date: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Monthly Agreed Retainer (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "number",
+      value: subForm.monthly_retainer_fee,
+      onChange: (e2) => setSubForm({ ...subForm, monthly_retainer_fee: parseFloat(e2.target.value) || 0 }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Billing Cycle"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      value: subForm.billing_cycle,
+      onChange: (e2) => setSubForm({ ...subForm, billing_cycle: e2.target.value }),
+      className: "w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Monthly Advance" }, "Monthly Advance"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Bi-Weekly" }, "Bi-Weekly"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Per Trip Drawdown" }, "Per Trip Drawdown")
+  ))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsRequestModalOpen(false) }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-purple-600 hover:bg-purple-700 text-white font-bold" }, "Submit Retainer Request"))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isAssignModalOpen, onOpenChange: setIsAssignModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-950 border border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "flex items-center gap-2 text-lg font-black text-white" }, /* @__PURE__ */ react_shim_default.createElement(Lock, { className: "w-5 h-5 text-purple-400" }), "Assign Fleet Truck & Lock Schedule")), selectedSub && /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleAssignTruck, className: "space-y-4 text-xs font-medium" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-bold text-white text-sm" }, selectedSub.company_name), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-slate-400 text-xs mt-0.5" }, "Term: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, selectedSub.start_date), " to ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, selectedSub.end_date)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-slate-400 text-xs" }, "Required: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-purple-400" }, selectedSub.vehicle_category))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Select Fleet Vehicle to Dedicate *"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      required: true,
+      value: assignForm.truck_number,
+      onChange: (e2) => setAssignForm({ ...assignForm, truck_number: e2.target.value }),
+      className: "w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-white font-mono font-bold"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "" }, "-- Choose Truck from Active Fleet --"),
+    trucks.map((t2) => /* @__PURE__ */ react_shim_default.createElement("option", { key: t2.id, value: t2.truck_number }, t2.truck_number, " (", t2.vehicle_class || t2.truck_size || "32FT SXL", ") - ", t2.driver_name || "Driver Available"))
+  ), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-amber-400/90 mt-1 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(CircleAlert, { className: "w-3.5 h-3.5" }), "Assigning will immediately lock this truck's schedule as BUSY for the full period.")), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Final Agreed Monthly Retainer (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "number",
+      value: assignForm.monthly_rate,
+      onChange: (e2) => setAssignForm({ ...assignForm, monthly_rate: parseFloat(e2.target.value) || 0 }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsAssignModalOpen(false) }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold" }, "Confirm & Lock Truck"))))));
+}
+
+// apps/web/src/pages/RecurringBookingsPage.jsx
+var DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+function RecurringBookingsPage() {
+  const [recurringList, setRecurringList] = useState([]);
+  const [trucks, setTrucks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedRec, setSelectedRec] = useState(null);
+  const [recForm, setRecForm] = useState({
+    customer_name: "",
+    customer_phone: "",
+    customer_email: "",
+    origin: "Hyderabad Hub",
+    destination: "Hubli Terminal",
+    vehicle_category: "32FT SXL",
+    recurring_days: ["Monday", "Wednesday", "Friday"],
+    preferred_time: "18:00",
+    start_date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+    end_date: new Date(Date.now() + 60 * 24 * 3600 * 1e3).toISOString().slice(0, 10),
+    rate_per_trip: 27500,
+    special_instructions: "Fixed schedule departure, priority dock clearance"
+  });
+  const [allocTruck, setAllocTruck] = useState("");
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [recRes, fleetTrucks] = await Promise.all([
+        reservationClient.getRecurringBookings(),
+        pocketbaseClient_default.collection("trucks").getFullList({ sort: "truck_number", $autoCancel: false }).catch(() => [])
+      ]);
+      setRecurringList(recRes.recurring || []);
+      setTrucks(fleetTrucks);
+    } catch (err) {
+      toast.error("Failed to load recurring bookings: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadData();
+  }, []);
+  const toggleDay = (day) => {
+    const cur = [...recForm.recurring_days];
+    const idx = cur.indexOf(day);
+    if (idx >= 0) {
+      if (cur.length === 1) {
+        toast.warning("At least one day must be selected.");
+        return;
+      }
+      cur.splice(idx, 1);
+    } else {
+      cur.push(day);
+    }
+    setRecForm({ ...recForm, recurring_days: cur });
+  };
+  const handleCreateRecurring = async (e2) => {
+    e2.preventDefault();
+    if (!recForm.customer_name || !recForm.customer_phone) {
+      toast.warning("Client name and phone are required.");
+      return;
+    }
+    try {
+      await reservationClient.createRecurringBooking(recForm);
+      toast.success("Recurring booking schedule recorded! Awaiting truck assignment.");
+      setIsNewModalOpen(false);
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Failed to submit recurring booking");
+    }
+  };
+  const handleAssignTruck = async (e2) => {
+    e2.preventDefault();
+    if (!allocTruck) {
+      toast.warning("Please select a truck to dedicate to this schedule.");
+      return;
+    }
+    try {
+      await reservationClient.assignTruckToRecurring({
+        id: selectedRec.id,
+        truck_number: allocTruck
+      });
+      toast.success(`Truck ${allocTruck} linked to recurring schedule! Matching days locked.`);
+      setIsAssignModalOpen(false);
+      setSelectedRec(null);
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Truck assignment failed");
+    }
+  };
+  const activeCount = recurringList.filter((r3) => r3.status === "Active").length;
+  const pendingCount = recurringList.filter((r3) => r3.status === "Pending Dispatch Review").length;
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-[1500px] mx-auto font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-teal-500/10 text-teal-400 border border-teal-500/25" }, "Module 11: Repeat Route Scheduling"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1.5 font-medium" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-teal-400 animate-ping" }), "Automated Recurring Dispatches")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement(Repeat, { className: "w-7 h-7 text-teal-400" }), "Recurring Truck Booking"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs md:text-sm text-slate-400" }, "Schedule recurring dispatches (e.g. Every Mon, Wed & Fri). Dynamic truck assignment locks recurring slots across the fleet schedule.")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      onClick: loadData,
+      variant: "outline",
+      className: "border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-300 gap-1.5 text-xs font-bold"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-3.5 h-3.5" }),
+    "Refresh"
+  ), /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      onClick: () => setIsNewModalOpen(true),
+      className: "bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-slate-950 font-black gap-2 text-xs shadow-lg shadow-teal-500/20"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(Plus, { className: "w-4 h-4" }),
+    "New Recurring Schedule"
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-4" }, /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Active Recurring Schedules"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Repeat, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-white" }, activeCount), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-teal-400 font-bold" }, "Lanes Running"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Pending Truck Assignment"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-amber-400" }, pendingCount), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Needs Dispatch Lock"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Weekly Dispatches Generated"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-white" }, recurringList.reduce((sum, r3) => sum + ((r3.recurring_days || []).length || 0), 0)), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-emerald-400 font-bold" }, "Trips / Week")))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 bg-slate-900/70 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Calendar, { className: "w-4 h-4 text-teal-400" }), /* @__PURE__ */ react_shim_default.createElement("h2", { className: "text-sm font-extrabold text-white" }, "Active Recurring Schedules & Allocations")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Showing ", recurringList.length, " Scheduled Patterns")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900/90 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Recurrence Code"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Customer & Contact"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Route"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Frequency Days"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Preferred Time"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Rate / Trip"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Assigned Vehicle"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Status"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5 text-right" }, "Actions"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-800/60 font-medium text-slate-300" }, recurringList.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: "9", className: "p-8 text-center text-slate-500" }, 'No recurring booking schedules registered. Click "New Recurring Schedule" to configure recurring truck movements.')) : recurringList.map((rec) => {
+    const isActive = rec.status === "Active";
+    const isPending = rec.status === "Pending Dispatch Review";
+    const days = Array.isArray(rec.recurring_days) ? rec.recurring_days : [];
+    return /* @__PURE__ */ react_shim_default.createElement("tr", { key: rec.id, className: "hover:bg-slate-900/40 transition-colors" }, /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 font-mono font-bold text-teal-400" }, rec.recurrence_code), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-extrabold text-white" }, rec.customer_name), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400" }, rec.customer_phone)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-white font-bold" }, rec.origin, " \u2192 ", rec.destination), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400" }, rec.vehicle_category)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap gap-1" }, days.map((d) => /* @__PURE__ */ react_shim_default.createElement("span", { key: d, className: "px-1.5 py-0.5 rounded text-[10px] bg-teal-500/10 text-teal-300 border border-teal-500/20 font-bold" }, d.slice(0, 3))))), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-mono text-white font-bold" }, rec.preferred_time || "18:00")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 font-mono font-bold text-emerald-400 text-sm" }, "\u20B9", parseFloat(rec.rate_per_trip || 0).toLocaleString("en-IN")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, rec.assigned_truck_number ? /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-mono font-extrabold text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-800" }, rec.assigned_truck_number)) : /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-amber-400 text-xs italic" }, "Unassigned")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: `text-[10px] font-black ${isActive ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : isPending ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-slate-800 text-slate-400"}` }, rec.status)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 text-right" }, isPending && /* @__PURE__ */ react_shim_default.createElement(
+      Button,
+      {
+        onClick: () => {
+          setSelectedRec(rec);
+          setAllocTruck("");
+          setIsAssignModalOpen(true);
+        },
+        className: "bg-teal-600 hover:bg-teal-700 text-slate-950 font-black text-xs py-1 px-2.5 h-auto rounded-lg shadow-sm"
+      },
+      "Assign Truck & Lock"
+    ), isActive && /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-500 font-medium" }, "Locked in Calendar")));
+  }))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isNewModalOpen, onOpenChange: setIsNewModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-950 border border-slate-800 text-white max-w-xl" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "flex items-center gap-2 text-lg font-black text-white" }, /* @__PURE__ */ react_shim_default.createElement(Repeat, { className: "w-5 h-5 text-teal-400" }), "Configure Recurring Truck Schedule")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleCreateRecurring, className: "space-y-4 text-xs font-medium" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Customer / Company Name *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Reliance Retail Logistics",
+      value: recForm.customer_name,
+      onChange: (e2) => setRecForm({ ...recForm, customer_name: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Phone Number *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "+91 98765 43210",
+      value: recForm.customer_phone,
+      onChange: (e2) => setRecForm({ ...recForm, customer_phone: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Loading Origin *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Hyderabad Hub",
+      value: recForm.origin,
+      onChange: (e2) => setRecForm({ ...recForm, origin: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Destination Terminal *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Hubli Terminal",
+      value: recForm.destination,
+      onChange: (e2) => setRecForm({ ...recForm, destination: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1.5 font-bold" }, "Recurring Days of Week *"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap gap-2" }, DAYS_OF_WEEK.map((day) => {
+    const isSelected = recForm.recurring_days.includes(day);
+    return /* @__PURE__ */ react_shim_default.createElement(
+      "button",
+      {
+        type: "button",
+        key: day,
+        onClick: () => toggleDay(day),
+        className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isSelected ? "bg-teal-500 text-slate-950 shadow-md font-black" : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-white"}`
+      },
+      day
+    );
+  }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Preferred Departure Time"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "time",
+      value: recForm.preferred_time,
+      onChange: (e2) => setRecForm({ ...recForm, preferred_time: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Agreed Rate per Trip (\u20B9)"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "number",
+      value: recForm.rate_per_trip,
+      onChange: (e2) => setRecForm({ ...recForm, rate_per_trip: parseFloat(e2.target.value) || 0 }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Start Date"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "date",
+      value: recForm.start_date,
+      onChange: (e2) => setRecForm({ ...recForm, start_date: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "End Date"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "date",
+      value: recForm.end_date,
+      onChange: (e2) => setRecForm({ ...recForm, end_date: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsNewModalOpen(false) }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-teal-500 hover:bg-teal-600 text-slate-950 font-black" }, "Save Recurring Schedule"))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isAssignModalOpen, onOpenChange: setIsAssignModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-950 border border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "flex items-center gap-2 text-lg font-black text-white" }, /* @__PURE__ */ react_shim_default.createElement(Lock, { className: "w-5 h-5 text-teal-400" }), "Link Fleet Truck to Recurring Schedule")), selectedRec && /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleAssignTruck, className: "space-y-4 text-xs font-medium" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-bold text-white text-sm" }, selectedRec.customer_name), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-slate-400 text-xs mt-0.5" }, "Lane: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, selectedRec.origin, " \u2192 ", selectedRec.destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-teal-400 text-xs font-bold mt-1" }, "Days: ", (selectedRec.recurring_days || []).join(", "), " @ ", selectedRec.preferred_time || "18:00")), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Select Truck to Dedicate *"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      required: true,
+      value: allocTruck,
+      onChange: (e2) => setAllocTruck(e2.target.value),
+      className: "w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-white font-mono font-bold"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "" }, "-- Choose Truck from Active Fleet --"),
+    trucks.map((t2) => /* @__PURE__ */ react_shim_default.createElement("option", { key: t2.id, value: t2.truck_number }, t2.truck_number, " (", t2.vehicle_class || t2.truck_size || "32FT SXL", ")"))
+  ), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-amber-400/90 mt-1 flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(CircleAlert, { className: "w-3.5 h-3.5" }), "This vehicle's schedule will be marked as BUSY for all matching days in the calendar.")), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsAssignModalOpen(false) }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-teal-500 hover:bg-teal-600 text-slate-950 font-black" }, "Confirm & Lock Schedule"))))));
+}
+
+// apps/web/src/pages/PartnerOwnerPortal.jsx
+function PartnerOwnerPortal() {
+  const [partnerTrucks, setPartnerTrucks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isAvailModalOpen, setIsAvailModalOpen] = useState(false);
+  const [selectedTruck, setSelectedTruck] = useState(null);
+  const [regForm, setRegForm] = useState({
+    owner_name: "",
+    owner_phone: "",
+    owner_email: "",
+    owner_pan: "",
+    bank_account_number: "",
+    bank_ifsc: "",
+    truck_number: "",
+    truck_type: "32FT SXL",
+    capacity_tons: 14.5,
+    rc_number: "",
+    fitness_expiry: new Date(Date.now() + 180 * 24 * 3600 * 1e3).toISOString().slice(0, 10),
+    insurance_expiry: new Date(Date.now() + 240 * 24 * 3600 * 1e3).toISOString().slice(0, 10),
+    declared_empty_location: "Hyderabad Hub",
+    agreed_payout_rate: 32
+  });
+  const [availForm, setAvailForm] = useState({
+    current_availability: "Available for Trips",
+    declared_empty_location: "Hyderabad Hub",
+    available_from_date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 16),
+    preferred_return_destination: "Hubli"
+  });
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const res = await reservationClient.getPartnerTrucks();
+      setPartnerTrucks(res.trucks || []);
+    } catch (err) {
+      toast.error("Failed to load partner trucks: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadData();
+  }, []);
+  const handleRegister = async (e2) => {
+    e2.preventDefault();
+    if (!regForm.owner_name || !regForm.owner_phone || !regForm.truck_number) {
+      toast.warning("Owner name, phone, and truck number are mandatory.");
+      return;
+    }
+    try {
+      await reservationClient.registerPartnerTruck(regForm);
+      toast.success(`Attached truck ${regForm.truck_number} registered! Dispatch verification pending.`);
+      setIsRegisterModalOpen(false);
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Registration failed");
+    }
+  };
+  const handleUpdateAvailability = async (e2) => {
+    e2.preventDefault();
+    try {
+      await reservationClient.declarePartnerAvailability({
+        id: selectedTruck.id,
+        ...availForm
+      });
+      toast.success(`Availability declared for ${selectedTruck.truck_number}!`);
+      setIsAvailModalOpen(false);
+      setSelectedTruck(null);
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Failed to declare availability");
+    }
+  };
+  const handleVerifyTruck = async (id, status) => {
+    try {
+      await reservationClient.verifyPartnerTruck({
+        id,
+        verification_status: status
+      });
+      toast.success(`Truck marked as ${status}`);
+      loadData();
+    } catch (err) {
+      toast.error(err.message || "Verification update failed");
+    }
+  };
+  const verifiedCount = partnerTrucks.filter((t2) => t2.verification_status === "Verified Active").length;
+  const availableCount = partnerTrucks.filter((t2) => t2.current_availability === "Available for Trips").length;
+  const totalPayout = partnerTrucks.reduce((sum, t2) => sum + (parseFloat(t2.total_net_payout) || 0), 0);
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-6 max-w-[1500px] mx-auto font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/25" }, "Marketplace Fleet Network"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1.5 font-medium" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-amber-400 animate-ping" }), "Attached Truck Owner Portal")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-2xl md:text-3xl font-black text-white tracking-tight mt-1 flex items-center gap-2.5" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-7 h-7 text-amber-400" }), "Attached Truck Owner Portal"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-xs md:text-sm text-slate-400" }, "External truck owners can onboard vehicles, declare empty location & availability, receive direct trip offers, and track settlement earnings.")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      onClick: loadData,
+      variant: "outline",
+      className: "border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-300 gap-1.5 text-xs font-bold"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-3.5 h-3.5" }),
+    "Refresh"
+  ), /* @__PURE__ */ react_shim_default.createElement(
+    Button,
+    {
+      onClick: () => setIsRegisterModalOpen(true),
+      className: "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black gap-2 text-xs shadow-lg shadow-amber-500/20"
+    },
+    /* @__PURE__ */ react_shim_default.createElement(Plus, { className: "w-4 h-4" }),
+    "Register Attached Vehicle"
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-4 gap-4" }, /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Registered Partner Fleet"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-white" }, partnerTrucks.length), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-amber-400 font-bold" }, "Total Trucks"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Verified Active"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(ShieldCheck, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-emerald-400" }, verifiedCount), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Compliance Approved"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Declared Ready for Load"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-blue-400" }, availableCount), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Available Now"))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-900/60 border-slate-800/80 p-4 rounded-xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-400 uppercase tracking-wider" }, "Total Disbursed Payouts"), /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center" }, /* @__PURE__ */ react_shim_default.createElement(DollarSign, { className: "w-4 h-4" }))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "mt-2 flex items-baseline gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl font-black text-white" }, "\u20B9", totalPayout.toLocaleString("en-IN")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-emerald-400 font-bold" }, "Ledger Cleared")))), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 bg-slate-900/70 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4 text-amber-400" }), /* @__PURE__ */ react_shim_default.createElement("h2", { className: "text-sm font-extrabold text-white" }, "Attached Fleet Register & Live Availability")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-medium" }, "Showing ", partnerTrucks.length, " Vehicles")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900/90 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Truck Reg No"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Owner & Contact"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Category & Capacity"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Current Location & Preference"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Live Status"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Verification"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5" }, "Payout Rate"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "p-3.5 text-right" }, "Actions"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-800/60 font-medium text-slate-300" }, partnerTrucks.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: "8", className: "p-8 text-center text-slate-500" }, 'No attached partner trucks registered yet. Click "Register Attached Vehicle" to onboard an external fleet truck.')) : partnerTrucks.map((truck) => {
+    const isVerified = truck.verification_status === "Verified Active";
+    const isAvailable = truck.current_availability === "Available for Trips";
+    return /* @__PURE__ */ react_shim_default.createElement("tr", { key: truck.id, className: "hover:bg-slate-900/40 transition-colors" }, /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 font-mono font-extrabold text-white" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${isAvailable ? "bg-emerald-400" : "bg-slate-500"}` }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800 text-amber-300" }, truck.truck_number))), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-extrabold text-white" }, truck.owner_name), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400" }, truck.owner_phone)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-white font-bold" }, truck.truck_type), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[11px] text-slate-400" }, truck.capacity_tons, " MT payload")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-white font-bold flex items-center gap-1" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-3 h-3 text-amber-400" }), /* @__PURE__ */ react_shim_default.createElement("span", null, truck.declared_empty_location || "Not declared")), truck.preferred_return_destination && /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-[10px] text-slate-400 mt-0.5" }, "Heading to: ", truck.preferred_return_destination)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: `text-[10px] font-black ${isAvailable ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-slate-800 text-slate-400"}` }, truck.current_availability)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ react_shim_default.createElement(Badge, { className: `text-[10px] font-black ${isVerified ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30"}` }, truck.verification_status)), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 font-mono font-bold text-white" }, "\u20B9", truck.agreed_payout_rate || 32, "/km"), /* @__PURE__ */ react_shim_default.createElement("td", { className: "p-3.5 text-right space-x-2" }, /* @__PURE__ */ react_shim_default.createElement(
+      Button,
+      {
+        onClick: () => {
+          setSelectedTruck(truck);
+          setAvailForm({
+            current_availability: truck.current_availability || "Available for Trips",
+            declared_empty_location: truck.declared_empty_location || "",
+            available_from_date: truck.available_from_date || (/* @__PURE__ */ new Date()).toISOString().slice(0, 16),
+            preferred_return_destination: truck.preferred_return_destination || ""
+          });
+          setIsAvailModalOpen(true);
+        },
+        variant: "outline",
+        className: "border-slate-800 bg-slate-900 text-slate-300 hover:text-white text-xs py-1 px-2 h-auto"
+      },
+      "Declare Avail"
+    ), !isVerified && /* @__PURE__ */ react_shim_default.createElement(
+      Button,
+      {
+        onClick: () => handleVerifyTruck(truck.id, "Verified Active"),
+        className: "bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-1 px-2.5 h-auto rounded-lg"
+      },
+      "Verify & Approve"
+    )));
+  }))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isRegisterModalOpen, onOpenChange: setIsRegisterModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-950 border border-slate-800 text-white max-w-xl" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "flex items-center gap-2 text-lg font-black text-white" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-5 h-5 text-amber-400" }), "Onboard Attached Vehicle (Partner Portal)")), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleRegister, className: "space-y-4 text-xs font-medium" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Truck Registration No *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. MH12 RN 8841",
+      value: regForm.truck_number,
+      onChange: (e2) => setRegForm({ ...regForm, truck_number: e2.target.value.toUpperCase() }),
+      className: "bg-slate-900 border-slate-800 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Truck Class / Spec *"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      value: regForm.truck_type,
+      onChange: (e2) => setRegForm({ ...regForm, truck_type: e2.target.value }),
+      className: "w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT SXL" }, "32FT SXL (Single Axle 14.5 MT)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "32FT MXL" }, "32FT MXL (Multi Axle 18.5 MT)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "24FT Container" }, "24FT Container (8.5 MT)"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "40FT Trailer" }, "40FT Trailer (28 MT)")
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Truck Owner Full Name *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Santosh Gaikwad",
+      value: regForm.owner_name,
+      onChange: (e2) => setRegForm({ ...regForm, owner_name: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Owner Contact Phone *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "+91 98220 12345",
+      value: regForm.owner_phone,
+      onChange: (e2) => setRegForm({ ...regForm, owner_phone: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Owner PAN Number"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "ABCDE1234F",
+      value: regForm.owner_pan,
+      onChange: (e2) => setRegForm({ ...regForm, owner_pan: e2.target.value.toUpperCase() }),
+      className: "bg-slate-900 border-slate-800 text-white font-mono"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Bank Account / IFSC"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "Account No / IFSC for Net Payouts",
+      value: regForm.bank_account_number,
+      onChange: (e2) => setRegForm({ ...regForm, bank_account_number: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Current Empty Location"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "e.g. Pune Chakan MIDC",
+      value: regForm.declared_empty_location,
+      onChange: (e2) => setRegForm({ ...regForm, declared_empty_location: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Agreed Payout Rate (\u20B9/km)"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      type: "number",
+      value: regForm.agreed_payout_rate,
+      onChange: (e2) => setRegForm({ ...regForm, agreed_payout_rate: parseFloat(e2.target.value) || 0 }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  ))), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsRegisterModalOpen(false) }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black" }, "Register Attached Vehicle"))))), /* @__PURE__ */ react_shim_default.createElement(Dialog2, { open: isAvailModalOpen, onOpenChange: setIsAvailModalOpen }, /* @__PURE__ */ react_shim_default.createElement(DialogContent3, { className: "bg-slate-950 border border-slate-800 text-white max-w-md" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle3, { className: "flex items-center gap-2 text-lg font-black text-white" }, /* @__PURE__ */ react_shim_default.createElement(MapPin, { className: "w-5 h-5 text-amber-400" }), "Declare Empty Location & Availability")), selectedTruck && /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleUpdateAvailability, className: "space-y-4 text-xs font-medium" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "font-mono font-bold text-amber-300 text-sm" }, selectedTruck.truck_number), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-slate-400 text-xs mt-0.5" }, "Owner: ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, selectedTruck.owner_name), " (", selectedTruck.owner_phone, ")")), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Current Availability Status"), /* @__PURE__ */ react_shim_default.createElement(
+    "select",
+    {
+      value: availForm.current_availability,
+      onChange: (e2) => setAvailForm({ ...availForm, current_availability: e2.target.value }),
+      className: "w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-white"
+    },
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Available for Trips" }, "Available for Trips"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "On Assigned Trip" }, "On Assigned Trip"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Maintenance" }, "Maintenance"),
+    /* @__PURE__ */ react_shim_default.createElement("option", { value: "Not Available" }, "Not Available")
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Current Empty Location *"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      required: true,
+      placeholder: "e.g. Pune MIDC / Hubli APMC Yard",
+      value: availForm.declared_empty_location,
+      onChange: (e2) => setAvailForm({ ...availForm, declared_empty_location: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-slate-400 block mb-1" }, "Preferred Return Destination"), /* @__PURE__ */ react_shim_default.createElement(
+    Input,
+    {
+      placeholder: "e.g. Hyderabad / Bangalore",
+      value: availForm.preferred_return_destination,
+      onChange: (e2) => setAvailForm({ ...availForm, preferred_return_destination: e2.target.value }),
+      className: "bg-slate-900 border-slate-800 text-white"
+    }
+  )), /* @__PURE__ */ react_shim_default.createElement(DialogFooter, { className: "pt-2" }, /* @__PURE__ */ react_shim_default.createElement(Button, { type: "button", variant: "outline", onClick: () => setIsAvailModalOpen(false) }, "Cancel"), /* @__PURE__ */ react_shim_default.createElement(Button, { type: "submit", className: "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black" }, "Update Availability"))))));
+}
+
 // apps/web/src/pages/FleetReservationHub.jsx
 var SUBMODULES = [
   { id: "calendar", label: "Fleet Calendar", icon: CalendarDays, description: "Gantt timeline & truck scheduling" },
-  { id: "prediction", label: "Movement Prediction", icon: Compass, description: "SLA forecasts & India map distribution" },
-  { id: "search", label: "Availability Search", icon: Search, description: "Intelligent truck matching & booking" },
-  { id: "manage", label: "Booking Management", icon: ClipboardCheck, description: "Confirmed, provisional & requests" },
-  { id: "return-loads", label: "Return-Load Opportunities", icon: Repeat, description: "Backhaul revenue maximizer" }
+  { id: "departures", label: "Departure Board", icon: Clock, description: "Airport flight-style truck departures" },
+  { id: "search", label: "Flexible Date Search", icon: Search, description: "Multi-date availability & economic rates" },
+  { id: "manage", label: "Booking Management", icon: ClipboardCheck, description: "Client requests & instant truck assignment" },
+  { id: "subscriptions", label: "Dedicated Retainers", icon: ShieldCheck, description: "Monthly dedicated vehicle subscriptions" },
+  { id: "recurring", label: "Recurring Bookings", icon: Repeat, description: "Repeat scheduled dispatches" },
+  { id: "route-profit", label: "Route Profit Ranking", icon: TrendingUp, description: "P&L net margin corridor leaderboard" },
+  { id: "partner-portal", label: "Attached Owner Portal", icon: UserCheck, description: "External vehicle onboarding & ledger" },
+  { id: "return-loads", label: "Return-Loads", icon: ArrowLeftRight, description: "Backhaul revenue maximizer" },
+  { id: "prediction", label: "Movement Prediction", icon: Compass, description: "SLA forecasts & location telemetry" }
 ];
 function getUrlTab() {
   try {
@@ -7999,7 +9363,7 @@ function FleetReservationHub({ initialTab = "calendar" }) {
     } catch (e2) {
     }
   };
-  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "min-h-screen bg-slate-950 text-white font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md px-4 md:px-6 py-2.5 shadow-md" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "max-w-[1600px] mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xs" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-sm tracking-tight text-white hidden sm:inline" }, "Fleet Reservation")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 shrink-0 bg-slate-950 p-1 rounded-xl border border-slate-800" }, SUBMODULES.map((tab) => {
+  return /* @__PURE__ */ react_shim_default.createElement("div", { className: "min-h-screen bg-slate-950 text-white font-sans" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md px-4 md:px-6 py-2.5 shadow-md" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "max-w-[1700px] mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black text-xs" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-4 h-4" })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-extrabold text-sm tracking-tight text-white hidden sm:inline" }, "Fleet Reservation Hub")), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1 shrink-0 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar" }, SUBMODULES.map((tab) => {
     const Icon2 = tab.icon;
     const isActive = activeTab === tab.id;
     return /* @__PURE__ */ react_shim_default.createElement(
@@ -8007,12 +9371,13 @@ function FleetReservationHub({ initialTab = "calendar" }) {
       {
         key: tab.id,
         onClick: () => handleSelectTab(tab.id),
-        className: `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20" : "text-slate-400 hover:text-white hover:bg-slate-900"}`
+        className: `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${isActive ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20 font-black" : "text-slate-400 hover:text-white hover:bg-slate-900"}`,
+        title: tab.description
       },
       /* @__PURE__ */ react_shim_default.createElement(Icon2, { className: "w-3.5 h-3.5" }),
       /* @__PURE__ */ react_shim_default.createElement("span", null, tab.label)
     );
-  })))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-2" }, activeTab === "calendar" && /* @__PURE__ */ react_shim_default.createElement(FleetCalendarPage, null), activeTab === "prediction" && /* @__PURE__ */ react_shim_default.createElement(MovementPredictionPage, null), activeTab === "search" && /* @__PURE__ */ react_shim_default.createElement(AvailabilitySearchPage, null), activeTab === "manage" && /* @__PURE__ */ react_shim_default.createElement(BookingManagementPage, null), activeTab === "return-loads" && /* @__PURE__ */ react_shim_default.createElement(ReturnLoadPage, null)));
+  })))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "py-2" }, activeTab === "calendar" && /* @__PURE__ */ react_shim_default.createElement(FleetCalendarPage, null), activeTab === "departures" && /* @__PURE__ */ react_shim_default.createElement(DepartureBoardPage, null), activeTab === "search" && /* @__PURE__ */ react_shim_default.createElement(AvailabilitySearchPage, null), activeTab === "manage" && /* @__PURE__ */ react_shim_default.createElement(BookingManagementPage, null), activeTab === "subscriptions" && /* @__PURE__ */ react_shim_default.createElement(SubscriptionsPage, null), activeTab === "recurring" && /* @__PURE__ */ react_shim_default.createElement(RecurringBookingsPage, null), activeTab === "route-profit" && /* @__PURE__ */ react_shim_default.createElement(RouteProfitPage, null), activeTab === "partner-portal" && /* @__PURE__ */ react_shim_default.createElement(PartnerOwnerPortal, null), activeTab === "return-loads" && /* @__PURE__ */ react_shim_default.createElement(ReturnLoadPage, null), activeTab === "prediction" && /* @__PURE__ */ react_shim_default.createElement(MovementPredictionPage, null)));
 }
 export {
   FleetReservationHub as default
@@ -8023,9 +9388,13 @@ lucide-react/dist/esm/shared/src/utils.js:
 lucide-react/dist/esm/defaultAttributes.js:
 lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
+lucide-react/dist/esm/icons/arrow-left-right.js:
 lucide-react/dist/esm/icons/arrow-right.js:
+lucide-react/dist/esm/icons/award.js:
+lucide-react/dist/esm/icons/building.js:
 lucide-react/dist/esm/icons/calendar-days.js:
 lucide-react/dist/esm/icons/calendar.js:
+lucide-react/dist/esm/icons/check.js:
 lucide-react/dist/esm/icons/chevron-left.js:
 lucide-react/dist/esm/icons/chevron-right.js:
 lucide-react/dist/esm/icons/circle-alert.js:
@@ -8034,11 +9403,16 @@ lucide-react/dist/esm/icons/circle-x.js:
 lucide-react/dist/esm/icons/clipboard-check.js:
 lucide-react/dist/esm/icons/clock.js:
 lucide-react/dist/esm/icons/compass.js:
+lucide-react/dist/esm/icons/dollar-sign.js:
 lucide-react/dist/esm/icons/file-text.js:
 lucide-react/dist/esm/icons/filter.js:
 lucide-react/dist/esm/icons/layers.js:
+lucide-react/dist/esm/icons/lock.js:
 lucide-react/dist/esm/icons/map-pin.js:
+lucide-react/dist/esm/icons/maximize-2.js:
+lucide-react/dist/esm/icons/minimize-2.js:
 lucide-react/dist/esm/icons/navigation.js:
+lucide-react/dist/esm/icons/plane-takeoff.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/printer.js:
 lucide-react/dist/esm/icons/radio.js:
@@ -8048,8 +9422,12 @@ lucide-react/dist/esm/icons/search.js:
 lucide-react/dist/esm/icons/shield-alert.js:
 lucide-react/dist/esm/icons/shield-check.js:
 lucide-react/dist/esm/icons/sparkles.js:
+lucide-react/dist/esm/icons/trending-down.js:
 lucide-react/dist/esm/icons/trending-up.js:
+lucide-react/dist/esm/icons/triangle-alert.js:
 lucide-react/dist/esm/icons/truck.js:
+lucide-react/dist/esm/icons/user-check.js:
+lucide-react/dist/esm/icons/user.js:
 lucide-react/dist/esm/icons/x.js:
 lucide-react/dist/esm/lucide-react.js:
   (**

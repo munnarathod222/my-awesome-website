@@ -219,6 +219,209 @@ export const reservationClient = {
       if (res.ok) return await res.json();
     } catch (_) {}
     return { success: true, count: 0, opportunities: [] };
+  },
+
+  /**
+   * Airport Flight-Style Truck Departure Board (FIDS)
+   */
+  async getDepartures() {
+    try {
+      const res = await fetch(`${API_BASE}/departures`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { success: true, active_bays_count: 0, departures: [] };
+  },
+
+  async updateDepartureBay(payload) {
+    const res = await fetch(`${API_BASE}/departures/update-bay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to update bay status');
+    return data;
+  },
+
+  /**
+   * Route Net Profit Ranking
+   */
+  async getRouteProfitRanking() {
+    try {
+      const res = await fetch(`${API_BASE}/route-profit`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { success: true, routes_count: 0, routes: [] };
+  },
+
+  /**
+   * Assign truck to reservation and immediately lock its schedule as BUSY
+   */
+  async assignTruckAndLock(payload) {
+    const res = await fetch(`${API_BASE}/assign-and-lock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to assign truck and lock schedule');
+    return data;
+  },
+
+  /**
+   * Flexible Date Booking & Economic Date Suggestion Matrix
+   */
+  async getFlexibleMatrix(origin = 'Hyderabad', destination = 'Hubli', targetDate = null, daysAhead = 6) {
+    try {
+      const q = new URLSearchParams({ origin, destination, daysAhead });
+      if (targetDate) q.append('targetDate', targetDate);
+      const res = await fetch(`${API_BASE}/flexible-matrix?${q.toString()}`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+
+    // Fallback matrix calculation
+    const baseDate = targetDate ? new Date(targetDate) : new Date();
+    const matrix = [];
+    for (let i = 0; i < daysAhead; i++) {
+      const d = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const isMid = d.getDay() === 2 || d.getDay() === 3 || d.getDay() === 4;
+      const rate = isMid ? 24500 : 28000;
+      matrix.push({
+        date: d.toISOString().slice(0, 10),
+        day_label: `${dayName}, ${monthDay}`,
+        weekday: dayName,
+        available_trucks: isMid ? 3 : 2,
+        rate,
+        base_rate: 28000,
+        discount_pct: isMid ? 12.5 : 0,
+        has_return_backhaul: isMid,
+        is_economical: isMid && i === 1
+      });
+    }
+    return {
+      success: true,
+      origin,
+      destination,
+      matrix,
+      suggested_date: matrix.find(m => m.is_economical)?.date || matrix[0].date,
+      savings_amount: 3500,
+      message: 'Most economical loading date found.'
+    };
+  },
+
+  /**
+   * Dedicated Vehicle Subscriptions (Module 12)
+   */
+  async getSubscriptions() {
+    try {
+      const res = await fetch(`${API_BASE}/subscriptions`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const list = await pb.collection('dedicated_subscriptions').getFullList({ sort: '-created', $autoCancel: false }).catch(() => []);
+    return { success: true, count: list.length, subscriptions: list };
+  },
+
+  async createSubscription(payload) {
+    const res = await fetch(`${API_BASE}/subscriptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to create subscription');
+    return data;
+  },
+
+  async assignTruckToSubscription(payload) {
+    const res = await fetch(`${API_BASE}/subscriptions/assign-truck`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to assign truck to subscription');
+    return data;
+  },
+
+  /**
+   * Recurring Truck Reservations (Module 11)
+   */
+  async getRecurringBookings() {
+    try {
+      const res = await fetch(`${API_BASE}/recurring`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const list = await pb.collection('recurring_reservations').getFullList({ sort: '-created', $autoCancel: false }).catch(() => []);
+    return { success: true, count: list.length, recurring: list };
+  },
+
+  async createRecurringBooking(payload) {
+    const res = await fetch(`${API_BASE}/recurring`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to create recurring booking');
+    return data;
+  },
+
+  async assignTruckToRecurring(payload) {
+    const res = await fetch(`${API_BASE}/recurring/assign-truck`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to assign truck to recurring schedule');
+    return data;
+  },
+
+  /**
+   * Attached Truck Owner Portal (Module 6)
+   */
+  async getPartnerTrucks() {
+    try {
+      const res = await fetch(`${API_BASE}/partner-trucks`);
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    const list = await pb.collection('partner_trucks').getFullList({ sort: '-created', $autoCancel: false }).catch(() => []);
+    return { success: true, count: list.length, trucks: list };
+  },
+
+  async registerPartnerTruck(payload) {
+    const res = await fetch(`${API_BASE}/partner-trucks/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to register partner truck');
+    return data;
+  },
+
+  async declarePartnerAvailability(payload) {
+    const res = await fetch(`${API_BASE}/partner-trucks/declare-availability`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to declare availability');
+    return data;
+  },
+
+  async verifyPartnerTruck(payload) {
+    const res = await fetch(`${API_BASE}/partner-trucks/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to update partner verification status');
+    return data;
   }
 };
 
