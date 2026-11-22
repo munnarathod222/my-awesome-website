@@ -92,19 +92,26 @@ export default function DepartureBoardPage() {
 
       // If API returned empty, fetch directly from PocketBase trip_logs
       if (list.length === 0) {
-        // First try to get any non-completed trips
-        let trips = await pb.collection('trip_logs').getFullList({
+        // Fetch any active/ongoing trips
+        const activeTrips = await pb.collection('trip_logs').getFullList({
           filter: 'trip_status != "Completed" && trip_status != "Cancelled"',
           sort: '-created',
           $autoCancel: false
         }).catch(() => []);
 
-        // If all trips in DB are completed or no active trips, fetch latest real trips from trip_logs
-        if (trips.length === 0) {
-          trips = await pb.collection('trip_logs').getList(1, 50, {
-            sort: '-date,-created',
-            $autoCancel: false
-          }).then(r => r.items).catch(() => []);
+        // Also fetch latest real trips
+        const recentTrips = await pb.collection('trip_logs').getList(1, 50, {
+          sort: '-date,-created',
+          $autoCancel: false
+        }).then(r => r.items).catch(() => []);
+
+        const seenIds = new Set();
+        const trips = [];
+        for (const t of [...activeTrips, ...recentTrips]) {
+          if (!seenIds.has(t.id)) {
+            seenIds.add(t.id);
+            trips.push(t);
+          }
         }
 
         const trucks = await pb.collection('trucks').getFullList({
@@ -158,6 +165,31 @@ export default function DepartureBoardPage() {
           };
         });
       }
+
+      // Sort priority: active/ongoing first, then most recent departures (newest first)
+      const statusPriority = {
+        'Delayed / Breakdown': 1,
+        'Delayed': 1,
+        'Loading in Progress': 2,
+        'Loading': 2,
+        'Arrived at Dock': 3,
+        'Unloading in Progress': 4,
+        'Vehicle Assigned': 5,
+        'Upcoming': 6,
+        'In Transit': 7,
+        'Dispatched': 8,
+        'Arrived at Delivery Location': 9,
+        'Delivered': 10,
+        'Completed': 11
+      };
+      list.sort((a, b) => {
+        const pA = statusPriority[a.status] || 99;
+        const pB = statusPriority[b.status] || 99;
+        if (pA !== pB) return pA - pB;
+        const timeA = a.scheduled_departure ? new Date(a.scheduled_departure).getTime() : 0;
+        const timeB = b.scheduled_departure ? new Date(b.scheduled_departure).getTime() : 0;
+        return timeB - timeA;
+      });
 
       setDepartures(list);
     } catch (err) {

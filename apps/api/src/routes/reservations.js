@@ -476,18 +476,25 @@ router.get('/departures', async (req, res) => {
     const truckMap = new Map();
     trucks.forEach(t => truckMap.set(t.truck_number, t));
 
-    // 2. Fetch active / scheduled trips from trip_logs, or latest real trips
-    let trips = await pb.collection('trip_logs').getFullList({
+    // 2. Fetch active / scheduled trips from trip_logs, plus latest real trips
+    const activeTrips = await pb.collection('trip_logs').getFullList({
       filter: 'trip_status != "Completed" && trip_status != "Cancelled"',
       sort: '-created',
       $autoCancel: false
     }).catch(() => []);
 
-    if (trips.length === 0) {
-      trips = await pb.collection('trip_logs').getList(1, 50, {
-        sort: '-date,-created',
-        $autoCancel: false
-      }).then(r => r.items).catch(() => []);
+    const recentTrips = await pb.collection('trip_logs').getList(1, 50, {
+      sort: '-date,-created',
+      $autoCancel: false
+    }).then(r => r.items).catch(() => []);
+
+    const seenIds = new Set();
+    const trips = [];
+    for (const t of [...activeTrips, ...recentTrips]) {
+      if (!seenIds.has(t.id)) {
+        seenIds.add(t.id);
+        trips.push(t);
+      }
     }
 
     // 3. Fetch active / confirmed reservations
@@ -585,7 +592,7 @@ router.get('/departures', async (req, res) => {
       }
     });
 
-    // Sort priority by operational state
+    // Sort priority by operational state (ongoing/active trips first, then completed)
     const statusPriority = {
       'Delayed / Breakdown': 1,
       'Delayed': 1,
@@ -605,7 +612,10 @@ router.get('/departures', async (req, res) => {
       const pA = statusPriority[a.status] || 99;
       const pB = statusPriority[b.status] || 99;
       if (pA !== pB) return pA - pB;
-      return new Date(a.scheduled_departure).getTime() - new Date(b.scheduled_departure).getTime();
+      // Within same status tier: NEWEST / MOST RECENT FIRST!
+      const timeA = a.scheduled_departure ? new Date(a.scheduled_departure).getTime() : 0;
+      const timeB = b.scheduled_departure ? new Date(b.scheduled_departure).getTime() : 0;
+      return timeB - timeA;
     });
 
     return res.status(200).json({
