@@ -7,7 +7,8 @@ import {
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
   TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert, Building2, UserPlus, Sparkles,
-  Navigation, QrCode, Receipt, IdCard, Database, CircleDashed, Briefcase
+  Navigation, QrCode, Receipt, IdCard, Database, CircleDashed, Briefcase,
+  PlaneTakeoff
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
@@ -88,6 +89,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         {
       title: 'Fleet Reservation',
       items: [
+        { icon: PlaneTakeoff,   label: 'Departure Board (FIDS)',   path: '/departure-board',           roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: CalendarDays,   label: 'Fleet Calendar',           path: '/reservations/calendar',     roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Compass,        label: 'Movement Prediction',      path: '/reservations/prediction',   roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Search,         label: 'Availability Search',      path: '/reservations/search',       roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },

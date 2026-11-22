@@ -55,6 +55,7 @@ import MovementPredictionPage from './pages/MovementPredictionPage.jsx';
 import AvailabilitySearchPage from './pages/AvailabilitySearchPage.jsx';
 import BookingManagementPage from './pages/BookingManagementPage.jsx';
 import ReturnLoadPage from './pages/ReturnLoadPage.jsx';
+import DepartureBoardPage from './pages/DepartureBoardPage.jsx';
 
 import GPSPage from './pages/GPSPage.jsx';
 import TripManagerPage from './pages/TripManagerPage.jsx';
@@ -267,6 +268,9 @@ function App() {
             <Route path="/reservations/search" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher','supervisor','user']}><AvailabilitySearchPage /></ProtectedRoute>} />
             <Route path="/reservations/manage" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher']}><BookingManagementPage /></ProtectedRoute>} />
             <Route path="/reservations/return-loads" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher']}><ReturnLoadPage /></ProtectedRoute>} />
+            <Route path="/reservations/departures" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher','supervisor']}><DepartureBoardPage /></ProtectedRoute>} />
+            <Route path="/departure-board" element={<ProtectedRoute allowedRoles={['super_admin','admin','manager','dispatcher','supervisor']}><DepartureBoardPage /></ProtectedRoute>} />
+            <Route path="/reservations" element={<Navigate to="/departure-board" replace />} />
             <Route path="/truck-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'supervisor']}><TruckManagerPage /></ProtectedRoute>} />
             <Route path="/gps" element={<ProtectedRoute><GPSPage /></ProtectedRoute>} />
                   <Route path="/tyres" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor']}><TyreManagementPage /></ProtectedRoute>} />
