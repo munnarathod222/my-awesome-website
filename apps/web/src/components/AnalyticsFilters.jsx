@@ -21,6 +21,9 @@ const AnalyticsFilters = ({ filters, setFilters, onApply, onReset }) => {
     } else if (presetKey === 'last_3_months') {
       start = format(startOfMonth(subMonths(now, 2)), 'yyyy-MM-dd');
       end = format(endOfMonth(now), 'yyyy-MM-dd');
+    } else if (presetKey === 'fy_26_27' || presetKey === 'current_fy') {
+      start = '2026-04-01';
+      end = format(now, 'yyyy-MM-dd');
     } else if (presetKey === 'fy_25_26') {
       start = '2025-04-01';
       end = '2026-03-31';
@@ -93,6 +96,7 @@ const AnalyticsFilters = ({ filters, setFilters, onApply, onReset }) => {
               <SelectValue placeholder="Quick Range" />
             </SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+              <SelectItem value="current_fy">Current FY (2026-27)</SelectItem>
               <SelectItem value="this_month">This Month</SelectItem>
               <SelectItem value="last_month">Last Month</SelectItem>
               <SelectItem value="last_3_months">Last 3 Months</SelectItem>
