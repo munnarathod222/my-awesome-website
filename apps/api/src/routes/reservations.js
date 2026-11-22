@@ -497,20 +497,11 @@ router.get('/departures', async (req, res) => {
       const truck = truckMap.get(trip.truck_number) || {};
       const scheduledTime = trip.loading_dock_arrival_time || trip.date || todayStr;
       
-      let status = 'SCHEDULED';
+      // Preserve the real system status from trip_logs (e.g. "Loading in Progress", "Arrived at Dock", "Unloading in Progress", "Dispatched", etc.)
+      const systemStatus = trip.trip_status || 'Upcoming';
       let delayMinutes = 0;
-      if (trip.trip_status === 'In Transit' || trip.dispatched_time) {
-        status = 'DEPARTED';
-      } else if (trip.trip_status === 'Loading' || trip.loading_dock_arrival_time) {
-        status = 'BOARDING';
-      } else {
-        const schedDate = new Date(scheduledTime);
-        if (!isNaN(schedDate.getTime()) && now.getTime() > schedDate.getTime() + 15 * 60 * 1000) {
-          delayMinutes = Math.round((now.getTime() - schedDate.getTime()) / (60 * 1000));
-          status = 'DELAYED';
-        } else {
-          status = 'GATE OPEN';
-        }
+      if (systemStatus.toLowerCase().includes('delayed') || systemStatus.toLowerCase().includes('breakdown')) {
+        delayMinutes = 25;
       }
 
       const bayNum = (idx % 6) + 1;
@@ -527,13 +518,14 @@ router.get('/departures', async (req, res) => {
         destination: trip.route ? trip.route.split(' to ')[1] : 'Hubli Terminal',
         dock_bay: `Bay #${String(bayNum).padStart(2, '0')}`,
         scheduled_departure: scheduledTime,
-        status,
+        status: systemStatus,
+        trip_status: systemStatus,
         delay_minutes: delayMinutes,
         lr_pod_number: trip.invoice_number || trip.trip_id || `LR-${480 + idx}`,
         cargo_weight: trip.actual_weight || '14.5 MT',
         fastag_balance: truck.current_fastag_balance || 3500,
         seal_number: trip.seal_number || `JBC-SEAL-${8290 + idx}`,
-        is_ready: status === 'DEPARTED' || status === 'GATE OPEN'
+        is_ready: systemStatus === 'Dispatched' || systemStatus === 'Arrived at Dock'
       });
     });
 
@@ -566,8 +558,22 @@ router.get('/departures', async (req, res) => {
       }
     });
 
-    // Sort: Delayed & Boarding first, then Scheduled by time, then Departed
-    const statusPriority = { 'DELAYED': 1, 'BOARDING': 2, 'GATE OPEN': 3, 'HELD': 4, 'SCHEDULED': 5, 'DEPARTED': 6 };
+    // Sort priority by operational state
+    const statusPriority = {
+      'Delayed / Breakdown': 1,
+      'Delayed': 1,
+      'Loading in Progress': 2,
+      'Loading': 2,
+      'Arrived at Dock': 3,
+      'Unloading in Progress': 4,
+      'Vehicle Assigned': 5,
+      'Upcoming': 6,
+      'In Transit': 7,
+      'Dispatched': 8,
+      'Arrived at Delivery Location': 9,
+      'Delivered': 10,
+      'Completed': 11
+    };
     departures.sort((a, b) => {
       const pA = statusPriority[a.status] || 99;
       const pB = statusPriority[b.status] || 99;
@@ -578,7 +584,7 @@ router.get('/departures', async (req, res) => {
     return res.status(200).json({
       success: true,
       timestamp: now.toISOString(),
-      active_bays_count: departures.filter(d => d.status !== 'DEPARTED').length,
+      active_bays_count: departures.filter(d => d.status !== 'Delivered' && d.status !== 'Completed' && d.status !== 'Cancelled').length,
       departures
     });
   } catch (err) {
