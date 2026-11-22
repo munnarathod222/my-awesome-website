@@ -443,12 +443,14 @@ export default function DepartureFlightBoardFullscreen({
 
                       {/* LR Number */}
                       <td className="py-4 px-4 whitespace-nowrap text-slate-400 font-bold text-xs">
-                        {dep.lr_pod_number || 'LR-PENDING'}
+                        {dep.lr_pod_number || '—'}
                       </td>
 
                       {/* Cargo Weight */}
                       <td className="py-4 px-4 whitespace-nowrap text-slate-300 font-bold text-xs">
-                        {dep.cargo_weight || '14.5 MT'}
+                        {dep.cargo_weight && dep.cargo_weight !== '0' && dep.cargo_weight !== '0 MT' && dep.cargo_weight !== '14.5 MT' 
+                          ? dep.cargo_weight 
+                          : '—'}
                       </td>
 
                       {/* EXACT SYSTEM STATUS */}

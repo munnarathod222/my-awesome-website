@@ -476,12 +476,19 @@ router.get('/departures', async (req, res) => {
     const truckMap = new Map();
     trucks.forEach(t => truckMap.set(t.truck_number, t));
 
-    // 2. Fetch active / scheduled trips from trip_logs
-    const trips = await pb.collection('trip_logs').getFullList({
+    // 2. Fetch active / scheduled trips from trip_logs, or latest real trips
+    let trips = await pb.collection('trip_logs').getFullList({
       filter: 'trip_status != "Completed" && trip_status != "Cancelled"',
       sort: '-created',
       $autoCancel: false
     }).catch(() => []);
+
+    if (trips.length === 0) {
+      trips = await pb.collection('trip_logs').getList(1, 50, {
+        sort: '-date,-created',
+        $autoCancel: false
+      }).then(r => r.items).catch(() => []);
+    }
 
     // 3. Fetch active / confirmed reservations
     const reservations = await pb.collection('truck_reservations').getFullList({
@@ -497,7 +504,6 @@ router.get('/departures', async (req, res) => {
       const truck = truckMap.get(trip.truck_number) || {};
       const scheduledTime = trip.loading_dock_arrival_time || trip.date || todayStr;
       
-      // Preserve the real system status from trip_logs (e.g. "Loading in Progress", "Arrived at Dock", "Unloading in Progress", "Dispatched", etc.)
       const systemStatus = trip.trip_status || 'Upcoming';
       let delayMinutes = 0;
       if (systemStatus.toLowerCase().includes('delayed') || systemStatus.toLowerCase().includes('breakdown')) {
@@ -506,25 +512,46 @@ router.get('/departures', async (req, res) => {
 
       const bayNum = (idx % 6) + 1;
 
+      let origin = 'Hyderabad';
+      let destination = 'Hubli';
+      if (trip.route) {
+        if (trip.route.includes(' to ') || trip.route.includes(' To ')) {
+          const parts = trip.route.split(/\s+[tT][oO]\s+/);
+          origin = parts[0]?.trim() || origin;
+          destination = parts[1]?.trim() || destination;
+        } else if (trip.route.includes('->') || trip.route.includes('➔')) {
+          const parts = trip.route.split(/->|➔/);
+          origin = parts[0]?.trim() || origin;
+          destination = parts[parts.length - 1]?.trim() || destination;
+        } else {
+          origin = trip.route;
+        }
+      }
+
+      const rawWeight = Number(trip.actual_weight) || Number(trip.charged_weight) || 0;
+      const cargoWeight = rawWeight > 0 
+        ? `${rawWeight} MT` 
+        : (trip.packages_count > 0 ? `${trip.packages_count} pkgs` : '—');
+
       departures.push({
         id: trip.id,
         type: 'trip',
         trip_code: trip.trip_id || `TRIP-${idx + 101}`,
         truck_number: trip.truck_number,
-        vehicle_category: truck.vehicle_class || truck.truck_size || '32FT SXL Container',
-        driver_name: trip.driver_name || truck.driver_name || 'Assigned Pilot',
-        driver_phone: truck.driver_phone || '9876543210',
-        origin: trip.route ? trip.route.split(' to ')[0] : 'Hyderabad Hub',
-        destination: trip.route ? trip.route.split(' to ')[1] : 'Hubli Terminal',
+        vehicle_category: truck.vehicle_class || truck.truck_size || '32 FT',
+        driver_name: trip.driver_name || truck.driver_name || 'Driver Not Assigned',
+        driver_phone: truck.driver_phone || '',
+        origin: origin,
+        destination: destination,
         dock_bay: `Bay #${String(bayNum).padStart(2, '0')}`,
         scheduled_departure: scheduledTime,
         status: systemStatus,
         trip_status: systemStatus,
         delay_minutes: delayMinutes,
-        lr_pod_number: trip.invoice_number || trip.trip_id || `LR-${480 + idx}`,
-        cargo_weight: trip.actual_weight || '14.5 MT',
-        fastag_balance: truck.current_fastag_balance || 3500,
-        seal_number: trip.seal_number || `JBC-SEAL-${8290 + idx}`,
+        lr_pod_number: trip.invoice_number || trip.trip_id || '—',
+        cargo_weight: cargoWeight,
+        fastag_balance: truck.current_fastag_balance || 0,
+        seal_number: trip.seal_number || '',
         is_ready: systemStatus === 'Dispatched' || systemStatus === 'Arrived at Dock'
       });
     });

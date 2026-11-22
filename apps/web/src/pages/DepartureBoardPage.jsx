@@ -90,13 +90,22 @@ export default function DepartureBoardPage() {
         }
       } catch (_) {}
 
-      // If API returned empty or failed, fetch directly from PocketBase trip_logs
+      // If API returned empty, fetch directly from PocketBase trip_logs
       if (list.length === 0) {
-        const trips = await pb.collection('trip_logs').getFullList({
+        // First try to get any non-completed trips
+        let trips = await pb.collection('trip_logs').getFullList({
           filter: 'trip_status != "Completed" && trip_status != "Cancelled"',
           sort: '-created',
           $autoCancel: false
         }).catch(() => []);
+
+        // If all trips in DB are completed or no active trips, fetch latest real trips from trip_logs
+        if (trips.length === 0) {
+          trips = await pb.collection('trip_logs').getList(1, 50, {
+            sort: '-date,-created',
+            $autoCancel: false
+          }).then(r => r.items).catch(() => []);
+        }
 
         const trucks = await pb.collection('trucks').getFullList({
           $autoCancel: false
@@ -109,166 +118,45 @@ export default function DepartureBoardPage() {
           const bayNum = (idx % 6) + 1;
           const sysStatus = trip.trip_status || 'Upcoming';
 
+          let origin = 'Hyderabad';
+          let destination = 'Hubli';
+          if (trip.route) {
+            if (trip.route.includes(' to ') || trip.route.includes(' To ')) {
+              const parts = trip.route.split(/\s+[tT][oO]\s+/);
+              origin = parts[0]?.trim() || origin;
+              destination = parts[1]?.trim() || destination;
+            } else if (trip.route.includes('->') || trip.route.includes('➔')) {
+              const parts = trip.route.split(/->|➔/);
+              origin = parts[0]?.trim() || origin;
+              destination = parts[parts.length - 1]?.trim() || destination;
+            } else {
+              origin = trip.route;
+            }
+          }
+
+          const rawWeight = Number(trip.actual_weight) || Number(trip.charged_weight) || 0;
+          const cargoWeight = rawWeight > 0 
+            ? `${rawWeight} MT` 
+            : (trip.packages_count > 0 ? `${trip.packages_count} pkgs` : '—');
+
           return {
             id: trip.id,
             type: 'trip',
             trip_code: trip.trip_id || `TRIP-${idx + 101}`,
-            truck_number: trip.truck_number || 'TG 12 B 9021',
-            vehicle_category: truck.vehicle_class || truck.truck_size || '32FT Container',
-            driver_name: trip.driver_name || truck.driver_name || 'Assigned Driver',
-            origin: trip.route ? trip.route.split(' to ')[0] : (trip.origin || 'Hyderabad'),
-            destination: trip.route ? trip.route.split(' to ')[1] : (trip.destination || 'Hubli'),
+            truck_number: trip.truck_number || '',
+            vehicle_category: truck.vehicle_class || truck.truck_size || '32 FT',
+            driver_name: trip.driver_name || truck.driver_name || 'Driver Not Assigned',
+            origin: origin,
+            destination: destination,
             dock_bay: `Bay #${String(bayNum).padStart(2, '0')}`,
             scheduled_departure: trip.loading_dock_arrival_time || trip.date || new Date().toISOString(),
             status: sysStatus,
             trip_status: sysStatus,
             delay_minutes: sysStatus.toLowerCase().includes('delayed') ? 25 : 0,
-            lr_pod_number: trip.invoice_number || trip.trip_id || `LR-${892100 + idx}`,
-            cargo_weight: trip.actual_weight ? `${trip.actual_weight} MT` : '14.5 MT'
+            lr_pod_number: trip.invoice_number || trip.trip_id || '—',
+            cargo_weight: cargoWeight
           };
         });
-      }
-
-      // If still empty (e.g. fresh environment or offline/unauthenticated DB access), populate standard active terminal departures
-      if (list.length === 0) {
-        list = [
-          {
-            id: 'dep-hyd-hub-01',
-            type: 'trip',
-            trip_code: 'JBC-HYD-01',
-            truck_number: 'TG 12 B 9021',
-            vehicle_category: '32FT MXL Container',
-            driver_name: 'Suresh Kumar',
-            origin: 'Hyderabad',
-            destination: 'Hubli',
-            dock_bay: 'Bay #02',
-            scheduled_departure: new Date(Date.now() + 15 * 60000).toISOString(),
-            status: 'Loading in Progress',
-            trip_status: 'Loading in Progress',
-            delay_minutes: 0,
-            lr_pod_number: 'LR-892101',
-            cargo_weight: '14.5 MT'
-          },
-          {
-            id: 'dep-hyd-pun-02',
-            type: 'trip',
-            trip_code: 'JBC-HYD-02',
-            truck_number: 'TS 08 UB 4519',
-            vehicle_category: '20FT Closed Body',
-            driver_name: 'Ramesh Goud',
-            origin: 'Hyderabad',
-            destination: 'Pune',
-            dock_bay: 'Bay #04',
-            scheduled_departure: new Date(Date.now() + 35 * 60000).toISOString(),
-            status: 'Arrived at Dock',
-            trip_status: 'Arrived at Dock',
-            delay_minutes: 0,
-            lr_pod_number: 'LR-892102',
-            cargo_weight: '8.2 MT'
-          },
-          {
-            id: 'dep-pun-hyd-03',
-            type: 'trip',
-            trip_code: 'JBC-PUN-01',
-            truck_number: 'MH 12 QX 8832',
-            vehicle_category: '32FT SXL Container',
-            driver_name: 'Vinod Rathod',
-            origin: 'Pune',
-            destination: 'Hyderabad',
-            dock_bay: 'Bay #01',
-            scheduled_departure: new Date(Date.now() - 45 * 60000).toISOString(),
-            status: 'Delayed / Breakdown',
-            trip_status: 'Delayed / Breakdown',
-            delay_minutes: 45,
-            lr_pod_number: 'LR-892103',
-            cargo_weight: '15.8 MT'
-          },
-          {
-            id: 'dep-blr-hyd-04',
-            type: 'trip',
-            trip_code: 'JBC-BLR-01',
-            truck_number: 'KA 01 AH 3311',
-            vehicle_category: '24FT Open High Deck',
-            driver_name: 'Manjunath',
-            origin: 'Bangalore',
-            destination: 'Hyderabad',
-            dock_bay: 'Bay #03',
-            scheduled_departure: new Date(Date.now() - 90 * 60000).toISOString(),
-            status: 'Dispatched',
-            trip_status: 'Dispatched',
-            delay_minutes: 0,
-            lr_pod_number: 'LR-892104',
-            cargo_weight: '11.0 MT'
-          },
-          {
-            id: 'dep-maa-hyd-05',
-            type: 'trip',
-            trip_code: 'JBC-MAA-01',
-            truck_number: 'TN 04 BC 6721',
-            vehicle_category: '32FT Container',
-            driver_name: 'Anbarasan M',
-            origin: 'Chennai',
-            destination: 'Hyderabad',
-            dock_bay: 'Bay #05',
-            scheduled_departure: new Date(Date.now() - 180 * 60000).toISOString(),
-            status: 'In Transit',
-            trip_status: 'In Transit',
-            delay_minutes: 0,
-            lr_pod_number: 'LR-892105',
-            cargo_weight: '16.2 MT'
-          },
-          {
-            id: 'dep-bza-hub-06',
-            type: 'trip',
-            trip_code: 'JBC-BZA-01',
-            truck_number: 'AP 29 TA 1980',
-            vehicle_category: '32FT Container',
-            driver_name: 'K. Venkatesh',
-            origin: 'Vijayawada',
-            destination: 'Hubli',
-            dock_bay: 'Bay #06',
-            scheduled_departure: new Date(Date.now() - 15 * 60000).toISOString(),
-            status: 'Unloading in Progress',
-            trip_status: 'Unloading in Progress',
-            delay_minutes: 0,
-            lr_pod_number: 'LR-892106',
-            cargo_weight: '13.4 MT'
-          },
-          {
-            id: 'dep-nag-hyd-07',
-            type: 'trip',
-            trip_code: 'JBC-NAG-01',
-            truck_number: 'MH 31 CB 7712',
-            vehicle_category: '20FT Container',
-            driver_name: 'Santosh Shinde',
-            origin: 'Nagpur',
-            destination: 'Hyderabad',
-            dock_bay: 'Bay #02',
-            scheduled_departure: new Date(Date.now() + 120 * 60000).toISOString(),
-            status: 'Vehicle Assigned',
-            trip_status: 'Vehicle Assigned',
-            delay_minutes: 0,
-            lr_pod_number: 'LR-892107',
-            cargo_weight: '7.5 MT'
-          },
-          {
-            id: 'dep-hub-hyd-08',
-            type: 'trip',
-            trip_code: 'JBC-HUB-01',
-            truck_number: 'KA 25 D 1029',
-            vehicle_category: '32FT Multi-Axle',
-            driver_name: 'Basavaraj P',
-            origin: 'Hubli',
-            destination: 'Hyderabad',
-            dock_bay: 'Bay #03',
-            scheduled_departure: new Date(Date.now() + 180 * 60000).toISOString(),
-            status: 'Upcoming',
-            trip_status: 'Upcoming',
-            delay_minutes: 0,
-            lr_pod_number: 'LR-892108',
-            cargo_weight: '15.0 MT'
-          }
-        ];
       }
 
       setDepartures(list);
