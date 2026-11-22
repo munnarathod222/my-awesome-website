@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   PlaneTakeoff, Clock, Minimize2, RefreshCw, ArrowRight, User, 
   Truck, ShieldAlert, Sparkles, ChevronLeft, ChevronRight, Pause, Play,
-  Search, Copy, Check, Share2, IndianRupee, Radio
+  Search, Copy, Check, Share2, IndianRupee, Radio, Maximize2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatRateBadge, laneRateClient } from '@/lib/laneRateClient.js';
+import { createPortal } from '@/lib/react-shim.js';
 import { toast } from 'sonner';
 
 // System Status Visual Theme Configuration
@@ -136,6 +137,7 @@ export default function DepartureFlightBoardFullscreen({
   onRefresh, 
   onDepartureClick 
 }) {
+  const containerRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentPage, setCurrentPage] = useState(0);
   const [isAutoPaging, setIsAutoPaging] = useState(true);
@@ -147,6 +149,15 @@ export default function DepartureFlightBoardFullscreen({
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Request browser native fullscreen on mount if supported
+  useEffect(() => {
+    try {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch (_) {}
   }, []);
 
   const totalPages = Math.max(1, Math.ceil(departures.length / ITEMS_PER_PAGE));
@@ -212,8 +223,31 @@ export default function DepartureFlightBoardFullscreen({
     setTimeout(() => setQuoteCopied(false), 2000);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-[#07090e] text-white flex flex-col justify-between overflow-hidden font-mono select-none">
+  const handleManualExit = () => {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (_) {}
+    onExitFullscreen?.();
+  };
+
+  const boardContent = (
+    <div 
+      ref={containerRef}
+      className="fixed inset-0 w-screen h-screen z-[999999] bg-[#07090e] text-white flex flex-col justify-between overflow-hidden font-mono select-none"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 999999,
+        backgroundColor: '#07090e'
+      }}
+    >
       
       {/* ── Top Airport Terminal Solari Header ─────────────────────────── */}
       <div className="bg-[#0b0e17] border-b border-slate-800/90 px-6 py-4 flex items-center justify-between shadow-2xl shrink-0">
@@ -302,11 +336,11 @@ export default function DepartureFlightBoardFullscreen({
           {/* Exit Fullscreen */}
           <Button
             size="sm"
-            onClick={onExitFullscreen}
-            className="bg-rose-600 hover:bg-rose-500 text-white font-black text-xs h-11 px-4 rounded-xl shadow-lg shadow-rose-600/30"
+            onClick={handleManualExit}
+            className="bg-rose-600 hover:bg-rose-500 text-white font-black text-xs h-11 px-4 rounded-xl shadow-lg shadow-rose-600/30 flex items-center gap-1.5"
           >
-            <Minimize2 className="w-4 h-4 mr-1.5" />
-            Exit Fullscreen (Esc)
+            <Minimize2 className="w-4 h-4" />
+            <span>Exit Fullscreen (Esc)</span>
           </Button>
         </div>
       </div>
@@ -551,4 +585,9 @@ export default function DepartureFlightBoardFullscreen({
 
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(boardContent, document.body);
+  }
+  return boardContent;
 }

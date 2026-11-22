@@ -1,6 +1,7 @@
-import { r as _React } from './vendor-react-Bs5V2qFE.js';
+import { r as _React, a as _ReactDOM } from './vendor-react-Bs5V2qFE.js';
 
 const React = _React || (typeof window !== 'undefined' ? window.React : {});
+const ReactDOM = _ReactDOM || (typeof window !== 'undefined' ? window.ReactDOM : {});
 
 export const useState = (...args) => React.useState(...args);
 export const useEffect = (...args) => React.useEffect(...args);
@@ -24,16 +25,17 @@ export const PureComponent = React.PureComponent || class PureComponent extends 
 
 export const createPortal = (children, container) => {
   try {
+    if (ReactDOM && typeof ReactDOM.createPortal === 'function') {
+      return ReactDOM.createPortal(children, container || (typeof document !== 'undefined' ? document.body : null));
+    }
     if (typeof window !== 'undefined' && window.ReactDOM && typeof window.ReactDOM.createPortal === 'function') {
-      return window.ReactDOM.createPortal(children, container);
+      return window.ReactDOM.createPortal(children, container || (typeof document !== 'undefined' ? document.body : null));
     }
   } catch (e) {}
   return children;
 };
 
-export const ReactDOM = {
-  createPortal
-};
+export { ReactDOM };
 
 export const jsx = (type, props, key) => {
   if (!props) return React.createElement(type, key !== undefined ? { key } : null);
