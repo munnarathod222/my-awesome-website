@@ -690,6 +690,27 @@ Best Regards,
             client_payment_status: 'paid'
           }, { $autoCancel: false });
         }
+
+        // Record income in cashbook if not already present
+        try {
+          const tripCode = req.expand?.trip_id?.trip_id || req.trip_id || id;
+          const recAmt = Number(req.amount || 0);
+          if (recAmt > 0) {
+            await pb.collection('cashbook').create({
+              date: new Date().toISOString(),
+              description: `Payment Received - Trip ${tripCode}`,
+              amount: recAmt,
+              transaction_type: 'Income',
+              category: 'Trip Revenue',
+              added_by: currentUser?.id || pb.authStore.model?.id || '',
+              reference_id: req.trip_id || id,
+              reference_type: 'trip_payment',
+              status: 'Completed'
+            }, { $autoCancel: false }).catch(() => {});
+          }
+        } catch (cbErr) {
+          console.warn('Optional cashbook recording skipped:', cbErr?.message);
+        }
       }
 
       toast.success(`Successfully marked ${selectedIds.length} requests as Paid`);

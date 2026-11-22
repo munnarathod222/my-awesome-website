@@ -165,17 +165,17 @@ export default function CashbookPage() {
 
   const isLoading = !isInitialized || isTxLoading;
 
+  const openingAmt = useMemo(() => {
+    if (!openingBalanceRecord) return 0;
+    const isCredit = openingBalanceRecord.transaction_type === 'Income' || openingBalanceRecord.transaction_type === 'credit';
+    return isCredit ? Number(openingBalanceRecord.amount || 0) : -Number(openingBalanceRecord.amount || 0);
+  }, [openingBalanceRecord]);
+
   const processedTransactions = useMemo(() => {
     if (!transactions) return [];
     
     // Filter out the opening balance record from regular transactions list
     const regularTxs = transactions.filter(t => t.description !== 'Opening Balance' && t.reference_type !== 'opening_balance');
-    
-    let openingAmt = 0;
-    if (openingBalanceRecord) {
-      const isCredit = openingBalanceRecord.transaction_type === 'Income' || openingBalanceRecord.transaction_type === 'credit';
-      openingAmt = isCredit ? Number(openingBalanceRecord.amount) : -Number(openingBalanceRecord.amount);
-    }
     
     let currentBal = openingAmt;
     // Deterministic chronological sort (oldest to newest)
@@ -208,17 +208,18 @@ export default function CashbookPage() {
     if (openingBalanceRecord) {
       reversed.push({
         id: openingBalanceRecord.id || 'ob-item',
-        date: openingBalanceRecord.date || new Date().toISOString(),
+        date: openingBalanceRecord.date || '2000-01-01T00:00:00.000Z',
         isOpeningBalance: true,
         running_balance: openingAmt,
         description: 'Opening Balance',
         category: 'Opening Balance',
-        amount: Math.abs(openingAmt)
+        amount: Math.abs(openingAmt),
+        isIncome: openingAmt >= 0
       });
     }
     
     return reversed;
-  }, [transactions, openingBalanceRecord]);
+  }, [transactions, openingBalanceRecord, openingAmt]);
 
   const filteredTransactions = useMemo(() => {
     return processedTransactions.filter(tx => {
@@ -257,18 +258,33 @@ export default function CashbookPage() {
   };
 
   const displayBalance = useMemo(() => {
-    let openingAmt = 0;
-    if (openingBalanceRecord) {
-      const isCredit = openingBalanceRecord.transaction_type === 'Income' || openingBalanceRecord.transaction_type === 'credit';
-      openingAmt = isCredit ? Number(openingBalanceRecord.amount) : -Number(openingBalanceRecord.amount);
-    }
-    
     const regularTxs = transactions ? transactions.filter(t => t.description !== 'Opening Balance' && t.reference_type !== 'opening_balance') : [];
-    const totalIncome = regularTxs.filter(t => t.transaction_type === 'Income' || t.transaction_type === 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
-    const totalOutflow = regularTxs.filter(t => t.transaction_type !== 'Income' && t.transaction_type !== 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    const totalInc = regularTxs.filter(t => t.transaction_type === 'Income' || t.transaction_type === 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    const totalOut = regularTxs.filter(t => t.transaction_type !== 'Income' && t.transaction_type !== 'credit').reduce((a, b) => a + (Number(b.amount) || 0), 0);
     
-    return openingAmt + totalIncome - totalOutflow;
-  }, [transactions, openingBalanceRecord]);
+    return openingAmt + totalInc - totalOut;
+  }, [transactions, openingAmt]);
+
+  const hasActiveFilter = Boolean(
+    (filters.search && filters.search.trim()) || 
+    (filters.type && filters.type !== 'all') || 
+    (filters.category && filters.category !== 'all') || 
+    (filters.employee && filters.employee !== 'all') || 
+    filters.dateFrom || 
+    filters.dateTo
+  );
+
+  const { totalIncome, totalOutflow, creditCount, debitCount } = useMemo(() => {
+    const list = hasActiveFilter ? filteredTransactions : processedTransactions;
+    const credits = list.filter(t => !t.isOpeningBalance && t.isIncome);
+    const debits = list.filter(t => !t.isOpeningBalance && !t.isIncome);
+    return {
+      totalIncome: credits.reduce((a, b) => a + (Number(b.amount) || 0), 0),
+      totalOutflow: debits.reduce((a, b) => a + (Number(b.amount) || 0), 0),
+      creditCount: credits.length,
+      debitCount: debits.length
+    };
+  }, [hasActiveFilter, filteredTransactions, processedTransactions]);
 
   const isNegativeBalance = displayBalance < 0;
 
@@ -366,7 +382,7 @@ export default function CashbookPage() {
                       <div className="mt-4 pt-4 border-t border-border/50">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Opening Balance</p>
                         <p className="text-sm font-semibold tabular-nums text-foreground">
-                          {formatCurrency(openingBalanceRecord.transaction_type === 'Expense' || openingBalanceRecord.transaction_type === 'credit' ? -openingBalanceRecord.amount : openingBalanceRecord.amount)}
+                          {formatCurrency(openingAmt)}
                         </p>
                       </div>
                     )}
@@ -377,17 +393,19 @@ export default function CashbookPage() {
                   <CardContent className="p-6 flex flex-col justify-between h-full">
                     <div>
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Total Income</p>
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                          Total Income {hasActiveFilter && <span className="text-xs font-normal text-muted-foreground lowercase">(filtered)</span>}
+                        </p>
                         <div className="p-2 bg-success/10 rounded-lg">
                           <ArrowUpRight className="w-4 h-4 text-success" />
                         </div>
                       </div>
                       <h3 className="text-3xl font-bold mt-4 text-success tabular-nums">
-                        {formatCurrency(processedTransactions.filter(t => !t.isOpeningBalance && t.isIncome).reduce((a, b) => a + (Number(b.amount) || 0), 0))}
+                        {formatCurrency(totalIncome)}
                       </h3>
                     </div>
                     <p className="text-xs text-muted-foreground mt-4">
-                      {processedTransactions.filter(t => !t.isOpeningBalance && t.isIncome).length} credit transaction(s)
+                      {creditCount} credit transaction(s){hasActiveFilter ? ' (filtered)' : ''}
                     </p>
                   </CardContent>
                 </Card>
@@ -396,17 +414,19 @@ export default function CashbookPage() {
                   <CardContent className="p-6 flex flex-col justify-between h-full">
                     <div>
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Total Outflow</p>
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                          Total Outflow {hasActiveFilter && <span className="text-xs font-normal text-muted-foreground lowercase">(filtered)</span>}
+                        </p>
                         <div className="p-2 bg-destructive/10 rounded-lg">
                           <ArrowDownRight className="w-4 h-4 text-destructive" />
                         </div>
                       </div>
                       <h3 className="text-3xl font-bold mt-4 text-destructive tabular-nums">
-                        {formatCurrency(processedTransactions.filter(t => !t.isOpeningBalance && !t.isIncome).reduce((a, b) => a + (Number(b.amount) || 0), 0))}
+                        {formatCurrency(totalOutflow)}
                       </h3>
                     </div>
                     <p className="text-xs text-muted-foreground mt-4">
-                      {processedTransactions.filter(t => !t.isOpeningBalance && !t.isIncome).length} debit transaction(s)
+                      {debitCount} debit transaction(s){hasActiveFilter ? ' (filtered)' : ''}
                     </p>
                   </CardContent>
                 </Card>

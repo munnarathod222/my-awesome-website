@@ -356,8 +356,19 @@ export default function WorkshopJobCardModal({ isOpen, onClose, jobCard, trucks 
           if (cashbookId) {
             await pb.collection('cashbook').update(cashbookId, cashbookPayload, { $autoCancel: false }).catch(() => {});
           } else {
-            const cbRec = await pb.collection('cashbook').create(cashbookPayload, { $autoCancel: false }).catch(() => null);
-            cashbookId = cbRec?.id || '';
+            // Check if record already exists to prevent duplicate entries
+            const existingCb = await pb.collection('cashbook').getList(1, 1, {
+              filter: `reference_id = "${jobCard?.id || form.job_card_number}" || description ~ "${form.job_card_number}"`,
+              $autoCancel: false
+            }).catch(() => ({ items: [] }));
+
+            if (existingCb.items && existingCb.items.length > 0) {
+              await pb.collection('cashbook').update(existingCb.items[0].id, cashbookPayload, { $autoCancel: false }).catch(() => {});
+              cashbookId = existingCb.items[0].id;
+            } else {
+              const cbRec = await pb.collection('cashbook').create(cashbookPayload, { $autoCancel: false }).catch(() => null);
+              cashbookId = cbRec?.id || '';
+            }
           }
         }
       } catch (cbErr) {

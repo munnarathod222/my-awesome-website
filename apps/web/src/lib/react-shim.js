@@ -1,7 +1,5 @@
-import { r as _React, a as _ReactDOM } from './vendor-react-Bs5V2qFE.js';
-
-const React = _React || (typeof window !== 'undefined' ? window.React : {});
-const ReactDOM = _ReactDOM || (typeof window !== 'undefined' ? window.ReactDOM : {});
+import React from 'react';
+import ReactDOM from 'react-dom';
 
 export const useState = (...args) => React.useState(...args);
 export const useEffect = (...args) => React.useEffect(...args);
