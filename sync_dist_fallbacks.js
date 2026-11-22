@@ -117,7 +117,11 @@ for (const target of targets) {
     if (clientPortalPageBuffer) {
       fs.writeFileSync(path.join(target, 'assets', 'ClientPortalPage-DuEOcerk.js'), clientPortalPageBuffer);
     }
-    console.log(`✓ Synced modern index.html, index-DLxf9dwO.js, index-B9k2Lm7P.js, MaintenancePage-B9k2Lm7P.js, ProfilePage, TripLogsPage, MaintenancePage, TruckManagerPage, TyreManagementPage, PODManagementPage, and ClientPortalPage to: ${target}`);
+    const primaryAnalyticsHub = path.resolve(__dirname, 'dist/assets/AnalyticsHub-CYZIBHI0.js');
+    if (fs.existsSync(primaryAnalyticsHub)) {
+      fs.copyFileSync(primaryAnalyticsHub, path.join(target, 'assets', 'AnalyticsHub-CYZIBHI0.js'));
+    }
+    console.log(`✓ Synced modern index.html, index-DLxf9dwO.js, index-B9k2Lm7P.js, AnalyticsHub-CYZIBHI0.js, MaintenancePage-B9k2Lm7P.js, ProfilePage, TripLogsPage, MaintenancePage, TruckManagerPage, TyreManagementPage, PODManagementPage, and ClientPortalPage to: ${target}`);
   }
 }
 
