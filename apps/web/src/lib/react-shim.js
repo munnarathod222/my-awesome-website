@@ -19,6 +19,19 @@ export const Children = React.Children;
 export const Fragment = React.Fragment;
 export const isValidElement = (...args) => React.isValidElement(...args);
 
+export const createPortal = (children, container) => {
+  try {
+    if (typeof window !== 'undefined' && window.ReactDOM && typeof window.ReactDOM.createPortal === 'function') {
+      return window.ReactDOM.createPortal(children, container);
+    }
+  } catch (e) {}
+  return children;
+};
+
+export const ReactDOM = {
+  createPortal
+};
+
 export const jsx = (type, props, key) => {
   if (!props) return React.createElement(type, key !== undefined ? { key } : null);
   const { children, ...rest } = props;
