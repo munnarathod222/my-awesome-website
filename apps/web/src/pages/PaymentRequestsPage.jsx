@@ -1213,57 +1213,57 @@ Best Regards,
         </div>
 
         {/* Executive KPI Cards Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           <Card className="border-l-4 border-l-amber-500 shadow-sm bg-card">
-            <CardContent className="p-5">
-              <div className="flex justify-between items-start">
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex justify-between items-start gap-1">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Dues Outstanding</p>
-                  <h3 className="text-2xl font-extrabold mt-1 text-foreground">₹{chartData.pendingAmt.toLocaleString('en-IN')}</h3>
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Dues</p>
+                  <h3 className="text-base sm:text-2xl font-extrabold mt-1 text-foreground">₹{chartData.pendingAmt.toLocaleString('en-IN')}</h3>
                 </div>
-                <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl">
-                  <Clock className="w-5 h-5" />
+                <div className="p-1.5 sm:p-2.5 bg-amber-500/10 text-amber-500 rounded-xl shrink-0">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1 font-medium">
-                <span className="text-amber-500 font-bold">{requests.filter(r => isRequestDelivered(r) && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).length}</span> invoices pending collection
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3 flex items-center gap-1 font-medium">
+                <span className="text-amber-500 font-bold">{requests.filter(r => isRequestDelivered(r) && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).length}</span> pending
               </p>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-emerald-500 shadow-sm bg-card">
-            <CardContent className="p-5">
-              <div className="flex justify-between items-start">
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex justify-between items-start gap-1">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Revenue Collected</p>
-                  <h3 className="text-2xl font-extrabold mt-1 text-emerald-600 dark:text-emerald-400">₹{chartData.paidAmt.toLocaleString('en-IN')}</h3>
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Collected</p>
+                  <h3 className="text-base sm:text-2xl font-extrabold mt-1 text-emerald-600 dark:text-emerald-400">₹{chartData.paidAmt.toLocaleString('en-IN')}</h3>
                 </div>
-                <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl">
-                  <CheckCircle className="w-5 h-5" />
+                <div className="p-1.5 sm:p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl shrink-0">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1 font-medium">
-                <span className="text-emerald-500 font-bold">{(chartData.paidAmt + chartData.pendingAmt) > 0 ? Math.round((chartData.paidAmt / (chartData.paidAmt + chartData.pendingAmt)) * 100) : 0}%</span> overall collection rate
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3 flex items-center gap-1 font-medium">
+                <span className="text-emerald-500 font-bold">{(chartData.paidAmt + chartData.pendingAmt) > 0 ? Math.round((chartData.paidAmt / (chartData.paidAmt + chartData.pendingAmt)) * 100) : 0}%</span> collected
               </p>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-rose-500 shadow-sm bg-card">
-            <CardContent className="p-5">
-              <div className="flex justify-between items-start">
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex justify-between items-start gap-1">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Overdue Invoices Risk</p>
-                  <h3 className="text-2xl font-extrabold mt-1 text-rose-600 dark:text-rose-400">
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Overdue Risk</p>
+                  <h3 className="text-base sm:text-2xl font-extrabold mt-1 text-rose-600 dark:text-rose-400">
                     ₹{requests.filter(r => isRequestDelivered(r) && r.calculatedStatus === 'Overdue').reduce((s, r) => s + (r.amount || 0), 0).toLocaleString('en-IN')}
                   </h3>
                 </div>
-                <div className="p-2.5 bg-rose-500/10 text-rose-500 rounded-xl">
-                  <AlertCircle className="w-5 h-5" />
+                <div className="p-1.5 sm:p-2.5 bg-rose-500/10 text-rose-500 rounded-xl shrink-0">
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-3">
-                <p className="text-xs text-rose-500 font-bold">
-                  {requests.filter(r => isRequestDelivered(r) && r.calculatedStatus === 'Overdue').length} overdue invoices
+              <div className="flex items-center justify-between mt-2 sm:mt-3">
+                <p className="text-[10px] sm:text-xs text-rose-500 font-bold">
+                  {requests.filter(r => isRequestDelivered(r) && r.calculatedStatus === 'Overdue').length} overdue
                 </p>
                 {requests.filter(r => isRequestDelivered(r) && r.calculatedStatus === 'Overdue').length > 0 && (
                   <button
@@ -1272,9 +1272,9 @@ Best Regards,
                       setActiveTab('all');
                       toast.info('Filtered to view overdue invoices');
                     }}
-                    className="text-[11px] font-bold text-rose-500 hover:underline flex items-center gap-0.5"
+                    className="text-[10px] sm:text-[11px] font-bold text-rose-500 hover:underline flex items-center gap-0.5"
                   >
-                    View Overdue &rarr;
+                    View &rarr;
                   </button>
                 )}
               </div>
@@ -1282,18 +1282,18 @@ Best Regards,
           </Card>
 
           <Card className="border-l-4 border-l-blue-500 shadow-sm bg-card">
-            <CardContent className="p-5">
-              <div className="flex justify-between items-start">
+            <CardContent className="p-3 sm:p-5">
+              <div className="flex justify-between items-start gap-1">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Collection DSO</p>
-                  <h3 className="text-2xl font-extrabold mt-1 text-blue-600 dark:text-blue-400">14 Days</h3>
+                  <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg DSO</p>
+                  <h3 className="text-base sm:text-2xl font-extrabold mt-1 text-blue-600 dark:text-blue-400">14 Days</h3>
                 </div>
-                <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl">
-                  <TrendingUp className="w-5 h-5" />
+                <div className="p-1.5 sm:p-2.5 bg-blue-500/10 text-blue-500 rounded-xl shrink-0">
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1 font-medium">
-                ⚡ Excellent receivables collection speed
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3 flex items-center gap-1 font-medium">
+                ⚡ Receivables health: Strong
               </p>
             </CardContent>
           </Card>
@@ -1321,75 +1321,79 @@ Best Regards,
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-col sm:flex-row justify-between gap-4 pb-4">
-            <CardTitle>All Requests</CardTitle>
-            <div className="flex flex-wrap items-center gap-3">
+            <CardTitle className="text-lg sm:text-xl">All Requests</CardTitle>
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search client or trip..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+                <Input placeholder="Search client or trip..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-xs sm:text-sm" />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={clientFilter} onValueChange={(val) => {
-                setClientFilter(val);
-                if (val !== 'all') {
-                  const unpaidIds = requests
-                    .filter(r => r.client_id === val && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue'))
-                    .map(r => r.id);
-                  if (unpaidIds.length > 0) {
-                    setSelectedIds(unpaidIds);
-                    const clientObj = clients.find(c => c.id === val);
-                    toast.success(`Auto-selected ${unpaidIds.length} unpaid dues for ${clientObj?.client_name || 'Client'}`);
-                  }
-                }
-              }}>
-                <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Clients" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Clients</SelectItem>
-                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.client_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={() => {
-                  setModalSelectedDate('');
-                  setIsBatchDueDateModalOpen(true);
-                }}
-                className="h-9 px-3 bg.amber-500 hover:bg-amber-600 bg-amber-600 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5"
-              >
-                <Clock className="w-4 h-4" /> Mark Due Date {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
-              </Button>
-
-              {clientFilter !== 'all' && (
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
-                  onClick={() => {
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[130px] h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                    <SelectItem value="Overdue">Overdue</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={clientFilter} onValueChange={(val) => {
+                  setClientFilter(val);
+                  if (val !== 'all') {
                     const unpaidIds = requests
-                      .filter(r => r.client_id === clientFilter && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue'))
+                      .filter(r => r.client_id === val && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue'))
                       .map(r => r.id);
                     if (unpaidIds.length > 0) {
                       setSelectedIds(unpaidIds);
-                      const clientObj = clients.find(c => c.id === clientFilter);
-                      toast.success(`Selected all ${unpaidIds.length} unpaid dues for ${clientObj?.client_name || 'Client'}`);
-                    } else {
-                      toast.info('No unpaid dues found for this client');
+                      const clientObj = clients.find(c => c.id === val);
+                      toast.success(`Auto-selected ${unpaidIds.length} unpaid dues for ${clientObj?.client_name || 'Client'}`);
                     }
+                  }
+                }}>
+                  <SelectTrigger className="w-full sm:w-[170px] h-9 text-xs"><SelectValue placeholder="All Clients" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Clients</SelectItem>
+                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.client_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={() => {
+                    setModalSelectedDate('');
+                    setIsBatchDueDateModalOpen(true);
                   }}
+                  className="h-9 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5 flex-1 sm:flex-initial text-xs"
                 >
-                  <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> 1-Click Select All Unpaid
+                  <Clock className="w-4 h-4" /> Mark Due Date {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
                 </Button>
-              )}
+
+                {clientFilter !== 'all' && (
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm flex-1 sm:flex-initial text-xs"
+                    onClick={() => {
+                      const unpaidIds = requests
+                        .filter(r => r.client_id === clientFilter && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue'))
+                        .map(r => r.id);
+                      if (unpaidIds.length > 0) {
+                        setSelectedIds(unpaidIds);
+                        const clientObj = clients.find(c => c.id === clientFilter);
+                        toast.success(`Selected all ${unpaidIds.length} unpaid dues for ${clientObj?.client_name || 'Client'}`);
+                      } else {
+                        toast.info('No unpaid dues found for this client');
+                      }
+                    }}
+                  >
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> 1-Click Select All
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -1690,57 +1694,58 @@ Best Regards,
       </TabsContent>
 
       {/* Tab 2: Aging Breakdown Workspace */}
-      <TabsContent value="aging" className="space-y-6 m-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <TabsContent value="aging" className="space-y-4 sm:space-y-6 m-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           <Card className="border-t-4 border-t-emerald-500 bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-emerald-500">Current (0 - 15 Days)</CardTitle>
+            <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+              <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-500">Current (0 - 15 Days)</CardTitle>
             </CardHeader>
-            <CardContent>
-              <h3 className="text-2xl font-extrabold text-foreground">₹{agingData.bucket0_15.amount.toLocaleString('en-IN')}</h3>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">{agingData.bucket0_15.count} Invoices</p>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <h3 className="text-lg sm:text-2xl font-extrabold text-foreground">₹{agingData.bucket0_15.amount.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium">{agingData.bucket0_15.count} Invoices</p>
             </CardContent>
           </Card>
 
           <Card className="border-t-4 border-t-amber-500 bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-amber-500">16 - 30 Days Late</CardTitle>
+            <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+              <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-500">16 - 30 Days Late</CardTitle>
             </CardHeader>
-            <CardContent>
-              <h3 className="text-2xl font-extrabold text-foreground">₹{agingData.bucket16_30.amount.toLocaleString('en-IN')}</h3>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">{agingData.bucket16_30.count} Invoices</p>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <h3 className="text-lg sm:text-2xl font-extrabold text-foreground">₹{agingData.bucket16_30.amount.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium">{agingData.bucket16_30.count} Invoices</p>
             </CardContent>
           </Card>
 
           <Card className="border-t-4 border-t-orange-500 bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-orange-500">31 - 60 Days Late</CardTitle>
+            <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+              <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-orange-500">31 - 60 Days Late</CardTitle>
             </CardHeader>
-            <CardContent>
-              <h3 className="text-2xl font-extrabold text-foreground">₹{agingData.bucket31_60.amount.toLocaleString('en-IN')}</h3>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">{agingData.bucket31_60.count} Invoices</p>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <h3 className="text-lg sm:text-2xl font-extrabold text-foreground">₹{agingData.bucket31_60.amount.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium">{agingData.bucket31_60.count} Invoices</p>
             </CardContent>
           </Card>
 
           <Card className="border-t-4 border-t-rose-500 bg-card shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-rose-500">60+ Days (High Risk)</CardTitle>
+            <CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2">
+              <CardTitle className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-rose-500">60+ Days (High Risk)</CardTitle>
             </CardHeader>
-            <CardContent>
-              <h3 className="text-2xl font-extrabold text-foreground">₹{agingData.bucket60_plus.amount.toLocaleString('en-IN')}</h3>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">{agingData.bucket60_plus.count} Invoices</p>
+            <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+              <h3 className="text-lg sm:text-2xl font-extrabold text-foreground">₹{agingData.bucket60_plus.amount.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium">{agingData.bucket60_plus.count} Invoices</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Aging Details Table */}
+        {/* Aging Details Table & Mobile Card View */}
         <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Aging Invoice Breakdown</CardTitle>
-            <CardDescription>Overdue invoices categorized by aging schedule</CardDescription>
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg">Aging Invoice Breakdown</CardTitle>
+            <CardDescription className="text-xs">Overdue invoices categorized by aging schedule</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
@@ -1797,21 +1802,99 @@ Best Regards,
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card List View for Aging */}
+            <div className="block md:hidden divide-y divide-border/40">
+              {processedData.filter(r => (r.linkedTrip?.trip_status === 'Delivered' || !r.linkedTrip) && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).length === 0 ? (
+                <div className="text-center py-8 text-xs text-muted-foreground p-4">
+                  No pending or overdue invoices found.
+                </div>
+              ) : (
+                processedData.filter(r => (r.linkedTrip?.trip_status === 'Delivered' || !r.linkedTrip) && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).map(r => {
+                  const days = r.daysOverdue || 0;
+                  let bucketLabel = '0-15 Days';
+                  let bucketBadgeCls = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+                  if (days > 60) {
+                    bucketLabel = '60+ Days (High Risk)';
+                    bucketBadgeCls = 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+                  } else if (days > 30) {
+                    bucketLabel = '31-60 Days';
+                    bucketBadgeCls = 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+                  } else if (days > 15) {
+                    bucketLabel = '16-30 Days';
+                    bucketBadgeCls = 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+                  }
+
+                  const tripObj = r.expand?.trip_id || r.linkedTrip || {};
+                  const routeStr = tripObj.origin && tripObj.destination ? `${tripObj.origin} ➔ ${tripObj.destination}` : '';
+
+                  return (
+                    <div key={r.id} className="p-3.5 space-y-2.5 hover:bg-muted/5 transition-colors">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <p className="font-bold text-sm text-foreground">{r.expand?.client_id?.client_name || 'Unknown Client'}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                            Trip: {tripObj.trip_id || r.trip_id || '-'}
+                            {routeStr && <span className="ml-1 text-foreground/80">• {routeStr}</span>}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className={cn("font-bold text-[9px] shrink-0", bucketBadgeCls)}>
+                          {bucketLabel}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Amount Due</span>
+                          <span className="font-extrabold text-sm text-primary">₹{Number(r.amount || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Aging Status</span>
+                          <span className={cn("font-bold text-xs", days > 0 ? "text-destructive" : "text-emerald-500")}>
+                            {days > 0 ? `🚨 ${days} Days Late` : 'On Schedule'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/30">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs font-semibold rounded-lg border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                          onClick={() => handleShareWhatsApp(r)}
+                        >
+                          <Send className="w-3.5 h-3.5 mr-1" /> WhatsApp
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => setPaidModalReq(r)}
+                        >
+                          <CheckCircle className="w-3.5 h-3.5 mr-1" /> Mark Paid
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
 
       {/* Tab 3: Client Ledgers */}
-      <TabsContent value="ledger" className="space-y-6 m-0">
+      <TabsContent value="ledger" className="space-y-4 sm:space-y-6 m-0">
         <Card className="shadow-sm">
-          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 p-4 sm:p-6 pb-2 sm:pb-4">
             <div>
-              <CardTitle className="text-xl">Client Account Ledgers</CardTitle>
-              <CardDescription>Comprehensive invoice and collection summary per client</CardDescription>
+              <CardTitle className="text-lg sm:text-xl font-heading">Client Account Ledgers</CardTitle>
+              <CardDescription className="text-xs">Comprehensive invoice and collection summary per client</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
@@ -1953,6 +2036,152 @@ Best Regards,
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card List View for Client Ledgers */}
+            <div className="block md:hidden divide-y divide-border/40">
+              {clientLedgerData.length === 0 ? (
+                <div className="text-center py-8 text-xs text-muted-foreground p-4">
+                  No client ledgers found.
+                </div>
+              ) : (
+                clientLedgerData.map(c => {
+                  const isExpanded = expandedClientIds.includes(c.client_id);
+                  const clientUnpaid = c.requests.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue');
+                  return (
+                    <div key={c.client_id} className="p-3.5 space-y-3">
+                      {/* Client Header */}
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <p className="font-bold text-sm text-foreground">{c.client_name}</p>
+                          {c.client_obj?.phone && (
+                            <a href={`tel:${c.client_obj.phone}`} className="text-[11px] text-primary font-medium hover:underline inline-block mt-0.5">
+                              📞 {c.client_obj.phone}
+                            </a>
+                          )}
+                        </div>
+                        {c.overdueCount > 0 ? (
+                          <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 font-bold text-[10px] shrink-0">
+                            {c.overdueCount} Overdue
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] shrink-0">
+                            Clean
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Financial 3-Pillar Summary Bar */}
+                      <div className="grid grid-cols-3 gap-1.5 p-2.5 bg-muted/40 rounded-xl text-center border border-border/40">
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-muted-foreground block">Invoiced</span>
+                          <span className="font-bold text-xs text-foreground">₹{c.totalInvoiced.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block">Paid</span>
+                          <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">₹{c.totalPaid.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">Due</span>
+                          <span className="font-extrabold text-xs text-amber-600 dark:text-amber-400">₹{c.totalOutstanding.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+
+                      {/* Mobile Actions Bar */}
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 text-xs font-semibold px-2 text-muted-foreground hover:text-foreground"
+                          onClick={() => toggleClientExpansion(c.client_id)}
+                        >
+                          {isExpanded ? (
+                            <><ChevronDown className="w-3.5 h-3.5 mr-1" /> Hide Trips ({c.requests.length})</>
+                          ) : (
+                            <><ChevronRight className="w-3.5 h-3.5 mr-1" /> View Trips ({c.requests.length})</>
+                          )}
+                        </Button>
+
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs font-bold border-emerald-600/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
+                          onClick={() => {
+                            if (clientUnpaid.length > 0) {
+                              setSelectedIds(clientUnpaid.map(r => r.id));
+                              toast.success(`Selected ${clientUnpaid.length} unpaid trips for ${c.client_name}`);
+                              handleBulkWhatsApp();
+                            } else {
+                              toast.info(`No unpaid dues for ${c.client_name}`);
+                            }
+                          }}
+                        >
+                          <Send className="w-3.5 h-3.5 mr-1" /> Statement
+                        </Button>
+                      </div>
+
+                      {/* Expandable Trips on Mobile */}
+                      {isExpanded && (
+                        <div className="space-y-2 pt-2 border-t border-border/40">
+                          {c.requests.map(r => {
+                            const tripObj = r.expand?.trip_id || r.linkedTrip || {};
+                            const tripDateVal = r.actualTripDate || tripObj.date || r.request_date;
+                            const tripDateFormatted = tripDateVal && parseDateSafe(tripDateVal) ? format(parseDateSafe(tripDateVal), 'dd MMM yyyy') : '-';
+                            const routeStr = tripObj.origin && tripObj.destination ? `${tripObj.origin} ➔ ${tripObj.destination}` : (r.description || 'Freight');
+                            const isPendingOrOverdue = r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue';
+
+                            return (
+                              <div key={r.id} className="p-2.5 bg-card border border-border/60 rounded-xl space-y-1.5 shadow-sm">
+                                <div className="flex justify-between items-start gap-2">
+                                  <div>
+                                    <p className="font-mono text-[11px] font-bold text-foreground">Trip: {tripObj.trip_id || r.trip_id || '-'}</p>
+                                    <p className="text-[11px] text-muted-foreground">{routeStr} • {tripDateFormatted}</p>
+                                  </div>
+                                  <Badge variant="outline" className={cn(
+                                    "border uppercase tracking-wider text-[9px] px-1.5 py-0 shrink-0",
+                                    r.calculatedStatus === 'Paid' ? "bg-success/10 text-success border-success/20" :
+                                    r.calculatedStatus === 'Overdue' ? "bg-destructive/10 text-destructive border-destructive/20" :
+                                    r.calculatedStatus === 'Pending' ? "bg-warning/10 text-warning border-warning/20" :
+                                    "bg-muted text-muted-foreground border-border"
+                                  )}>
+                                    {r.calculatedStatus}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs pt-1">
+                                  <span className="font-extrabold text-primary">₹{Number(r.amount || 0).toLocaleString('en-IN')}</span>
+                                  
+                                  {isPendingOrOverdue && (
+                                    <div className="flex items-center gap-1.5">
+                                      <Button 
+                                        variant="default" 
+                                        size="sm" 
+                                        className="h-7 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-2" 
+                                        onClick={(e) => { e.stopPropagation(); setPaidModalReq(r); }}
+                                      >
+                                        Mark Paid
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 w-7 p-0 text-emerald-600 rounded-md" 
+                                        onClick={(e) => { e.stopPropagation(); handleShareWhatsApp(r); }}
+                                        title="WhatsApp"
+                                      >
+                                        <Send className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -2040,51 +2269,51 @@ Best Regards,
       />
 
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-950 text-white dark:bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl px-6 py-4 flex flex-wrap items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom duration-300 w-[92%] max-w-2xl font-heading">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+        <div className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 bg-slate-950 text-white dark:bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl p-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 z-50 animate-in slide-in-from-bottom duration-300 w-[94%] max-w-2xl font-heading">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
               {selectedIds.length}
             </div>
-            <div>
-              <p className="font-extrabold text-sm text-white">
+            <div className="min-w-0">
+              <p className="font-extrabold text-xs sm:text-sm text-white truncate">
                 {selectedIds.length} Unpaid Trip{selectedIds.length > 1 ? 's' : ''} Selected {isSameClient && selectedReqs[0]?.expand?.client_id?.client_name ? `(${selectedReqs[0].expand.client_id.client_name})` : ''}
               </p>
-              <p className="text-xs text-emerald-400 font-semibold tabular-nums">
-                Total Amount: ₹{bulkTotal.toLocaleString('en-IN')}
+              <p className="text-[11px] sm:text-xs text-emerald-400 font-semibold tabular-nums">
+                Total: ₹{bulkTotal.toLocaleString('en-IN')}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               size="sm" 
-              className="h-9 border-slate-700 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold rounded-xl"
+              className="h-8 sm:h-9 border-slate-700 bg-slate-900 text-white hover:bg-slate-800 text-[11px] sm:text-xs font-bold rounded-xl"
               onClick={handleGenerateBulkInvoicePDF}
               title="Download Itemized Statement PDF with Pickup & Drop Details"
             >
-              <FileText className="w-3.5 h-3.5 mr-1.5 text-primary" /> Itemized PDF
+              <FileText className="w-3.5 h-3.5 mr-1 text-primary shrink-0" /> PDF Statement
             </Button>
             <Button 
               size="sm" 
-              className={cn("h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-900/30", !isSameClient && "opacity-50 cursor-not-allowed")}
+              className={cn("h-8 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] sm:text-xs rounded-xl shadow-lg shadow-emerald-900/30", !isSameClient && "opacity-50 cursor-not-allowed")}
               onClick={handleBulkWhatsApp}
               disabled={!isSameClient}
               title={isSameClient ? "Send Request on WhatsApp with PDF" : "All selected trips must belong to the same client"}
             >
-              <Send className="w-3.5 h-3.5 mr-1.5" /> WhatsApp Request
+              <Send className="w-3.5 h-3.5 mr-1 shrink-0" /> WhatsApp
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              className="h-9 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold rounded-xl"
+              className="h-8 sm:h-9 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-[11px] sm:text-xs font-bold rounded-xl"
               onClick={handleBulkMarkAsPaid}
             >
-              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Mark Paid
+              <CheckCircle className="w-3.5 h-3.5 mr-1 shrink-0" /> Mark Paid
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-9 text-slate-400 hover:text-white rounded-xl text-xs"
+              className="h-8 sm:h-9 text-slate-400 hover:text-white rounded-xl text-[11px] sm:text-xs"
               onClick={() => setSelectedIds([])}
             >
               Clear
@@ -2095,7 +2324,7 @@ Best Regards,
 
       {/* Batch Set Due Date Dialog Modal */}
       <Dialog open={isBatchDueDateModalOpen} onOpenChange={setIsBatchDueDateModalOpen}>
-        <DialogContent className="max-w-xl rounded-2xl p-6">
+        <DialogContent className="w-[95vw] max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Clock className="w-5 h-5 text-amber-500" />

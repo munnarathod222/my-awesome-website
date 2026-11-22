@@ -12,12 +12,15 @@ export const useCallback = (...args) => React.useCallback(...args);
 export const useRef = (...args) => React.useRef(...args);
 export const useId = (...args) => (React.useId ? React.useId(...args) : Math.random().toString(36).slice(2));
 export const useReducer = (...args) => React.useReducer(...args);
+export const useImperativeHandle = (...args) => (React.useImperativeHandle ? React.useImperativeHandle(...args) : undefined);
 export const forwardRef = (...args) => React.forwardRef(...args);
 export const createElement = (...args) => React.createElement(...args);
 export const cloneElement = (...args) => React.cloneElement(...args);
 export const Children = React.Children;
 export const Fragment = React.Fragment;
 export const isValidElement = (...args) => React.isValidElement(...args);
+export const Component = React.Component || class Component { constructor(props) { this.props = props; } };
+export const PureComponent = React.PureComponent || class PureComponent extends (React.Component || Object) {};
 
 export const createPortal = (children, container) => {
   try {
