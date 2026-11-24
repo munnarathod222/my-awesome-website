@@ -120,6 +120,7 @@ export default function ClientFormPage() {
       const dataToSave = {
         ...formData,
         credit_limit: Number(formData.credit_limit) || 0,
+        requires_pod: Boolean(formData.requires_pod),
         tdsRate: formData.isTdsApplicable ? (Number(formData.tdsRate) || 0) : 0,
         munsiyana_applicable: Boolean(formData.munsiyana_applicable),
         munsiyana_type: formData.munsiyana_type || 'slab',

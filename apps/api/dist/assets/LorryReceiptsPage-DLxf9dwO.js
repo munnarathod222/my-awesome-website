@@ -802,12 +802,12 @@ function LorryReceiptsPodHubPage() {
     setCourierModalTrip(trip);
     const client = getClientName(trip);
     setCourierForm({
-      partner: trip.pod_courier_partner || "DTDC",
-      awb: trip.pod_courier_awb || "",
-      date: trip.pod_courier_date || new Date().toISOString().split("T")[0],
+      partner: trip.pod_courier_partner || trip.hpod_courier_name || "DTDC",
+      awb: trip.pod_courier_awb || trip.hpod_tracking_number || "",
+      date: trip.pod_courier_date || (trip.hpod_couriered_date ? trip.hpod_couriered_date.split(" ")[0].split("T")[0] : "") || new Date().toISOString().split("T")[0],
       recipient: trip.pod_courier_recipient || (client ? client + " Billing Desk" : ""),
       notes: trip.pod_courier_notes || "",
-      isDelivered: trip.pod_hardcopy_status === "Delivered to Client"
+      isDelivered: trip.pod_hardcopy_status === "Delivered to Client" || trip.hpod_status === "Delivered to Hub"
     });
   };
 
@@ -816,13 +816,18 @@ function LorryReceiptsPodHubPage() {
     setSavingCourier(true);
     try {
       const isDel = courierForm.isDelivered;
+      const awbTrimmed = courierForm.awb.trim();
       const updateData = {
         pod_courier_partner: courierForm.partner,
-        pod_courier_awb: courierForm.awb.trim(),
+        pod_courier_awb: awbTrimmed,
         pod_courier_date: courierForm.date,
         pod_courier_recipient: courierForm.recipient.trim(),
         pod_courier_notes: courierForm.notes.trim(),
-        pod_hardcopy_status: isDel ? "Delivered to Client" : (courierForm.awb.trim() ? "Couriered" : "Pending Courier")
+        pod_hardcopy_status: isDel ? "Delivered to Client" : (awbTrimmed ? "Couriered" : "Pending Courier"),
+        hpod_courier_name: courierForm.partner,
+        hpod_tracking_number: awbTrimmed,
+        hpod_couriered_date: courierForm.date ? (courierForm.date + " 00:00:00.000Z") : "",
+        hpod_status: isDel ? "Delivered to Hub" : (awbTrimmed ? "Couriered" : "Pending")
       };
       if (isDel && !courierModalTrip.pod_courier_delivered_date) {
         updateData.pod_courier_delivered_date = new Date().toISOString().split("T")[0];
@@ -1158,9 +1163,9 @@ function LorryReceiptsPodHubPage() {
   /* @__PURE__ */ React.createElement("span", null, "Lorry Receipts (LR / Bilty)"),
   /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[11px] font-mono " + (activeTab === "lr" ? "bg-slate-950 text-amber-400 font-bold" : "bg-slate-800 text-slate-300") }, trips.length)
 )), activeTab === "pod" ? /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap bg-slate-900/90 p-2 sm:p-2.5 rounded-2xl border border-slate-800/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-slate-400 font-bold uppercase px-2 shrink-0" }, "\u{1F4E6} Courier Status:"), (() => {
-  const pCount = trips.filter((t) => isTripPodRequired(t) && !t.pod_courier_awb && t.pod_hardcopy_status !== "Delivered to Client").length;
-  const cCount = trips.filter((t) => t.pod_courier_awb && t.pod_hardcopy_status !== "Delivered to Client").length;
-  const dCount = trips.filter((t) => t.pod_hardcopy_status === "Delivered to Client").length;
+  const pCount = trips.filter((t) => isTripPodRequired(t) && !(t.pod_courier_awb || t.hpod_tracking_number) && t.pod_hardcopy_status !== "Delivered to Client" && t.hpod_status !== "Delivered to Hub").length;
+  const cCount = trips.filter((t) => (t.pod_courier_awb || t.hpod_tracking_number) && t.pod_hardcopy_status !== "Delivered to Client" && t.hpod_status !== "Delivered to Hub").length;
+  const dCount = trips.filter((t) => t.pod_hardcopy_status === "Delivered to Client" || t.hpod_status === "Delivered to Hub").length;
   return [
     { id: "all", label: "All Shipments (" + trips.length + ")" },
     { id: "pending", label: "\u{1F6A8} Pending Courier (" + pCount + ")", isAlert: true },

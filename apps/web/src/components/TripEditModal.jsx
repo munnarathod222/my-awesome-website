@@ -115,7 +115,7 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           invoice_number: trip.invoice_number || '',
           invoice_value: trip.invoice_value !== undefined && trip.invoice_value !== null ? trip.invoice_value.toString() : '',
           invoice_file_url: trip.invoice_file_url || '',
-          eway_bill_number: trip.eway_bill_number || '',
+          eway_bill_number: trip.eway_bill_number || trip.eway_bill_no || '',
           eway_expiry_date: trip.eway_expiry_date || '',
           eway_bill_file_url: trip.eway_bill_file_url || '',
           delivery_deadline: trip.delivery_deadline || '',
@@ -188,6 +188,7 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         invoice_value: parseFloat(formData.invoice_value) || 0,
         invoice_file_url: formData.invoice_file_url || '',
         eway_bill_number: formData.eway_bill_number || '',
+        eway_bill_no: formData.eway_bill_number || '',
         eway_expiry_date: formData.eway_expiry_date || '',
         eway_bill_file_url: formData.eway_bill_file_url || '',
         delivery_deadline: formData.delivery_deadline || '',
@@ -450,6 +451,22 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                       placeholder="e.g. 400676524"
                       value={formData.lr_number || ''}
                       onChange={(e) => setFormData({ ...formData, lr_number: e.target.value })}
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* E-Way Bill Number */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-eway-num" className="text-xs font-semibold flex items-center justify-between">
+                      <span>E-Way Bill Number</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">12-digit GST docket</span>
+                    </Label>
+                    <Input
+                      id="edit-eway-num"
+                      type="text"
+                      placeholder="e.g. 281145678901"
+                      value={formData.eway_bill_number || ''}
+                      onChange={(e) => setFormData({ ...formData, eway_bill_number: e.target.value })}
                       className="bg-background h-9 text-xs font-mono"
                     />
                   </div>

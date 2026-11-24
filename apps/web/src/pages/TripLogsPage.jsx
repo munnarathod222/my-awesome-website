@@ -418,7 +418,10 @@ const TripLogsPage = () => {
       (log.trip_id && log.trip_id.toLowerCase().includes(query)) ||
       (log.driver_name && log.driver_name.toLowerCase().includes(query)) ||
       (log.route && log.route.toLowerCase().includes(query)) ||
-      (log.truck_number && log.truck_number.toLowerCase().includes(query));
+      (log.truck_number && log.truck_number.toLowerCase().includes(query)) ||
+      (log.lr_number && log.lr_number.toLowerCase().includes(query)) ||
+      (log.eway_bill_number && log.eway_bill_number.toLowerCase().includes(query)) ||
+      (log.eway_bill_no && log.eway_bill_no.toLowerCase().includes(query));
 
     const matchesPayment = paymentFilter === 'all' || 
       (paymentFilter === 'blank' ? !log.client_payment_status : log.client_payment_status === paymentFilter);
@@ -879,8 +882,14 @@ const TripLogsPage = () => {
                                 aria-label={`Select row ${log.id}`}
                               />
                             </TableCell>
-                            <TableCell className="whitespace-nowrap font-mono font-bold text-sm text-primary">
-                              {log.trip_id || '-'}
+                            <TableCell className="whitespace-nowrap font-mono text-sm text-primary">
+                              <div className="font-bold">{log.trip_id || '-'}</div>
+                              {log.lr_number && (
+                                <div className="text-[11px] text-muted-foreground font-normal">LR: <span className="text-slate-200 font-semibold">{log.lr_number}</span></div>
+                              )}
+                              {(log.eway_bill_number || log.eway_bill_no) && (
+                                <div className="text-[11px] text-sky-400 font-mono font-normal">E-Way: <span className="font-semibold">{log.eway_bill_number || log.eway_bill_no}</span></div>
+                              )}
                             </TableCell>
                             <TableCell className="whitespace-nowrap font-medium text-sm text-foreground">
                               {formatTripDate(log.date)}
@@ -1172,7 +1181,7 @@ const TripLogsPage = () => {
                                 {(() => {
                                   const docCount = (log.lr_file_url || log.lr_file || log.lr_number ? 1 : 0) + 
                                                    (log.invoice_file_url || log.invoice_file || log.invoice_number ? 1 : 0) + 
-                                                   (log.eway_bill_file_url || log.eway_bill_file || log.eway_bill_number ? 1 : 0);
+                                                   (log.eway_bill_file_url || log.eway_bill_file || log.eway_bill_number || log.eway_bill_no ? 1 : 0);
                                   return (
                                     <button
                                       type="button"
@@ -1667,7 +1676,7 @@ const TripLogsPage = () => {
                         {(() => {
                           const docCount = (log.lr_file_url || log.lr_file || log.lr_number ? 1 : 0) + 
                                            (log.invoice_file_url || log.invoice_file || log.invoice_number ? 1 : 0) + 
-                                           (log.eway_bill_file_url || log.eway_bill_file || log.eway_bill_number ? 1 : 0);
+                                           (log.eway_bill_file_url || log.eway_bill_file || log.eway_bill_number || log.eway_bill_no ? 1 : 0);
                           return (
                             <button
                               type="button"

@@ -13,10 +13,10 @@ export function getCourierTrackingUrl(partner, awb) {
 }
 
 export function getPodCourierInfo(trip, isRequired = true) {
-  const awb = trip.pod_courier_awb ? String(trip.pod_courier_awb).trim() : "";
-  const partner = trip.pod_courier_partner || "DTDC";
-  const courierDate = trip.pod_courier_date || "";
-  const isDeliveredToClient = trip.pod_hardcopy_status === "Delivered to Client";
+  const awb = (trip.pod_courier_awb || trip.hpod_tracking_number) ? String(trip.pod_courier_awb || trip.hpod_tracking_number).trim() : "";
+  const partner = trip.pod_courier_partner || trip.hpod_courier_name || "DTDC";
+  const courierDate = trip.pod_courier_date || (trip.hpod_couriered_date ? trip.hpod_couriered_date.split(" ")[0].split("T")[0] : "") || "";
+  const isDeliveredToClient = trip.pod_hardcopy_status === "Delivered to Client" || trip.hpod_status === "Delivered to Hub";
   
   if (isDeliveredToClient) {
     return {
@@ -130,7 +130,7 @@ export default function PODManagementPage() {
       });
       const clientMap = {};
       clientsRes.forEach(c => {
-        clientMap[c.id] = c.company_name || c.name || 'Unknown Client';
+        clientMap[c.id] = c.client_name || c.company_name || c.name || 'Unknown Client';
       });
       setClients(clientMap);
 

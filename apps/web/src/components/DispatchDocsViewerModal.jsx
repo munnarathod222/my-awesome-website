@@ -1,3 +1,4 @@
+import pb from '@/lib/pocketbaseClient.js';
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -248,7 +249,32 @@ export default function DispatchDocsViewerModal({ isOpen, onClose, trip }) {
             <div className="flex flex-wrap items-center gap-4">
               <div>
                 <span className="text-slate-400">E-Way Bill No: </span>
-                <strong className="text-slate-100 font-mono text-sm ml-1">{trip.eway_bill_number || '—'}</strong>
+                <strong className="text-slate-100 font-mono text-sm ml-1">{trip.eway_bill_number || trip.eway_bill_no || '—'}</strong>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const currentVal = trip.eway_bill_number || trip.eway_bill_no || '';
+                    const newNum = window.prompt("Enter / Update GST E-Way Bill Number (12 digits):", currentVal);
+                    if (newNum !== null) {
+                      const cleanNum = newNum.trim();
+                      try {
+                        await pb.collection('trip_logs').update(trip.id, {
+                          eway_bill_number: cleanNum,
+                          eway_bill_no: cleanNum
+                        });
+                        trip.eway_bill_number = cleanNum;
+                        trip.eway_bill_no = cleanNum;
+                        toast.success("E-Way Bill Number updated successfully!");
+                      } catch (err) {
+                        toast.error("Failed to update E-Way Bill Number: " + err.message);
+                      }
+                    }
+                  }}
+                  className="ml-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 cursor-pointer"
+                  title="Add or Edit E-Way Bill Number"
+                >
+                  ✏️ Edit
+                </button>
                 {trip.eway_bill_number && (
                   <button onClick={() => handleCopy(trip.eway_bill_number, 'E-Way Bill Number')} className="ml-1.5 text-slate-400 hover:text-slate-200 inline">
                     {copiedField === 'E-Way Bill Number' ? <Check className="w-3.5 h-3.5 inline text-emerald-400" /> : <Copy className="w-3.5 h-3.5 inline" />}
