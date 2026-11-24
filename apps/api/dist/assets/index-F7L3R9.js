@@ -2588,32 +2588,48 @@ return e.jsxs(e.Fragment,{children:[
                           })
                         ]
                       }),
-                      /* Live Vehicle GPS Tracking Card */
-                      e.jsxs("div", {
-                        className: "p-4 rounded-2xl bg-slate-950/60 border border-cyan-500/20 flex items-center justify-between gap-4",
-                        children: [
-                          e.jsxs("div", {
-                            className: "space-y-1",
-                            children: [
-                              e.jsx("span", {
-                                className: "text-[10px] font-mono text-cyan-400 uppercase font-bold",
-                                children: "Live Fleet GPS"
-                              }),
-                              e.jsx("h4", { className: "font-bold text-sm text-white", children: "Vehicle Location & Telemetry" }),
-                              e.jsx("p", {
-                                className: "text-xs text-slate-400",
-                                children: "Truck: " + (U || "Assigned") + " • Live GPS Status"
+                      /* Live Vehicle GPS Tracking Card (from Trip Log gps_tracking_link) */
+                      (() => {
+                        const rawGpsLink = (c.gps_tracking_link || "").trim();
+                        const expTime = c.gps_link_expiry ? new Date(c.gps_link_expiry).getTime() : (c.date ? new Date(c.date).getTime() + ((Number(c.gps_validity_days) || 2) * 86400000) : 0);
+                        const isGpsExpired = expTime > 0 && Date.now() > expTime;
+                        const expLabel = expTime > 0 ? new Date(expTime).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "";
+                        return e.jsxs("div", {
+                          className: "p-4 rounded-2xl bg-slate-950/60 border " + (isGpsExpired ? "border-rose-500/30" : "border-cyan-500/20") + " flex items-center justify-between gap-4",
+                          children: [
+                            e.jsxs("div", {
+                              className: "space-y-1",
+                              children: [
+                                e.jsx("span", {
+                                  className: "text-[10px] font-mono " + (isGpsExpired ? "text-rose-400" : "text-cyan-400") + " uppercase font-bold",
+                                  children: "Live Vehicle GPS"
+                                }),
+                                e.jsx("h4", { className: "font-bold text-sm text-white", children: rawGpsLink ? (isGpsExpired ? "GPS Tracking Link Expired" : "Live GPS Link Active") : "No GPS Link Added" }),
+                                e.jsx("p", {
+                                  className: "text-xs text-slate-400",
+                                  children: rawGpsLink ? (isGpsExpired ? ("Expired on " + expLabel) : ("Truck: " + (U || "Assigned") + (expLabel ? " • Valid till " + expLabel : ""))) : "No tracking URL added in Trip Log"
+                                })
+                              ]
+                            }),
+                            rawGpsLink ? (
+                              isGpsExpired ? e.jsx(Le, {
+                                variant: "outline",
+                                className: "text-xs font-mono text-rose-400 border-rose-500/40 bg-rose-500/10 px-2.5 py-1 shrink-0",
+                                children: "⏱️ Expired"
+                              }) : e.jsx(q, {
+                                size: "sm",
+                                onClick: () => window.open(rawGpsLink, "_blank", "noopener,noreferrer"),
+                                className: "rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5 shadow shrink-0 cursor-pointer",
+                                children: "🚚 Track Vehicle"
                               })
-                            ]
-                          }),
-                          e.jsxs(q, {
-                            size: "sm",
-                            onClick: jbcOpenTrackVehicle,
-                            className: "rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5 shadow shrink-0 cursor-pointer",
-                            children: ["🚚 Track Vehicle"]
-                          })
-                        ]
-                      }),
+                            ) : e.jsx(Le, {
+                              variant: "outline",
+                              className: "text-xs font-mono text-slate-500 border-slate-700 bg-slate-800/40 px-2 py-0.5 shrink-0",
+                              children: "No GPS Link"
+                            })
+                          ]
+                        });
+                      })(),
                       /* Courier POD Tracking Card (if dispatched) */
                       (c.pod_courier_awb || c.pod_courier_tracking_no) ? e.jsxs("div", {
                         className: "p-4 rounded-2xl bg-slate-950/60 border border-indigo-500/30 flex items-center justify-between gap-4",
