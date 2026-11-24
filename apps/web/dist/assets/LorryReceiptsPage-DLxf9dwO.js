@@ -985,15 +985,59 @@ function LorryReceiptsPodHubPage() {
     const f = formOverride || {
       partner: trip.pod_courier_partner || "DTDC",
       awb: trip.pod_courier_awb || "",
-      date: trip.pod_courier_date || new Date().toISOString().split("T")[0]
+      date: trip.pod_courier_date || new Date().toISOString().split("T")[0],
+      recipient: trip.pod_courier_recipient || ""
     };
     const client = getClientName(trip);
-    const truck = trip.truck_number || "";
+    const truck = trip.truck_number || "—";
+    const driver = trip.driver_name ? (" (" + trip.driver_name + ")") : "";
     const route = formatRoute(trip);
     const trackUrl = getCourierTrackingUrl(f.partner, f.awb);
-    
-    const text = "*JAI BHAVANI CARGO OPERATIONS*\n📦 *PHYSICAL POD COURIER DISPATCH NOTICE*\n\n🔹 *Client:* " + client + "\n🔹 *Trip ID:* #" + (trip.trip_id || trip.id?.slice(0, 8)) + "\n🔹 *Vehicle:* " + truck + "\n🔹 *Route:* " + route + "\n🔹 *Courier Partner:* " + f.partner + "\n🔹 *Docket / AWB #:* " + f.awb + "\n🔹 *Dispatch Date:* " + f.date + (trackUrl ? "\n🔹 *Live Tracking:* " + trackUrl : "") + "\n\nPlease confirm physical acknowledgment upon delivery for billing clearance.\n\nOperations Desk: +91 7794072244";
-    
+    const lrNum = getLrNumber(trip) || trip.invoice_number || "—";
+    const tripCode = trip.trip_id || ("TRIP-" + (trip.id ? trip.id.slice(-4) : ""));
+    const rawTripDate = trip.date || trip.created;
+    const tripDateStr = rawTripDate
+      ? new Date(rawTripDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+      : "—";
+    const dispDateStr = f.date
+      ? new Date(f.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+      : "—";
+    const clientRef = (trip.client_trip_id && trip.client_trip_id !== lrNum) ? trip.client_trip_id : (trip.po_number || trip.indent_number || "");
+    const ewayNo = trip.eway_bill_no || trip.eway_bill_number || "";
+    const weightVal = Number(trip.actual_weight) || Number(trip.charged_weight) || 0;
+    const weightStr = weightVal > 0 ? (weightVal + " MT") : (trip.packages_count > 0 ? (trip.packages_count + " Pkgs") : "");
+    const recipientDesk = f.recipient || trip.pod_courier_recipient || (client + " Billing Desk");
+    const digitalPodUrl = "https://www.jaibhavanicargo.com/tracking?trip=" + encodeURIComponent(trip.trip_id || trip.id);
+
+    const lines = [
+      "*JAI BHAVANI CARGO OPERATIONS*",
+      "📦 *PHYSICAL POD COURIER DISPATCH NOTICE*",
+      "",
+      "*━━━ SHIPMENT & TRIP DETAILS ━━━*",
+      "🔹 *Client:* " + client,
+      "🔹 *LR / Bilty No:* #" + lrNum,
+      "🔹 *Trip / Loading Date:* " + tripDateStr,
+      "🔹 *Trip ID:* #" + tripCode
+    ];
+    if (clientRef) lines.push("🔹 *Client Ref / Indent:* " + clientRef);
+    if (ewayNo) lines.push("🔹 *E-Way Bill No:* " + ewayNo);
+    lines.push("🔹 *Vehicle & Pilot:* " + truck + driver);
+    lines.push("🔹 *Route:* " + route);
+    if (weightStr) lines.push("🔹 *Cargo / Weight:* " + weightStr);
+    lines.push("");
+    lines.push("*━━━ COURIER TRACKING DETAILS ━━━*");
+    lines.push("📦 *Courier Partner:* " + f.partner);
+    lines.push("🔖 *Docket / AWB #:* " + (f.awb || "Pending"));
+    lines.push("📅 *Dispatch Date:* " + dispDateStr);
+    if (recipientDesk) lines.push("🏢 *Sent To / Attention:* " + recipientDesk);
+    if (trackUrl) lines.push("🔗 *Live Courier Tracking:* " + trackUrl);
+    lines.push("📄 *Digital POD & Trip Info:* " + digitalPodUrl);
+    lines.push("");
+    lines.push("Please confirm physical acknowledgment upon delivery for billing clearance.");
+    lines.push("");
+    lines.push("Operations Desk: +91 7794072244");
+
+    const text = lines.join("\n");
     window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(text), "_blank");
   };
 
