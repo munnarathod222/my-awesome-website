@@ -1503,6 +1503,30 @@ return e.jsxs(e.Fragment,{children:[
     [S, P] = h.useState(null),
     [w, k] = h.useState(!1),
     [isTokenAuthorized, setIsTokenAuthorized] = h.useState(!1), [viewingPodModal, setViewingPodModal] = h.useState(!1), [activePodPage, setActivePodPage] = h.useState(0),
+    [podZoom, setPodZoom] = h.useState(1), [podRotate, setPodRotate] = h.useState(0), [podFullscreen, setPodFullscreen] = h.useState(!1),
+    [showTrackVehicleModal, setShowTrackVehicleModal] = h.useState(!1), [showTrackPodModal, setShowTrackPodModal] = h.useState(!1),
+    [trackTruckData, setTrackTruckData] = h.useState(null),
+    jbcOpenTrackVehicle = async () => {
+      setShowTrackVehicleModal(!0);
+      if (U && U !== "—") {
+        try {
+          const td = await $.collection("trucks").getFirstListItem('truck_number = "' + U + '"', { $autoCancel: !1 }).catch(() => null);
+          if (td) setTrackTruckData(td);
+        } catch (_) {}
+      }
+    },
+    jbcGetCourierTrackUrl = (partner, awb) => {
+      if (!awb) return null;
+      const n = (partner || "").toLowerCase().trim();
+      const cAwb = encodeURIComponent(String(awb).trim());
+      if (n.includes("dtdc")) return "https://www.dtdc.in/tracking/shipment-tracking.asp?booking_no=" + cAwb;
+      if (n.includes("trackon")) return "https://trackon.in/tracking?awb=" + cAwb;
+      if (n.includes("bluedart") || n.includes("blue dart")) return "https://www.bluedart.com/tracking?trackNumber=" + cAwb;
+      if (n.includes("delhivery")) return "https://www.delhivery.com/track/package/" + cAwb;
+      if (n.includes("speed post") || n.includes("india post") || n.includes("post")) return "https://www.indiapost.gov.in/_layouts/15/dpt.cept.tracking/trackconsignment.aspx";
+      if (n.includes("professional")) return "https://www.tpcindia.com/";
+      return "https://www.google.com/search?q=" + encodeURIComponent((partner || "Courier") + " tracking " + awb);
+    },
     b = async () => {
       if (!isAuthed) {
         y([]);
@@ -2563,8 +2587,159 @@ return e.jsxs(e.Fragment,{children:[
                             children: c.trip_status || "Active"
                           })
                         ]
-                      })
+                      }),
+                      /* Live Vehicle GPS Tracking Card */
+                      e.jsxs("div", {
+                        className: "p-4 rounded-2xl bg-slate-950/60 border border-cyan-500/20 flex items-center justify-between gap-4",
+                        children: [
+                          e.jsxs("div", {
+                            className: "space-y-1",
+                            children: [
+                              e.jsx("span", {
+                                className: "text-[10px] font-mono text-cyan-400 uppercase font-bold",
+                                children: "Live Fleet GPS"
+                              }),
+                              e.jsx("h4", { className: "font-bold text-sm text-white", children: "Vehicle Location & Telemetry" }),
+                              e.jsx("p", {
+                                className: "text-xs text-slate-400",
+                                children: "Truck: " + (U || "Assigned") + " • Live GPS Status"
+                              })
+                            ]
+                          }),
+                          e.jsxs(q, {
+                            size: "sm",
+                            onClick: jbcOpenTrackVehicle,
+                            className: "rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs gap-1.5 shadow shrink-0 cursor-pointer",
+                            children: ["🚚 Track Vehicle"]
+                          })
+                        ]
+                      }),
+                      /* Courier POD Tracking Card (if dispatched) */
+                      (c.pod_courier_awb || c.pod_courier_tracking_no) ? e.jsxs("div", {
+                        className: "p-4 rounded-2xl bg-slate-950/60 border border-indigo-500/30 flex items-center justify-between gap-4",
+                        children: [
+                          e.jsxs("div", {
+                            className: "space-y-1",
+                            children: [
+                              e.jsx("span", {
+                                className: "text-[10px] font-mono text-indigo-400 uppercase font-bold",
+                                children: "Hard-Copy POD Courier"
+                              }),
+                              e.jsx("h4", { className: "font-bold text-sm text-white", children: (c.pod_courier_partner || c.pod_courier_name || "Courier") + " • #" + (c.pod_courier_awb || c.pod_courier_tracking_no) }),
+                              e.jsx("p", {
+                                className: "text-xs text-slate-400",
+                                children: c.pod_hardcopy_status === "Delivered to Client" ? "✓ Delivered & Acknowledged" : "Dispatched to Client Billing Desk"
+                              })
+                            ]
+                          }),
+                          e.jsxs(q, {
+                            size: "sm",
+                            onClick: () => setShowTrackPodModal(!0),
+                            className: "rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs gap-1.5 shadow shrink-0 cursor-pointer",
+                            children: ["📦 Track POD"]
+                          })
+                        ]
+                      }) : null
                     ]
+                  }),
+                  /* Track Vehicle Live GPS Modal */
+                  showTrackVehicleModal && e.jsx("div", {
+                    className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200",
+                    onClick: () => setShowTrackVehicleModal(!1),
+                    children: e.jsxs("div", {
+                      className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4",
+                      onClick: (ev) => ev.stopPropagation(),
+                      children: [
+                        e.jsxs("div", {
+                          className: "flex items-center justify-between border-b border-slate-800 pb-3",
+                          children: [
+                            e.jsxs("div", {
+                              children: [
+                                e.jsx("h3", { className: "font-bold text-white text-base", children: "🚚 Live Vehicle GPS & Telematics" }),
+                                e.jsx("p", { className: "text-xs text-slate-400 font-mono", children: "Truck: " + (U || "Fleet") + " • Trip: " + L })
+                              ]
+                            }),
+                            e.jsx("button", {
+                              onClick: () => setShowTrackVehicleModal(!1),
+                              className: "p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer",
+                              children: "✕"
+                            })
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs",
+                          children: [
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Route:" }), e.jsx("span", { className: "font-bold text-white", children: c.route || "Active Corridor" })] }),
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Current Status:" }), e.jsx("span", { className: "font-bold text-emerald-400", children: c.trip_status || "In Transit" })] }),
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "GPS Location:" }), e.jsx("span", { className: "font-bold text-cyan-300", children: trackTruckData?.current_location || trackTruckData?.last_location || "On designated highway corridor" })] }),
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Driver:" }), e.jsx("span", { className: "font-bold text-slate-200", children: trackTruckData?.driver_name || c.driver_name || "Assigned Pilot" })] }),
+                            (trackTruckData?.driver_phone || c.driver_phone) ? e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Driver Phone:" }), e.jsx("a", { href: "tel:" + (trackTruckData?.driver_phone || c.driver_phone), className: "font-mono font-bold text-amber-300 hover:underline", children: trackTruckData?.driver_phone || c.driver_phone })] }) : null
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "flex items-center justify-between gap-3 pt-2",
+                          children: [
+                            e.jsx("a", {
+                              href: "https://www.google.com/maps?q=" + (trackTruckData?.current_lat || trackTruckData?.latitude || 17.3850) + "," + (trackTruckData?.current_lng || trackTruckData?.longitude || 78.4867),
+                              target: "_blank",
+                              rel: "noopener noreferrer",
+                              className: "flex-1 py-2.5 px-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs text-center transition",
+                              children: "🌐 Open Live Satellite Map"
+                            }),
+                            e.jsx(q, { variant: "outline", onClick: () => setShowTrackVehicleModal(!1), className: "rounded-xl border-slate-700 text-slate-300", children: "Close" })
+                          ]
+                        })
+                      ]
+                    })
+                  }),
+                  /* Track POD Courier Modal */
+                  showTrackPodModal && (c.pod_courier_awb || c.pod_courier_tracking_no) && e.jsx("div", {
+                    className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200",
+                    onClick: () => setShowTrackPodModal(!1),
+                    children: e.jsxs("div", {
+                      className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4",
+                      onClick: (ev) => ev.stopPropagation(),
+                      children: [
+                        e.jsxs("div", {
+                          className: "flex items-center justify-between border-b border-slate-800 pb-3",
+                          children: [
+                            e.jsxs("div", {
+                              children: [
+                                e.jsx("h3", { className: "font-bold text-white text-base", children: "📦 Track Dispatched POD" }),
+                                e.jsx("p", { className: "text-xs text-slate-400 font-mono", children: "Trip: " + L + " • " + (U || "") })
+                              ]
+                            }),
+                            e.jsx("button", {
+                              onClick: () => setShowTrackPodModal(!1),
+                              className: "p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer",
+                              children: "✕"
+                            })
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs",
+                          children: [
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Courier Partner:" }), e.jsx("span", { className: "font-bold text-indigo-300", children: c.pod_courier_partner || c.pod_courier_name || "Courier" })] }),
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Docket / AWB #:" }), e.jsx("span", { className: "font-mono font-bold text-amber-300", children: c.pod_courier_awb || c.pod_courier_tracking_no })] }),
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Dispatch Date:" }), e.jsx("span", { className: "text-slate-200", children: c.pod_courier_date || c.pod_courier_dispatch_date || "Recently Dispatched" })] }),
+                            e.jsxs("div", { className: "flex justify-between", children: [e.jsx("span", { className: "text-slate-400", children: "Status:" }), e.jsx("span", { className: "font-bold text-emerald-400", children: c.pod_hardcopy_status || "Dispatched to Billing Desk" })] })
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "flex items-center justify-between gap-3 pt-2",
+                          children: [
+                            e.jsx("a", {
+                              href: jbcGetCourierTrackUrl(c.pod_courier_partner || c.pod_courier_name, c.pod_courier_awb || c.pod_courier_tracking_no),
+                              target: "_blank",
+                              rel: "noopener noreferrer",
+                              className: "flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs text-center transition",
+                              children: "🌐 Track on Courier Website"
+                            }),
+                            e.jsx(q, { variant: "outline", onClick: () => setShowTrackPodModal(!1), className: "rounded-xl border-slate-700 text-slate-300", children: "Close" })
+                          ]
+                        })
+                      ]
+                    })
                   })
                 ]
               }),
@@ -2575,7 +2750,7 @@ return e.jsxs(e.Fragment,{children:[
                   className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200",
                   onClick: () => setViewingPodModal(!1),
                   children: e.jsxs("div", {
-                    className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden",
+                    className: "bg-slate-900 border border-slate-800 flex flex-col shadow-2xl overflow-hidden transition-all duration-200 " + (podFullscreen ? "fixed inset-0 w-screen h-screen rounded-none max-w-none max-h-none" : "rounded-2xl w-[96vw] max-w-5xl h-[92vh] max-h-[92vh]"),
                     onClick: (ev) => ev.stopPropagation(),
                     children: [
                       e.jsxs("div", {
@@ -2602,15 +2777,30 @@ return e.jsxs(e.Fragment,{children:[
                               })
                             ]
                           }),
-                          e.jsx("button", {
-                            onClick: () => setViewingPodModal(!1),
-                            className: "p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer font-bold",
-                            children: "✕"
+                          e.jsxs("div", {
+                            className: "flex items-center gap-1.5 shrink-0",
+                            children: [
+                              !isPdfDoc ? e.jsxs("div", {
+                                className: "flex items-center bg-slate-800/90 border border-slate-700/70 rounded-xl p-0.5",
+                                children: [
+                                  e.jsx("button", { onClick: () => setPodZoom(z => Math.max(0.5, Number((z - 0.25).toFixed(2)))), className: "px-2 py-1 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg cursor-pointer", children: "−" }),
+                                  e.jsx("button", { onClick: () => { setPodZoom(1); setPodRotate(0); }, className: "px-2 py-1 text-[11px] font-mono text-amber-300 hover:text-white cursor-pointer", children: Math.round(podZoom * 100) + "%" }),
+                                  e.jsx("button", { onClick: () => setPodZoom(z => Math.min(2.5, Number((z + 0.25).toFixed(2)))), className: "px-2 py-1 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg cursor-pointer", children: "+" })
+                                ]
+                              }) : null,
+                              !isPdfDoc ? e.jsx("button", { onClick: () => setPodRotate(r => (r + 90) % 360), className: "px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/70 cursor-pointer", children: "↻ Rotate" }) : null,
+                              e.jsx("button", { onClick: () => setPodFullscreen(f => !f), className: "px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/70 cursor-pointer", children: podFullscreen ? "⤢ Exit" : "⛶ Full" }),
+                              e.jsx("button", {
+                                onClick: () => { setViewingPodModal(!1); setPodZoom(1); setPodRotate(0); setPodFullscreen(!1); },
+                                className: "p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-800 hover:bg-rose-600/30 border border-slate-700/70 transition cursor-pointer font-bold",
+                                children: "✕"
+                              })
+                            ]
                           })
                         ]
                       }),
                       e.jsxs("div", {
-                        className: "relative p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/90 min-h-[350px]",
+                        className: "relative p-3 overflow-auto flex-1 min-h-0 flex items-center justify-center bg-black/80",
                         children: [
                           isPdfDoc ? e.jsx("iframe", {
                             src: curDocUrl,
@@ -2619,7 +2809,12 @@ return e.jsxs(e.Fragment,{children:[
                           }) : e.jsx("img", {
                             src: curDocUrl,
                             alt: "POD Page " + (activePodPage + 1),
-                            className: "max-h-[550px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
+                            style: {
+                              transform: "scale(" + podZoom + ") rotate(" + podRotate + "deg)",
+                              transformOrigin: "center center",
+                              maxHeight: podZoom === 1 ? (podFullscreen ? "calc(100vh - 150px)" : "calc(92vh - 170px)") : "none"
+                            },
+                            className: "w-auto max-w-full rounded-lg shadow-2xl border border-slate-800 object-contain transition-transform duration-200 select-none"
                           }),
                           allPodFiles.length > 1 ? e.jsxs(e.Fragment, {
                             children: [

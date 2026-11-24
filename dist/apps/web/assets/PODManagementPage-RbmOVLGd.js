@@ -146,6 +146,9 @@ function LorryReceiptsPodHubPage() {
   const [previewScale, setPreviewScale] = useState(0.75);
   const [isCreatingLr, setIsCreatingLr] = useState(false);
   const [viewingPodDoc, setViewingPodDoc] = useState(null);
+  const [podZoom, setPodZoom] = useState(1);
+  const [podRotate, setPodRotate] = useState(0);
+  const [podFullscreen, setPodFullscreen] = useState(false);
   const [uploadingTripId, setUploadingTripId] = useState(null);
   const [editLrTrip, setEditLrTrip] = useState(null);
   const [courierModalTrip, setCourierModalTrip] = useState(null);
@@ -2104,28 +2107,58 @@ function LorryReceiptsPodHubPage() {
   const currentFileUrl = isCurrentUrl ? currentFile : (currentFile && viewingPodDoc.trip ? pb.files.getUrl(viewingPodDoc.trip, currentFile) : viewingPodDoc.url);
   const isPdf = currentFileUrl && currentFileUrl.toLowerCase().split("?")[0].endsWith(".pdf");
 
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200" },
-    /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" },
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200" },
+    /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 flex flex-col shadow-2xl overflow-hidden transition-all duration-200 " + (podFullscreen ? "fixed inset-0 w-screen h-screen rounded-none max-w-none max-h-none" : "rounded-2xl w-[96vw] max-w-5xl h-[92vh] max-h-[92vh]") },
       /* Header */
-      /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" },
-        /* @__PURE__ */ React.createElement("div", null,
+      /* @__PURE__ */ React.createElement("div", { className: "px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0" },
+        /* @__PURE__ */ React.createElement("div", { className: "min-w-0" },
           /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" },
-            /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 text-emerald-400" }),
-            /* @__PURE__ */ React.createElement("span", null, "Proof of Delivery Document"),
-            docFiles.length > 1 ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "Page " + (activeIdx + 1) + " of " + docFiles.length) : null
+            /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 text-emerald-400 shrink-0" }),
+            /* @__PURE__ */ React.createElement("span", { className: "truncate" }, "Proof of Delivery (POD) - " + viewingPodDoc.tripId),
+            docFiles.length > 1 ? /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0" }, "Page " + (activeIdx + 1) + " of " + docFiles.length) : null
           ),
-          /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" },
-            "Trip: ", viewingPodDoc.tripId, " \u2022 Truck: ", viewingPodDoc.truck, " \u2022 Client: ", viewingPodDoc.client
+          /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5 truncate" },
+            "Truck: ", viewingPodDoc.truck, " \u2022 Client: ", viewingPodDoc.client
           )
         ),
-        /* @__PURE__ */ React.createElement("button", {
-          onClick: () => setViewingPodDoc(null),
-          className: "p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
-        }, /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" }))
+        /* Interactive Viewer Toolbar */
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
+          !isPdf && currentFileUrl ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center bg-slate-800/90 border border-slate-700/70 rounded-xl p-0.5" },
+            /* @__PURE__ */ React.createElement("button", {
+              onClick: () => setPodZoom(z => Math.max(0.5, Number((z - 0.25).toFixed(2)))),
+              className: "px-2 py-1 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg cursor-pointer",
+              title: "Zoom Out"
+            }, "\u2212"),
+            /* @__PURE__ */ React.createElement("button", {
+              onClick: () => { setPodZoom(1); setPodRotate(0); },
+              className: "px-2 py-1 text-[11px] font-mono text-amber-300 hover:text-white cursor-pointer",
+              title: "Fit to Screen (Reset)"
+            }, Math.round(podZoom * 100) + "%"),
+            /* @__PURE__ */ React.createElement("button", {
+              onClick: () => setPodZoom(z => Math.min(2.5, Number((z + 0.25).toFixed(2)))),
+              className: "px-2 py-1 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg cursor-pointer",
+              title: "Zoom In"
+            }, "+")
+          ) : null,
+          !isPdf && currentFileUrl ? /* @__PURE__ */ React.createElement("button", {
+            onClick: () => setPodRotate(r => (r + 90) % 360),
+            className: "px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/70 transition cursor-pointer",
+            title: "Rotate 90\xB0"
+          }, "\u21BB Rotate") : null,
+          /* @__PURE__ */ React.createElement("button", {
+            onClick: () => setPodFullscreen(f => !f),
+            className: "px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/70 transition cursor-pointer",
+            title: podFullscreen ? "Exit Fullscreen" : "Fullscreen"
+          }, podFullscreen ? "\u2922 Exit" : "\u26F6 Full"),
+          /* @__PURE__ */ React.createElement("button", {
+            onClick: () => { setViewingPodDoc(null); setPodZoom(1); setPodRotate(0); setPodFullscreen(false); },
+            className: "p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-800 hover:bg-rose-600/30 border border-slate-700/70 transition cursor-pointer"
+          }, /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" }))
+        )
       ),
 
       /* Preview Content Area */
-      /* @__PURE__ */ React.createElement("div", { className: "relative p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[320px]" },
+      /* @__PURE__ */ React.createElement("div", { className: "relative p-3 overflow-auto flex-1 min-h-0 flex items-center justify-center bg-black/80" },
         (!currentFileUrl || currentFileUrl.endsWith("/")) ? (
           /* @__PURE__ */ React.createElement("div", { className: "text-center p-8 text-slate-400" },
             /* @__PURE__ */ React.createElement("p", { className: "font-bold text-amber-400 text-sm" }, "No Document Uploaded"),
@@ -2147,14 +2180,19 @@ function LorryReceiptsPodHubPage() {
         ) : isPdf ? (
           /* @__PURE__ */ React.createElement("iframe", {
             src: currentFileUrl,
-            className: "w-full h-[520px] rounded-xl border border-slate-800",
+            className: "w-full h-full rounded-xl border border-slate-800",
             title: "POD PDF Document"
           })
         ) : (
           /* @__PURE__ */ React.createElement("img", {
             src: currentFileUrl,
             alt: "Signed POD",
-            className: "max-h-[520px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
+            style: {
+              transform: "scale(" + podZoom + ") rotate(" + podRotate + "deg)",
+              transformOrigin: "center center",
+              maxHeight: podZoom === 1 ? (podFullscreen ? "calc(100vh - 150px)" : "calc(92vh - 165px)") : "none"
+            },
+            className: "w-auto max-w-full rounded-lg shadow-2xl border border-slate-800 object-contain transition-transform duration-200 select-none"
           })
         ),
 
