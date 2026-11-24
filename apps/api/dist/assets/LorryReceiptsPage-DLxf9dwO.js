@@ -844,6 +844,140 @@ function LorryReceiptsPodHubPage() {
     }
   };
 
+  
+  const handlePrintCourierSlip = (trip, formOverride) => {
+    const f = formOverride || {
+      partner: trip.pod_courier_partner || trip.hpod_courier_name || "DTDC",
+      awb: trip.pod_courier_awb || trip.hpod_tracking_number || "",
+      date: trip.pod_courier_date || (trip.hpod_couriered_date ? trip.hpod_couriered_date.split(" ")[0].split("T")[0] : "") || new Date().toISOString().split("T")[0],
+      recipient: trip.pod_courier_recipient || ""
+    };
+    const cl = getClientForTrip(trip);
+    const cName = getClientName(trip);
+    const addr = cl?.address || trip.destination || "Central Industrial Area";
+    const city = cl?.city || (addr.toLowerCase().includes("hubli") ? "Hubli" : (addr.toLowerCase().includes("pune") ? "Pune" : "Hyderabad"));
+    const state = cl?.state || (addr.toLowerCase().includes("hubli") ? "Karnataka" : (addr.toLowerCase().includes("pune") ? "Maharashtra" : "Telangana"));
+    const pincode = cl?.pincode || (addr.toLowerCase().includes("hubli") ? "580024" : (addr.toLowerCase().includes("pune") ? "411001" : "500070"));
+    const phone = cl?.phone || "040-27801234";
+    const attn = f.recipient || (cName + " Central Billing Clearance Desk");
+    const truck = trip.truck_number || "FLEET";
+    const tripId = trip.trip_id || trip.id?.slice(0, 8);
+    const lrNum = getLrNumber(trip);
+    const partner = f.partner || "DTDC";
+    const awb = f.awb || "";
+    const date = f.date || new Date().toISOString().split("T")[0];
+
+    const printWin = window.open("", "_blank", "width=850,height=950");
+    if (!printWin) {
+      alert("Please allow popups to print the shipping slip.");
+      return;
+    }
+
+    const qrData = encodeURIComponent("JAI BHAVANI CARGO | POD COURIER\nTO: " + cName + " (" + city + ")\nTRIP: #" + tripId + "\nTRUCK: " + truck + "\nLR: " + lrNum + "\nAWB: " + awb);
+    const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + qrData;
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Courier Slip - ${cName} - ${tripId}</title>
+          <style>
+            @page { size: A5 portrait; margin: 8mm; }
+            * { box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              margin: 0; padding: 12px; color: #0f172a; background: #fff;
+            }
+            .label-card {
+              border: 2px solid #000; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;
+            }
+            .header-bar {
+              display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px;
+            }
+            .brand-title { font-size: 18px; font-weight: 900; letter-spacing: 0.5px; margin: 0; }
+            .brand-sub { font-size: 10px; color: #475569; margin: 2px 0 0 0; font-weight: 600; }
+            .courier-badge { border: 1.5px solid #000; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; text-align: right; background: #f1f5f9; }
+            .ref-grid {
+              display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 4px; margin-bottom: 10px; font-size: 11px;
+            }
+            .ref-item strong { display: block; color: #64748b; font-size: 9px; text-transform: uppercase; }
+            .ref-item span { font-weight: 800; color: #0f172a; font-family: monospace; }
+            .to-section {
+              background: #fff; border: 2px solid #000; border-radius: 6px; padding: 12px 14px; margin-bottom: 10px;
+            }
+            .to-tag { display: inline-block; background: #000; color: #fff; font-size: 11px; font-weight: 900; padding: 2px 6px; border-radius: 3px; margin-bottom: 4px; }
+            .to-name { font-size: 17px; font-weight: 900; color: #000; margin: 4px 0; }
+            .to-attention { font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+            .to-address { font-size: 12px; color: #334155; line-height: 1.35; margin: 4px 0; }
+            .to-phone { font-size: 13px; font-weight: 800; color: #000; margin-top: 4px; font-family: monospace; }
+            .from-section {
+              border-top: 1.5px dashed #64748b; padding-top: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10.5px;
+            }
+            .from-tag { font-weight: 900; color: #475569; font-size: 9px; text-transform: uppercase; }
+            .from-name { font-weight: 800; color: #0f172a; font-size: 12px; }
+            .from-address { color: #475569; margin-top: 1px; }
+            .urgent-banner {
+              border: 1px solid #000; background: #f8fafc; text-align: center; font-weight: 900; font-size: 10px; padding: 4px; border-radius: 4px; letter-spacing: 0.5px; margin-top: 8px;
+            }
+            .qr-box { text-align: center; margin-left: 8px; }
+            .qr-box img { width: 75px; height: 75px; border: 1px solid #000; }
+            @media print { body { margin: 0; padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="label-card">
+            <div class="header-bar">
+              <div>
+                <h1 class="brand-title">JAI BHAVANI CARGO</h1>
+                <p class="brand-sub">Express Logistics & Fleet Contractors</p>
+              </div>
+              <div class="courier-badge">
+                <div>${partner.toUpperCase()} COURIER</div>
+                ${awb ? '<div style="font-family: monospace; font-size: 11px;">AWB: ' + awb + '</div>' : ''}
+              </div>
+            </div>
+
+            <div class="ref-grid">
+              <div class="ref-item"><strong>Date:</strong><span>${date}</span></div>
+              <div class="ref-item"><strong>Trip ID:</strong><span>${tripId}</span></div>
+              <div class="ref-item"><strong>Truck #:</strong><span>${truck}</span></div>
+              <div class="ref-item"><strong>LR Consignment:</strong><span>${lrNum || 'N/A'}</span></div>
+            </div>
+
+            <div class="to-section">
+              <span class="to-tag">DELIVER TO:</span>
+              <div class="to-name">${cName}</div>
+              <div class="to-attention">Attn: ${attn}</div>
+              <div class="to-address">${addr}<br/>${city}, ${state} - ${pincode}</div>
+              <div class="to-phone">📞 Contact: ${phone}</div>
+            </div>
+
+            <div class="from-section">
+              <div>
+                <div class="from-tag">FROM (SENDER):</div>
+                <div class="from-name">JAI BHAVANI CARGO (Head Office)</div>
+                <div class="from-address">Plot No. 12, Behind HP Petrol Pump, Autonagar, Hyderabad, Telangana - 500070</div>
+                <div class="from-address">Desk In-charge: Vinod Kumar Rathod (MD) • Ph: +91 7794072244 / 9440072244</div>
+              </div>
+              <div class="qr-box">
+                <img src="${qrUrl}" alt="QR" />
+                <div style="font-size: 7px; color: #64748b; font-weight: 700; margin-top: 1px;">SCAN REF</div>
+              </div>
+            </div>
+
+            <div class="urgent-banner">
+              ⚠️ CONTENTS: ORIGINAL PROOF OF DELIVERY (POD) & BILLING INVOICE — HANDLE WITH CARE ⚠️
+            </div>
+          </div>
+          <script>
+            window.onload = function() { window.print(); };
+          </script>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
+  };
+
   const handleSendCourierWhatsApp = (trip, formOverride) => {
     const f = formOverride || {
       partner: trip.pod_courier_partner || "DTDC",
@@ -2379,6 +2513,12 @@ function LorryReceiptsPodHubPage() {
       disabled: !courierForm.awb.trim(),
       className: "px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
     }, "📲 WhatsApp Client Notice"),
+    /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      onClick: () => handlePrintCourierSlip(courierModalTrip, courierForm),
+      className: "px-3 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+    }, "🖨️ Print Address Slip"),
+    
     /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
       /* @__PURE__ */ React.createElement("button", {
         type: "button",

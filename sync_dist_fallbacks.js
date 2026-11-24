@@ -117,6 +117,14 @@ for (const target of targets) {
     if (clientPortalPageBuffer) {
       fs.writeFileSync(path.join(target, 'assets', 'ClientPortalPage-DuEOcerk.js'), clientPortalPageBuffer);
     }
+    const primaryNewBundle = path.resolve(__dirname, 'dist/assets/index-D0yyA4ge.js');
+    if (fs.existsSync(primaryNewBundle)) {
+      fs.copyFileSync(primaryNewBundle, path.join(target, 'assets', 'index-D0yyA4ge.js'));
+    }
+    const primaryNewCss = path.resolve(__dirname, 'dist/assets/index-BRBY-V7S.css');
+    if (fs.existsSync(primaryNewCss)) {
+      fs.copyFileSync(primaryNewCss, path.join(target, 'assets', 'index-BRBY-V7S.css'));
+    }
     const primaryAnalyticsHub = path.resolve(__dirname, 'dist/assets/AnalyticsHub-CYZIBHI0.js');
     if (fs.existsSync(primaryAnalyticsHub)) {
       fs.copyFileSync(primaryAnalyticsHub, path.join(target, 'assets', 'AnalyticsHub-CYZIBHI0.js'));

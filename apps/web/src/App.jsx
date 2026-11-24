@@ -65,6 +65,7 @@ import TripOverviewCalculator from './pages/TripOverviewCalculator.jsx';
 
 // Client Management Pages
 import ClientsListPage from './pages/ClientsListPage.jsx';
+import CourierAddressCataloguePage from './pages/CourierAddressCataloguePage.jsx';
 import ClientFormPage from './pages/ClientFormPage.jsx';
 import ClientDetailsPage from './pages/ClientDetailsPage.jsx';
 import ClientDashboardPage from './pages/ClientDashboardPage.jsx';
@@ -300,6 +301,7 @@ function App() {
                   <Route path="/crm" element={<Navigate to="/transport-crm" replace />} />
                   <Route path="/recruitment" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><RecruitmentDashboardPage /></ProtectedRoute>} />
                   <Route path="/client-portal" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'client']}><ClientPortalPage /></ProtectedRoute>} />
+                  <Route path="/courier-address-catalogue" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><CourierAddressCataloguePage /></ProtectedRoute>} />
                   <Route path="/clients" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientsListPage /></ProtectedRoute>} />
                   <Route path="/clients/new" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientFormPage /></ProtectedRoute>} />
                   <Route path="/clients/dashboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientDashboardPage /></ProtectedRoute>} />
