@@ -261,11 +261,11 @@ function LorryReceiptsPodHubPage() {
     const files = getPodFiles(trip);
     return files.length > 0 ? files[0] : null;
   };
-  const compressDocumentImage = async (file, maxDimension = 1920, quality = 0.8) => {
+  const compressDocumentImage = async (file, maxDimension = 1600, quality = 0.82) => {
     if (!file || !file.type || !file.type.startsWith("image/")) {
       return file;
     }
-    if (file.size <= 250 * 1024) {
+    if (file.size <= 150 * 1024) {
       return file;
     }
     return new Promise((resolve) => {
@@ -293,22 +293,36 @@ function LorryReceiptsPodHubPage() {
           ctx.fillStyle = "#FFFFFF";
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob(
-            (blob) => {
-              if (blob && blob.size < file.size) {
-                const cleanBaseName = (file.name || "document").replace(/\.[^.]+$/, "");
-                const compressedFile = new File([blob], cleanBaseName + ".jpg", {
-                  type: "image/jpeg",
-                  lastModified: Date.now()
-                });
-                resolve(compressedFile);
-              } else {
-                resolve(file);
-              }
-            },
-            "image/jpeg",
-            quality
-          );
+
+          const cleanBaseName = (file.name || "document").replace(/\.[^.]+$/, "");
+          const tryEncode = (mime, q, ext, onFail) => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob && blob.size > 0 && blob.size < file.size) {
+                  // If still > 260KB on first WebP pass, do one gentle pass at 0.72 for compact server storage
+                  if (mime === "image/webp" && q > 0.75 && blob.size > 260 * 1024) {
+                    tryEncode("image/webp", 0.72, "webp", () => {
+                      resolve(new File([blob], cleanBaseName + "." + ext, { type: mime, lastModified: Date.now() }));
+                    });
+                    return;
+                  }
+                  resolve(new File([blob], cleanBaseName + "." + ext, {
+                    type: mime,
+                    lastModified: Date.now()
+                  }));
+                } else {
+                  onFail();
+                }
+              },
+              mime,
+              q
+            );
+          };
+
+          // Try WebP first (30-40% smaller than JPEG at identical crisp text/stamp quality), fallback to JPEG
+          tryEncode("image/webp", quality, "webp", () => {
+            tryEncode("image/jpeg", 0.8, "jpg", () => resolve(file));
+          });
         };
         img.onerror = () => resolve(file);
         img.src = e.target.result;
