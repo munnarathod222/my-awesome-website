@@ -6628,7 +6628,7 @@ function DepartureFlightBoardFullscreen({
         backgroundColor: "#07090e"
       }
     },
-    /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-[#0b0e17] border-b border-slate-800/90 px-6 py-4 flex items-center justify-between shadow-2xl shrink-0" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 font-black" }, /* @__PURE__ */ react_shim_default.createElement(PlaneTakeoff, { className: "w-7 h-7 text-slate-950" })), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded border border-amber-500/40" }, "FIDS \xB7 CENTRAL DISPATCH FLIGHT BOARD"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1 font-bold" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" }), "TERMINAL LIVE")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-xl md:text-2xl font-black text-white tracking-wider mt-0.5 font-mono" }, "JAI BHAVANI CARGO \xB7 DEPARTURES / \u092A\u094D\u0930\u0938\u094D\u0925\u093E\u0928"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "hidden lg:flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "Loading"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-amber-400 font-mono" }, loadingCount)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "At Dock"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-emerald-400 font-mono" }, dockCount)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "In Transit"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-cyan-400 font-mono" }, inTransitCount)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "Delayed"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-rose-400 font-mono" }, delayedCount))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-[#05070b] border border-amber-500/30 px-5 py-2.5 rounded-xl flex items-center gap-3 shadow-inner" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-5 h-5 text-amber-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl md:text-3xl font-black text-amber-400 tracking-wider" }, currentTime.toLocaleTimeString("en-IN", { hour12: false })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-black text-amber-500/80 ml-1.5" }, "IST")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-bold border-l border-slate-800 pl-3" }, currentTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }))), totalPages > 1 && /* @__PURE__ */ react_shim_default.createElement(
+    /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-[#0b0e17] border-b border-slate-800/90 px-6 py-4 flex items-center justify-between shadow-2xl shrink-0" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 font-black" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-7 h-7 text-slate-950" })), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded border border-amber-500/40" }, "CENTRAL FLEET DISPATCH BOARD"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1 font-bold" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" }), "TERMINAL LIVE")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-xl md:text-2xl font-black text-white tracking-wider mt-0.5 font-mono" }, "JAI BHAVANI CARGO \xB7 DEPARTURES"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "hidden lg:flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "Loading"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-amber-400 font-mono" }, loadingCount)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "At Dock"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-emerald-400 font-mono" }, dockCount)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "In Transit"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-cyan-400 font-mono" }, inTransitCount)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 uppercase font-bold block" }, "Delayed"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-base font-black text-rose-400 font-mono" }, delayedCount))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-[#05070b] border border-amber-500/30 px-5 py-2.5 rounded-xl flex items-center gap-3 shadow-inner" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-5 h-5 text-amber-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-2xl md:text-3xl font-black text-amber-400 tracking-wider" }, currentTime.toLocaleTimeString("en-IN", { hour12: false })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-black text-amber-500/80 ml-1.5" }, "IST")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 font-bold border-l border-slate-800 pl-3" }, currentTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }))), totalPages > 1 && /* @__PURE__ */ react_shim_default.createElement(
       Button,
       {
         variant: "outline",
@@ -6665,26 +6665,34 @@ function DepartureFlightBoardFullscreen({
         style: { width: `${pageProgress}%` }
       }
     )),
-    /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex-1 overflow-y-auto px-6 py-3 flex flex-col justify-start" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-full border border-slate-800 rounded-2xl overflow-hidden bg-[#0a0d14] shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-sm font-mono border-collapse" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-[#101420] text-amber-400/90 font-black text-xs tracking-wider uppercase border-b-2 border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-28" }, "TIME"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-36" }, "TRUCK #"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "DESTINATION ROUTE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-44" }, "VEHICLE TYPE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-28 text-center" }, "DOCK BAY"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-44" }, "DRIVER PILOT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-36" }, "LR / POD"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-28" }, "CARGO"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-56 text-right" }, "SYSTEM STATUS"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-800/80" }, displayedDepartures.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 9, className: "py-24 text-center text-slate-500 font-bold text-base" }, "No active truck departures scheduled in terminal queue.")) : displayedDepartures.map((dep, idx) => {
+    /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex-1 overflow-y-auto px-6 py-3 flex flex-col justify-start" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-full border border-slate-800 rounded-2xl overflow-hidden bg-[#0a0d14] shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-sm font-mono border-collapse" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-[#101420] text-amber-400/90 font-black text-xs tracking-wider uppercase border-b-2 border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-36" }, "DATE & TIME"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-36" }, "TRUCK #"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4" }, "DESTINATION ROUTE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-44" }, "VEHICLE TYPE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-28 text-center" }, "DOCK BAY"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-44" }, "DRIVER PILOT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-36" }, "LR / POD"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-28" }, "CARGO"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-48 text-right" }, "SYSTEM STATUS"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3.5 px-4 w-28 text-center" }, "TRACK"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-800/80" }, displayedDepartures.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 10, className: "py-24 text-center text-slate-500 font-bold text-base" }, "No active truck departures scheduled in terminal queue.")) : displayedDepartures.map((dep, idx) => {
       const currentStatus = dep.status || dep.trip_status || "Upcoming";
       const theme = getSystemStatusStyle(currentStatus);
+      const rawDt = dep.trip_date || dep.scheduled_departure;
+      const schedDate = rawDt ? new Date(rawDt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "";
       const schedTime = dep.scheduled_departure ? new Date(dep.scheduled_departure).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false }) : "18:00";
+      const trackTripParam = encodeURIComponent(dep.trip_code || dep.lr_pod_number || dep.id);
+      const trackPageUrl = "/tracking?trip=" + trackTripParam;
+      const rawGps = (dep.gps_tracking_link || "").trim();
+      const gpsExpTime = dep.gps_link_expiry ? new Date(dep.gps_link_expiry).getTime() : (dep.trip_date ? new Date(dep.trip_date).getTime() + ((Number(dep.gps_validity_days) || 2) * 86400000) : 0);
+      const isGpsExpired = gpsExpTime > 0 && Date.now() > gpsExpTime;
       return /* @__PURE__ */ react_shim_default.createElement(
         "tr",
         {
           key: dep.id || idx,
-          onClick: () => onDepartureClick?.(dep),
+          onClick: () => window.open(trackPageUrl, "_blank", "noopener,noreferrer"),
+          title: "Click to view " + (dep.trip_code || "trip") + " in Track Shipment",
           className: "hover:bg-slate-900/70 transition-colors cursor-pointer group"
         },
-        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 font-black text-amber-400 text-base whitespace-nowrap tracking-wider" }, schedTime),
+        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, schedDate ? /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs font-bold text-slate-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800" }, schedDate) : null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-amber-400 text-base tracking-wider" }, schedTime))),
         /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-white text-base tracking-widest group-hover:text-amber-400 transition-colors bg-[#05070b] px-2 py-1 rounded border border-slate-800 shadow-inner" }, dep.truck_number))),
         /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2 text-white font-extrabold text-sm" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-300" }, dep.origin || "Hyderabad"), /* @__PURE__ */ react_shim_default.createElement(ArrowRight, { className: "w-4 h-4 text-amber-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-amber-300 font-black tracking-wide" }, dep.destination || "Hubli"))),
         /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2 py-1 rounded bg-[#05070b] border border-slate-800 text-slate-300 text-xs font-bold" }, dep.vehicle_category || "32FT Container")),
         /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 text-center whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-black text-xs" }, dep.dock_bay || "Bay #01")),
         /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap text-slate-300 font-bold text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement(User, { className: "w-3.5 h-3.5 text-slate-500" }), /* @__PURE__ */ react_shim_default.createElement("span", null, dep.driver_name || "Assigned Driver"))),
-        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap text-slate-400 font-bold text-xs" }, dep.lr_pod_number || "LR-PENDING"),
-        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap text-slate-300 font-bold text-xs" }, dep.cargo_weight || "14.5 MT"),
-        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 text-right whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border font-black text-xs uppercase tracking-wider ${theme.badge}` }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${theme.dot}` }), currentStatus, currentStatus.includes("Delayed") && dep.delay_minutes ? ` (+${dep.delay_minutes}m)` : ""))
+        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap text-slate-400 font-bold text-xs" }, dep.lr_pod_number || "\u2014"),
+        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 whitespace-nowrap text-slate-300 font-bold text-xs" }, dep.cargo_weight && dep.cargo_weight !== "0" && dep.cargo_weight !== "0 MT" && dep.cargo_weight !== "14.5 MT" ? dep.cargo_weight : "\u2014"),
+        /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 text-right whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border font-black text-xs uppercase tracking-wider ${theme.badge}` }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${theme.dot}` }), currentStatus, currentStatus.includes("Delayed") && dep.delay_minutes ? ` (+${dep.delay_minutes}m)` : "")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-4 px-4 text-center whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("button", { type: "button", onClick: (ev) => { ev.stopPropagation(); if (rawGps && !isGpsExpired) { window.open(rawGps, "_blank", "noopener,noreferrer"); } else { window.open(trackPageUrl, "_blank", "noopener,noreferrer"); } }, className: "px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer inline-flex items-center gap-1 " + (rawGps && !isGpsExpired ? "bg-cyan-600 hover:bg-cyan-500 text-white shadow" : "bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700"), title: rawGps && !isGpsExpired ? "Open Live GPS Link" : "Open Track Shipment" }, rawGps && !isGpsExpired ? "🚚 Live GPS" : "📍 Track"))
       );
     }))))),
     /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-[#0b0e17] border-t border-slate-800/90 px-6 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-1 rounded-lg text-xs font-black" }, /* @__PURE__ */ react_shim_default.createElement(Radio, { className: "w-3.5 h-3.5 text-amber-400 animate-pulse" }), "LANE SPOT RATES"), totalPages > 1 && /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1 text-xs text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement(
@@ -7126,23 +7134,47 @@ function DepartureBoardPage() {
     } catch (_) {
     }
   }, []);
-  const loadDepartures = async () => {
+  const lastSigRef = React.useRef ? React.useRef("") : { current: "" };
+  const loadDepartures = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       let list = [];
+      const sevenDaysAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const isOngoingOrRecent = (d) => {
+        const st = (d.status || d.trip_status || "").toLowerCase();
+        if (st && st !== "completed" && st !== "cancelled" && st !== "delivered") return true;
+        const dt = new Date(d.trip_date || d.scheduled_departure || 0).getTime();
+        return !isNaN(dt) && dt >= sevenDaysAgoMs;
+      };
       try {
         const res = await reservationClient.getDepartures();
         if (res && Array.isArray(res.departures) && res.departures.length > 0) {
-          list = res.departures;
+          list = res.departures.filter(isOngoingOrRecent);
         }
       } catch (_) {
       }
       if (list.length === 0) {
-        const trips = await pocketbaseClient_default.collection("trip_logs").getFullList({
+        const activeTrips = await pocketbaseClient_default.collection("trip_logs").getFullList({
           filter: 'trip_status != "Completed" && trip_status != "Cancelled"',
           sort: "-created",
           $autoCancel: false
         }).catch(() => []);
+        const recentTripsRaw = await pocketbaseClient_default.collection("trip_logs").getList(1, 40, {
+          sort: "-date,-created",
+          $autoCancel: false
+        }).then((r3) => r3.items).catch(() => []);
+        const recentTrips = recentTripsRaw.filter(t2 => {
+          const dt = new Date(t2.date || t2.created || 0).getTime();
+          return !isNaN(dt) && dt >= sevenDaysAgoMs;
+        });
+        const seenIds = /* @__PURE__ */ new Set();
+        const trips = [];
+        for (const t2 of [...activeTrips, ...recentTrips]) {
+          if (!seenIds.has(t2.id)) {
+            seenIds.add(t2.id);
+            trips.push(t2);
+          }
+        }
         const trucks = await pocketbaseClient_default.collection("trucks").getFullList({
           $autoCancel: false
         }).catch(() => []);
@@ -7152,166 +7184,74 @@ function DepartureBoardPage() {
           const truck = truckMap.get(trip.truck_number) || {};
           const bayNum = idx % 6 + 1;
           const sysStatus = trip.trip_status || "Upcoming";
+          let origin = "Hyderabad";
+          let destination = "Hubli";
+          if (trip.route) {
+            if (trip.route.includes(" to ") || trip.route.includes(" To ")) {
+              const parts = trip.route.split(/\s+[tT][oO]\s+/);
+              origin = parts[0]?.trim() || origin;
+              destination = parts[1]?.trim() || destination;
+            } else if (trip.route.includes("->") || trip.route.includes("\u2794")) {
+              const parts = trip.route.split(/->|➔/);
+              origin = parts[0]?.trim() || origin;
+              destination = parts[parts.length - 1]?.trim() || destination;
+            } else {
+              origin = trip.route;
+            }
+          }
+          const rawWeight = Number(trip.actual_weight) || Number(trip.charged_weight) || 0;
+          const cargoWeight = rawWeight > 0 ? `${rawWeight} MT` : trip.packages_count > 0 ? `${trip.packages_count} pkgs` : "\u2014";
           return {
             id: trip.id,
             type: "trip",
             trip_code: trip.trip_id || `TRIP-${idx + 101}`,
-            truck_number: trip.truck_number || "TG 12 B 9021",
-            vehicle_category: truck.vehicle_class || truck.truck_size || "32FT Container",
-            driver_name: trip.driver_name || truck.driver_name || "Assigned Driver",
-            origin: trip.route ? trip.route.split(" to ")[0] : trip.origin || "Hyderabad",
-            destination: trip.route ? trip.route.split(" to ")[1] : trip.destination || "Hubli",
+            truck_number: trip.truck_number || "",
+            vehicle_category: truck.vehicle_class || truck.truck_size || "32 FT",
+            driver_name: trip.driver_name || truck.driver_name || "Driver Not Assigned",
+            origin,
+            destination,
             dock_bay: `Bay #${String(bayNum).padStart(2, "0")}`,
             scheduled_departure: trip.loading_dock_arrival_time || trip.date || (/* @__PURE__ */ new Date()).toISOString(),
             status: sysStatus,
             trip_status: sysStatus,
             delay_minutes: sysStatus.toLowerCase().includes("delayed") ? 25 : 0,
-            lr_pod_number: trip.invoice_number || trip.trip_id || `LR-${892100 + idx}`,
-            cargo_weight: trip.actual_weight ? `${trip.actual_weight} MT` : "14.5 MT"
+            lr_pod_number: trip.invoice_number || trip.trip_id || "\u2014",
+            trip_date: trip.date || trip.created,
+            gps_tracking_link: trip.gps_tracking_link || "",
+            gps_link_expiry: trip.gps_link_expiry || "",
+            gps_validity_days: trip.gps_validity_days || 2,
+            cargo_weight: cargoWeight
           };
         });
       }
-      if (list.length === 0) {
-        list = [
-          {
-            id: "dep-hyd-hub-01",
-            type: "trip",
-            trip_code: "JBC-HYD-01",
-            truck_number: "TG 12 B 9021",
-            vehicle_category: "32FT MXL Container",
-            driver_name: "Suresh Kumar",
-            origin: "Hyderabad",
-            destination: "Hubli",
-            dock_bay: "Bay #02",
-            scheduled_departure: new Date(Date.now() + 15 * 6e4).toISOString(),
-            status: "Loading in Progress",
-            trip_status: "Loading in Progress",
-            delay_minutes: 0,
-            lr_pod_number: "LR-892101",
-            cargo_weight: "14.5 MT"
-          },
-          {
-            id: "dep-hyd-pun-02",
-            type: "trip",
-            trip_code: "JBC-HYD-02",
-            truck_number: "TS 08 UB 4519",
-            vehicle_category: "20FT Closed Body",
-            driver_name: "Ramesh Goud",
-            origin: "Hyderabad",
-            destination: "Pune",
-            dock_bay: "Bay #04",
-            scheduled_departure: new Date(Date.now() + 35 * 6e4).toISOString(),
-            status: "Arrived at Dock",
-            trip_status: "Arrived at Dock",
-            delay_minutes: 0,
-            lr_pod_number: "LR-892102",
-            cargo_weight: "8.2 MT"
-          },
-          {
-            id: "dep-pun-hyd-03",
-            type: "trip",
-            trip_code: "JBC-PUN-01",
-            truck_number: "MH 12 QX 8832",
-            vehicle_category: "32FT SXL Container",
-            driver_name: "Vinod Rathod",
-            origin: "Pune",
-            destination: "Hyderabad",
-            dock_bay: "Bay #01",
-            scheduled_departure: new Date(Date.now() - 45 * 6e4).toISOString(),
-            status: "Delayed / Breakdown",
-            trip_status: "Delayed / Breakdown",
-            delay_minutes: 45,
-            lr_pod_number: "LR-892103",
-            cargo_weight: "15.8 MT"
-          },
-          {
-            id: "dep-blr-hyd-04",
-            type: "trip",
-            trip_code: "JBC-BLR-01",
-            truck_number: "KA 01 AH 3311",
-            vehicle_category: "24FT Open High Deck",
-            driver_name: "Manjunath",
-            origin: "Bangalore",
-            destination: "Hyderabad",
-            dock_bay: "Bay #03",
-            scheduled_departure: new Date(Date.now() - 90 * 6e4).toISOString(),
-            status: "Dispatched",
-            trip_status: "Dispatched",
-            delay_minutes: 0,
-            lr_pod_number: "LR-892104",
-            cargo_weight: "11.0 MT"
-          },
-          {
-            id: "dep-maa-hyd-05",
-            type: "trip",
-            trip_code: "JBC-MAA-01",
-            truck_number: "TN 04 BC 6721",
-            vehicle_category: "32FT Container",
-            driver_name: "Anbarasan M",
-            origin: "Chennai",
-            destination: "Hyderabad",
-            dock_bay: "Bay #05",
-            scheduled_departure: new Date(Date.now() - 180 * 6e4).toISOString(),
-            status: "In Transit",
-            trip_status: "In Transit",
-            delay_minutes: 0,
-            lr_pod_number: "LR-892105",
-            cargo_weight: "16.2 MT"
-          },
-          {
-            id: "dep-bza-hub-06",
-            type: "trip",
-            trip_code: "JBC-BZA-01",
-            truck_number: "AP 29 TA 1980",
-            vehicle_category: "32FT Container",
-            driver_name: "K. Venkatesh",
-            origin: "Vijayawada",
-            destination: "Hubli",
-            dock_bay: "Bay #06",
-            scheduled_departure: new Date(Date.now() - 15 * 6e4).toISOString(),
-            status: "Unloading in Progress",
-            trip_status: "Unloading in Progress",
-            delay_minutes: 0,
-            lr_pod_number: "LR-892106",
-            cargo_weight: "13.4 MT"
-          },
-          {
-            id: "dep-nag-hyd-07",
-            type: "trip",
-            trip_code: "JBC-NAG-01",
-            truck_number: "MH 31 CB 7712",
-            vehicle_category: "20FT Container",
-            driver_name: "Santosh Shinde",
-            origin: "Nagpur",
-            destination: "Hyderabad",
-            dock_bay: "Bay #02",
-            scheduled_departure: new Date(Date.now() + 120 * 6e4).toISOString(),
-            status: "Vehicle Assigned",
-            trip_status: "Vehicle Assigned",
-            delay_minutes: 0,
-            lr_pod_number: "LR-892107",
-            cargo_weight: "7.5 MT"
-          },
-          {
-            id: "dep-hub-hyd-08",
-            type: "trip",
-            trip_code: "JBC-HUB-01",
-            truck_number: "KA 25 D 1029",
-            vehicle_category: "32FT Multi-Axle",
-            driver_name: "Basavaraj P",
-            origin: "Hubli",
-            destination: "Hyderabad",
-            dock_bay: "Bay #03",
-            scheduled_departure: new Date(Date.now() + 180 * 6e4).toISOString(),
-            status: "Upcoming",
-            trip_status: "Upcoming",
-            delay_minutes: 0,
-            lr_pod_number: "LR-892108",
-            cargo_weight: "15.0 MT"
-          }
-        ];
+      const statusPriority = {
+        "Delayed / Breakdown": 1,
+        "Delayed": 1,
+        "Loading in Progress": 2,
+        "Loading": 2,
+        "Arrived at Dock": 3,
+        "Unloading in Progress": 4,
+        "Vehicle Assigned": 5,
+        "Upcoming": 6,
+        "In Transit": 7,
+        "Dispatched": 8,
+        "Arrived at Delivery Location": 9,
+        "Delivered": 10,
+        "Completed": 11
+      };
+      list.sort((a, b) => {
+        const pA = statusPriority[a.status] || 99;
+        const pB = statusPriority[b.status] || 99;
+        if (pA !== pB) return pA - pB;
+        const timeA = a.scheduled_departure ? new Date(a.scheduled_departure).getTime() : 0;
+        const timeB = b.scheduled_departure ? new Date(b.scheduled_departure).getTime() : 0;
+        return timeB - timeA;
+      });
+      const nextSig = list.map(d => (d.id || "") + "|" + (d.status || "") + "|" + (d.scheduled_departure || "") + "|" + (d.dock_bay || "")).join(";");
+      if (nextSig !== lastSigRef.current) {
+        lastSigRef.current = nextSig;
+        setDepartures(list);
       }
-      setDepartures(list);
     } catch (err) {
       toast.error("Failed to load departure board: " + err.message);
     } finally {
@@ -7319,9 +7259,23 @@ function DepartureBoardPage() {
     }
   };
   useEffect(() => {
-    loadDepartures();
-    const interval = setInterval(loadDepartures, 3e4);
-    return () => clearInterval(interval);
+    loadDepartures(false);
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      loadDepartures(true);
+    }, 5e3);
+    const onVisChange = () => {
+      if (document.visibilityState === "visible") loadDepartures(true);
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisChange);
+    }
+    return () => {
+      clearInterval(interval);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisChange);
+      }
+    };
   }, []);
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -7403,7 +7357,7 @@ function DepartureBoardPage() {
         setNewStatus(dep.status || dep.trip_status);
       }
     }
-  ), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-5 font-sans max-w-[1650px] mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/95 border border-slate-800 p-4 md:p-5 rounded-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement(PlaneTakeoff, { className: "w-6 h-6 text-slate-950" })), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30" }, "FIDS \xB7 CENTRAL DISPATCH TERMINAL"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1 font-mono" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-ping" }), "LIVE SYSTEM STATUS")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-xl md:text-2xl font-black text-white tracking-tight mt-0.5 font-mono" }, "TRUCK DEPARTURE BOARD"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-2.5 font-mono shadow-inner" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-4 h-4 text-amber-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-lg md:text-xl font-black text-amber-400 tracking-wider" }, currentTime.toLocaleTimeString("en-IN", { hour12: false })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-bold text-slate-500 ml-1" }, "IST")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 font-bold border-l border-slate-800 pl-2 hidden sm:inline" }, currentTime.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }))), /* @__PURE__ */ react_shim_default.createElement(
+  ), /* @__PURE__ */ react_shim_default.createElement("div", { className: "p-4 md:p-6 space-y-5 font-sans max-w-[1650px] mx-auto" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-900/95 border border-slate-800 p-4 md:p-5 rounded-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 shrink-0" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-6 h-6 text-slate-950" })), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30" }, "CENTRAL FLEET DISPATCH"), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-xs text-slate-400 flex items-center gap-1 font-mono" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-ping" }), "LIVE SYSTEM STATUS")), /* @__PURE__ */ react_shim_default.createElement("h1", { className: "text-xl md:text-2xl font-black text-white tracking-tight mt-0.5 font-mono" }, "TRUCK DEPARTURE BOARD"))), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex flex-wrap items-center gap-3" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-2.5 font-mono shadow-inner" }, /* @__PURE__ */ react_shim_default.createElement(Clock, { className: "w-4 h-4 text-amber-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-lg md:text-xl font-black text-amber-400 tracking-wider" }, currentTime.toLocaleTimeString("en-IN", { hour12: false })), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] font-bold text-slate-500 ml-1" }, "IST")), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[10px] text-slate-400 font-bold border-l border-slate-800 pl-2 hidden sm:inline" }, currentTime.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }))), /* @__PURE__ */ react_shim_default.createElement(
     Button,
     {
       variant: "outline",
@@ -7458,22 +7412,26 @@ function DepartureBoardPage() {
     },
     /* @__PURE__ */ react_shim_default.createElement("option", { value: "All" }, "All System Statuses"),
     SYSTEM_STATUS_OPTIONS.map((opt) => /* @__PURE__ */ react_shim_default.createElement("option", { key: opt, value: opt }, opt))
-  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-xs text-slate-400 font-medium" }, "Showing ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-amber-400 font-mono" }, filtered.length), " of ", departures.length, " Departures")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs font-mono" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900 text-slate-400 font-black text-[11px] tracking-wider uppercase border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "SCHED. TIME"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "TRUCK #"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "DESTINATION ROUTE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "VEHICLE TYPE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-center" }, "DOCK BAY"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "DRIVER PILOT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "LR / CONSIGNMENT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "CARGO / WT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "SYSTEM STATUS"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-850" }, loading ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 9, className: "py-20 text-center text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-8 h-8 animate-spin text-amber-400 mx-auto mb-2" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "Syncing with warehouse telematics & dock bay sensors..."))) : filtered.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 9, className: "py-20 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-10 h-10 mx-auto mb-2 opacity-30 text-amber-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "No scheduled departures found"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-slate-500 mt-0.5" }, "Try clearing filter parameters."))) : filtered.map((dep, idx) => {
+  )), /* @__PURE__ */ react_shim_default.createElement("div", { className: "text-xs text-slate-400 font-medium" }, "Showing ", /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-amber-400 font-mono" }, filtered.length), " of ", departures.length, " Departures")), /* @__PURE__ */ react_shim_default.createElement(Card, { className: "bg-slate-950 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ react_shim_default.createElement("table", { className: "w-full text-left text-xs font-mono" }, /* @__PURE__ */ react_shim_default.createElement("thead", { className: "bg-slate-900 text-slate-400 font-black text-[11px] tracking-wider uppercase border-b border-slate-800" }, /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "SCHED. TIME"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "TRUCK #"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "DESTINATION ROUTE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "VEHICLE TYPE"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-center" }, "DOCK BAY"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "DRIVER PILOT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "LR / CONSIGNMENT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4" }, "CARGO / WT"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-right" }, "SYSTEM STATUS"), /* @__PURE__ */ react_shim_default.createElement("th", { className: "py-3 px-4 text-center" }, "TRACK"))), /* @__PURE__ */ react_shim_default.createElement("tbody", { className: "divide-y divide-slate-850" }, loading ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 9, className: "py-20 text-center text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement(RefreshCw, { className: "w-8 h-8 animate-spin text-amber-400 mx-auto mb-2" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "Syncing with warehouse telematics & dock bay sensors..."))) : filtered.length === 0 ? /* @__PURE__ */ react_shim_default.createElement("tr", null, /* @__PURE__ */ react_shim_default.createElement("td", { colSpan: 9, className: "py-20 text-center text-slate-500" }, /* @__PURE__ */ react_shim_default.createElement(Truck, { className: "w-10 h-10 mx-auto mb-2 opacity-30 text-amber-400" }), /* @__PURE__ */ react_shim_default.createElement("p", { className: "font-bold text-slate-300" }, "No scheduled departures found"), /* @__PURE__ */ react_shim_default.createElement("p", { className: "text-[11px] text-slate-500 mt-0.5" }, "Try clearing filter parameters."))) : filtered.map((dep, idx) => {
     const currentStatus = dep.status || dep.trip_status || "Upcoming";
     const theme = getSystemStatusStyle(currentStatus);
+    const rawDt = dep.trip_date || dep.scheduled_departure;
+    const schedDateFormatted = rawDt ? new Date(rawDt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "";
     const schedTimeFormatted = dep.scheduled_departure ? new Date(dep.scheduled_departure).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false }) : "18:00";
+    const trackTripParam = encodeURIComponent(dep.trip_code || dep.lr_pod_number || dep.id);
+    const trackPageUrl = "/tracking?trip=" + trackTripParam;
+    const rawGps = (dep.gps_tracking_link || "").trim();
+    const gpsExpTime = dep.gps_link_expiry ? new Date(dep.gps_link_expiry).getTime() : (dep.trip_date ? new Date(dep.trip_date).getTime() + ((Number(dep.gps_validity_days) || 2) * 86400000) : 0);
+    const isGpsExpired = gpsExpTime > 0 && Date.now() > gpsExpTime;
     return /* @__PURE__ */ react_shim_default.createElement(
       "tr",
       {
         key: dep.id || idx,
-        onClick: () => {
-          setActiveDeparture(dep);
-          setNewBay(dep.dock_bay);
-          setNewStatus(currentStatus);
-        },
+        onClick: () => window.open(trackPageUrl, "_blank", "noopener,noreferrer"),
+        title: "Click to view " + (dep.trip_code || "trip") + " in Track Shipment",
         className: "hover:bg-slate-900/60 transition-colors cursor-pointer group"
       },
-      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-black text-amber-400 text-sm whitespace-nowrap" }, schedTimeFormatted),
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5" }, schedDateFormatted ? /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-[11px] font-bold text-slate-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800" }, schedDateFormatted) : null, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-amber-400 text-sm" }, schedTimeFormatted))),
       /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "font-black text-white text-sm tracking-wider group-hover:text-amber-400 transition-colors bg-slate-900 px-2 py-0.5 rounded border border-slate-800" }, dep.truck_number))),
       /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "space-y-0.5" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 text-white font-bold text-xs" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-slate-400" }, dep.origin), /* @__PURE__ */ react_shim_default.createElement(ArrowRight, { className: "w-3.5 h-3.5 text-amber-400 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", { className: "text-amber-300 font-extrabold" }, dep.destination)))),
       /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 text-[11px] font-bold" }, dep.vehicle_category)),
@@ -7481,7 +7439,7 @@ function DepartureBoardPage() {
       /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex items-center gap-1.5 text-slate-300 font-bold" }, /* @__PURE__ */ react_shim_default.createElement(User, { className: "w-3 h-3 text-slate-500 shrink-0" }), /* @__PURE__ */ react_shim_default.createElement("span", null, dep.driver_name))),
       /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-bold text-slate-400 whitespace-nowrap" }, dep.lr_pod_number),
       /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 font-bold text-slate-300 whitespace-nowrap" }, dep.cargo_weight),
-      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border font-black text-xs uppercase ${theme.badge}` }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${theme.dot}` }), currentStatus, currentStatus.includes("Delayed") && dep.delay_minutes ? ` (+${dep.delay_minutes}m)` : ""))
+      /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-right whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border font-black text-xs uppercase ${theme.badge}` }, /* @__PURE__ */ react_shim_default.createElement("span", { className: `w-2 h-2 rounded-full ${theme.dot}` }), currentStatus, currentStatus.includes("Delayed") && dep.delay_minutes ? ` (+${dep.delay_minutes}m)` : "")), /* @__PURE__ */ react_shim_default.createElement("td", { className: "py-3.5 px-4 text-center whitespace-nowrap" }, /* @__PURE__ */ react_shim_default.createElement("button", { type: "button", onClick: (ev) => { ev.stopPropagation(); if (rawGps && !isGpsExpired) { window.open(rawGps, "_blank", "noopener,noreferrer"); } else { window.open(trackPageUrl, "_blank", "noopener,noreferrer"); } }, className: "px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer inline-flex items-center gap-1 " + (rawGps && !isGpsExpired ? "bg-cyan-600 hover:bg-cyan-500 text-white" : "bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700") }, rawGps && !isGpsExpired ? "🚚 GPS" : "📍 Track"))
     );
   }))))), activeDeparture && /* @__PURE__ */ react_shim_default.createElement(Dialog, { open: Boolean(activeDeparture), onOpenChange: () => setActiveDeparture(null) }, /* @__PURE__ */ react_shim_default.createElement(DialogContent, { className: "bg-slate-900 border-slate-800 text-white max-w-md rounded-2xl shadow-2xl font-sans" }, /* @__PURE__ */ react_shim_default.createElement(DialogHeader, null, /* @__PURE__ */ react_shim_default.createElement(DialogTitle, { className: "text-lg font-black text-white flex items-center justify-between font-mono" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Gate Control: ", activeDeparture.truck_number), /* @__PURE__ */ react_shim_default.createElement("span", { className: "px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30" }, activeDeparture.trip_code))), /* @__PURE__ */ react_shim_default.createElement("form", { onSubmit: handleUpdateBay, className: "space-y-4 py-2 text-xs" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1" }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Destination Route:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-white" }, activeDeparture.origin, " \u2192 ", activeDeparture.destination)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Assigned Driver:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-amber-400" }, activeDeparture.driver_name)), /* @__PURE__ */ react_shim_default.createElement("div", { className: "flex justify-between text-slate-400" }, /* @__PURE__ */ react_shim_default.createElement("span", null, "E-Way / LR #:"), /* @__PURE__ */ react_shim_default.createElement("strong", { className: "text-slate-300 font-mono" }, activeDeparture.lr_pod_number))), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("label", { className: "text-[11px] font-bold text-slate-400 uppercase" }, "Warehouse Dock Bay"), /* @__PURE__ */ react_shim_default.createElement(
     "select",

@@ -476,17 +476,22 @@ router.get('/departures', async (req, res) => {
     const truckMap = new Map();
     trucks.forEach(t => truckMap.set(t.truck_number, t));
 
-    // 2. Fetch active / scheduled trips from trip_logs, plus latest real trips
+    // 2. Fetch active / scheduled trips from trip_logs, plus latest 1-week real trips
     const activeTrips = await pb.collection('trip_logs').getFullList({
       filter: 'trip_status != "Completed" && trip_status != "Cancelled"',
       sort: '-created',
       $autoCancel: false
     }).catch(() => []);
 
-    const recentTrips = await pb.collection('trip_logs').getList(1, 50, {
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const recentTripsRaw = await pb.collection('trip_logs').getList(1, 50, {
       sort: '-date,-created',
       $autoCancel: false
     }).then(r => r.items).catch(() => []);
+    const recentTrips = recentTripsRaw.filter(t => {
+      const d = new Date(t.date || t.created);
+      return !isNaN(d.getTime()) && d >= sevenDaysAgo;
+    });
 
     const seenIds = new Set();
     const trips = [];
@@ -552,6 +557,10 @@ router.get('/departures', async (req, res) => {
         destination: destination,
         dock_bay: `Bay #${String(bayNum).padStart(2, '0')}`,
         scheduled_departure: scheduledTime,
+        trip_date: trip.date || trip.created,
+        gps_tracking_link: trip.gps_tracking_link || '',
+        gps_link_expiry: trip.gps_link_expiry || '',
+        gps_validity_days: trip.gps_validity_days || 2,
         status: systemStatus,
         trip_status: systemStatus,
         delay_minutes: delayMinutes,
