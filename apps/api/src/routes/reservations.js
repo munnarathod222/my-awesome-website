@@ -1191,7 +1191,6 @@ router.post('/auto-recommend', async (req, res) => {
  */
 router.get('/client-trips', async (req, res) => {
   try {
-    await ensurePbAuth();
     const { clientId = '', clientName = '', companyName = '', email = '' } = req.query;
     const allClients = await pb.collection('clients').getFullList({ $autoCancel: false }).catch(() => []);
     const cNameL = String(clientName || '').trim().toLowerCase();
