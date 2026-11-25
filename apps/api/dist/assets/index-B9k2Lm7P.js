@@ -1669,7 +1669,7 @@ return e.jsxs(e.Fragment,{children:[
       { size: "32FT MXL", cap: "18 Tons", body: "Multi-Axle Heavy" }
     ];
     return e.jsxs("div", {
-      className: "min-h-screen bg-[#03050a] text-slate-100 font-sans relative overflow-x-hidden",
+      className: "min-h-screen bg-[#03050a] text-slate-100 antialiased relative overflow-x-hidden", style: { fontFamily: "'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
       children: [
         e.jsx("div", {
           className: "pointer-events-none absolute inset-0 opacity-30",
@@ -1706,7 +1706,7 @@ return e.jsxs(e.Fragment,{children:[
                   className: "space-y-4 max-w-2xl",
                   children: [
                     e.jsx("div", { className: "text-xs font-bold tracking-[0.2em] uppercase " + pd.accentText, children: pd.eyebrow }),
-                    e.jsx("h1", { className: "text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.05]", children: pd.title }),
+                    e.jsx("h1", { className: "text-3xl sm:text-4xl lg:text-[44px] font-bold text-white tracking-[-0.025em] leading-[1.12]", children: pd.title }),
                     e.jsx("p", { className: "text-sm sm:text-base text-slate-300/90 leading-relaxed max-w-xl", children: pd.subtitle })
                   ]
                 }),
@@ -1815,7 +1815,7 @@ return e.jsxs(e.Fragment,{children:[
                   e.jsxs("div", {
                     className: "space-y-1",
                     children: [
-                      e.jsx("h2", { className: "text-2xl font-black text-white tracking-tight", children: pd.formTitle }),
+                      e.jsx("h2", { className: "text-xl font-bold text-white tracking-[-0.02em]", children: pd.formTitle }),
                       e.jsx("p", { className: "text-xs text-slate-400", children: pd.formSub })
                     ]
                   }),
@@ -1872,7 +1872,7 @@ return e.jsxs(e.Fragment,{children:[
               children: [
                 e.jsxs("div", {
                   children: [
-                    e.jsx("div", { className: "text-xs font-black text-white font-mono", children: fsItem.size }),
+                    e.jsx("div", { className: "text-xs font-bold text-white tracking-tight", children: fsItem.size }),
                     e.jsx("div", { className: "text-[10px] text-slate-400", children: fsItem.body })
                   ]
                 }),
@@ -1889,7 +1889,7 @@ return e.jsxs(e.Fragment,{children:[
               className: "max-w-2xl space-y-2",
               children: [
                 e.jsx("div", { className: "text-[11px] font-bold uppercase tracking-[0.2em] " + pd.accentText, children: "CAPABILITIES" }),
-                e.jsx("h2", { className: "text-2xl sm:text-3xl font-black text-white tracking-tight", children: pd.servicesHeading }),
+                e.jsx("h2", { className: "text-2xl sm:text-3xl font-bold text-white tracking-[-0.02em]", children: pd.servicesHeading }),
                 e.jsx("p", { className: "text-sm text-slate-400", children: pd.servicesSub })
               ]
             }),
@@ -1915,7 +1915,7 @@ return e.jsxs(e.Fragment,{children:[
               e.jsxs("div", {
                 className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4",
                 children: [
-                  e.jsx("h3", { className: "text-xl font-black text-white", children: pd.stepsHeading }),
+                  e.jsx("h3", { className: "text-xl font-bold text-white tracking-[-0.015em]", children: pd.stepsHeading }),
                   e.jsx("a", { href: pd.joinUrl, target: "_blank", rel: "noreferrer", className: "px-5 py-2.5 rounded-xl text-xs font-extrabold " + pd.btnCls, children: pd.joinBtn + " →" })
                 ]
               }),
