@@ -32,6 +32,41 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
     fetchTheftReports();
   }, []);
 
+  const handleDeleteTheftReport = async (inc) => {
+    if (!inc || !inc.id) return;
+    if (!window.confirm("Delete this fraud sentinel log permanently?")) return;
+    try {
+      await B.collection("fuel_theft_reports").delete(inc.id, { $autoCancel: !1 });
+      setTheftReports(prev => prev.filter(r => r.id !== inc.id));
+      setSelectedDriver(prev => {
+        if (!prev) return null;
+        const nextInc = (prev.incidents || []).filter(i => i.id !== inc.id);
+        if (nextInc.length === 0) return null;
+        return { ...prev, count: nextInc.length, incidents: nextInc };
+      });
+      if (typeof toast !== "undefined") toast.success("Fraud sentinel log deleted.");
+    } catch (err) {
+      console.error("Failed to delete theft report:", err);
+      if (typeof toast !== "undefined") toast.error("Failed to delete log: " + (err?.message || "Error"));
+    }
+  };
+
+  const handleDeleteAllDriverTheftReports = async (drv) => {
+    if (!drv || !drv.incidents || drv.incidents.length === 0) return;
+    if (!window.confirm("Delete all " + drv.incidents.length + " fraud sentinel log(s) for " + drv.driver_name + "?")) return;
+    try {
+      for (const inc of drv.incidents) {
+        if (inc.id) await B.collection("fuel_theft_reports").delete(inc.id, { $autoCancel: !1 }).catch(() => {});
+      }
+      const deletedIds = new Set(drv.incidents.map(i => i.id));
+      setTheftReports(prev => prev.filter(r => !deletedIds.has(r.id)));
+      if (selectedDriver && selectedDriver.driver_name === drv.driver_name) setSelectedDriver(null);
+      if (typeof toast !== "undefined") toast.success("Deleted all fraud sentinel logs for " + drv.driver_name);
+    } catch (err) {
+      if (typeof toast !== "undefined") toast.error("Failed to delete logs: " + (err?.message || "Error"));
+    }
+  };
+
   // 1-Click Advance Deduction
   const handleQuickDeduct = async (report) => {
     if (!report || !report.id) return;
@@ -771,6 +806,14 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                           onClick: ev => { ev.stopPropagation(); printDriverSettlement(d); },
                           className: "h-8 px-3 rounded-xl border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-bold",
                           children: "🖨️ Print"
+                        }),
+                        e.jsx(y, {
+                          size: "sm",
+                          variant: "outline",
+                          onClick: ev => { ev.stopPropagation(); handleDeleteAllDriverTheftReports(d); },
+                          className: "h-8 px-2.5 rounded-xl border-rose-500/40 bg-rose-950/50 hover:bg-rose-600 hover:text-white text-rose-300 text-xs font-bold",
+                          title: "Delete all fraud sentinel logs for this driver",
+                          children: "🗑️"
                         })
                       ]
                     })
@@ -1101,7 +1144,15 @@ import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as
                                 onClick: () => handleQuickDeduct(inc),
                                 className: "h-7 text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg px-2.5",
                                 children: ["⚡ Deduct ", fmtInr(inc.bleeding_amount)]
-                              }) : null
+                              }) : null,
+                              e.jsx(y, {
+                                size: "sm",
+                                variant: "outline",
+                                onClick: () => handleDeleteTheftReport(inc),
+                                className: "h-7 text-xs border-rose-500/40 bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-300 font-bold rounded-lg px-2",
+                                title: "Delete this fraud sentinel log",
+                                children: "🗑️ Delete"
+                              })
                             ]
                           })
                         ]

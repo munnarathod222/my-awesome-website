@@ -1024,7 +1024,7 @@ function _formatBytes(bytes = 0) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-async function _compressImage(file) {
+async function _compressImage(file, maxDim = 1600, targetKb = 180) {
   if (!file || !file.type || !file.type.startsWith('image/')) return file;
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -1032,29 +1032,39 @@ async function _compressImage(file) {
       const img = new Image();
       img.onload = () => {
         let { width, height } = img;
-        const max = 2048;
-        if (width > max || height > max) {
+        if (width > maxDim || height > maxDim) {
           if (width > height) {
-            height = Math.round((height * max) / width);
-            width = max;
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
           } else {
-            width = Math.round((width * max) / height);
-            height = max;
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
           }
         }
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const compFile = new File([blob], file.name, { type: 'image/jpeg' });
-            resolve(compFile);
-          } else {
-            resolve(file);
-          }
-        }, 'image/jpeg', 0.82);
+        const baseName = (file.name || 'image').replace(/\.[^.]+$/, '');
+        const encode = (mime, q, ext, onFail) => {
+          canvas.toBlob((blob) => {
+            if (blob && blob.size > 0) {
+              if (mime === 'image/webp' && q > 0.65 && blob.size > targetKb * 1024) {
+                encode('image/webp', 0.62, 'webp', () => resolve(new File([blob], baseName + '.' + ext, { type: mime, lastModified: Date.now() })));
+                return;
+              }
+              resolve(new File([blob], baseName + '.' + ext, { type: mime, lastModified: Date.now() }));
+            } else {
+              onFail();
+            }
+          }, mime, q);
+        };
+        encode('image/webp', 0.78, 'webp', () => encode('image/jpeg', 0.75, 'jpg', () => resolve(file)));
       };
       img.onerror = () => resolve(file);
       img.src = e.target.result;
@@ -1073,7 +1083,7 @@ function _DispatchDocsViewerModal({ isOpen, onClose, trip, ReactModule, jsx }) {
   const lrUrl = trip.lr_file_url || (trip.lr_file ? ('/api/files/trip_logs/' + trip.id + '/' + trip.lr_file) : null);
   const invoiceUrl = trip.invoice_file_url || (trip.invoice_file ? ('/api/files/trip_logs/' + trip.id + '/' + trip.invoice_file) : null);
   const ewayUrl = trip.eway_bill_file_url || (trip.eway_bill_file ? ('/api/files/trip_logs/' + trip.id + '/' + trip.eway_bill_file) : null);
-  const sealUrl = trip.seal_photo_url || (trip.seal_photo_file ? ('/api/files/trip_logs/' + trip.id + '/' + trip.seal_photo_file) : null);
+  const sealUrl = (trip.seal_photo_file ? ('/api/files/trip_logs/' + trip.id + '/' + trip.seal_photo_file) : null) || trip.seal_photo_url || null;
   let allSeals = [];
   if (Array.isArray(trip.seal_numbers) && trip.seal_numbers.length > 0) {
     allSeals = trip.seal_numbers.filter(Boolean);
@@ -1541,7 +1551,7 @@ function _DispatchComplianceSection({ formData, setFormData, ReactModule, jsx })
                       }) : jsx.jsx("span", { className: "text-[11px] text-slate-400", children: "Attach physical seal verification photo (compressed in-browser to < 40KB):" }),
                       formData.seal_photo_url ? jsx.jsx("button", {
                         type: "button",
-                        onClick: () => setFormData({ ...formData, seal_photo_url: '' }),
+                        onClick: () => setFormData({ ...formData, seal_photo_url: '', seal_photo_file_raw: null, seal_photo_removed: true }),
                         className: "text-[10px] text-rose-400 hover:text-rose-300 underline cursor-pointer",
                         children: "Remove Photo"
                       }) : jsx.jsxs("label", {
@@ -1555,12 +1565,9 @@ function _DispatchComplianceSection({ formData, setFormData, ReactModule, jsx })
                               const file = e.target.files && e.target.files[0];
                               if (!file) return;
                               try {
-                                const comp = await _compressImage(file);
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  setFormData({ ...formData, seal_photo_url: ev.target.result });
-                                };
-                                reader.readAsDataURL(comp);
+                                const comp = await _compressImage(file, 1200, 55);
+                                const previewUrl = URL.createObjectURL(comp);
+                                setFormData({ ...formData, seal_photo_url: previewUrl, seal_photo_file_raw: comp, seal_photo_removed: false });
                               } catch (err) {
                                 console.error(err);
                               }
@@ -1798,7 +1805,7 @@ import{r as a,j as e,ak as Te,cg as rs,a1 as na,a9 as gs,az as Ht,a5 as nt,ar as
         is_sealed:Boolean(v.is_sealed),
         seal_number:v.seal_number||"",
         seal_numbers:Array.isArray(v.seal_numbers)&&v.seal_numbers.length>0?v.seal_numbers:(v.seal_number?v.seal_number.split(',').map(s=>s.trim()).filter(Boolean):['']),
-        seal_photo_url:v.seal_photo_url||"",
+        seal_photo_url:v.seal_photo_file?D.files.getUrl(v,v.seal_photo_file):(v.seal_photo_url||""),seal_photo_file_raw:null,seal_photo_removed:!1,
         gps_tracking_link:v.gps_tracking_link||"",
         gps_validity_days:v.gps_validity_days||2,
         gps_link_expiry:v.gps_link_expiry||""
@@ -1865,11 +1872,12 @@ import{r as a,j as e,ak as Te,cg as rs,a1 as na,a9 as gs,az as Ht,a5 as nt,ar as
           is_sealed:Boolean(r.is_sealed),
           seal_number:Array.isArray(r.seal_numbers)?r.seal_numbers.filter(Boolean).map(s=>s.trim()).join(", "):(r.seal_number||""),
           seal_numbers:Array.isArray(r.seal_numbers)?r.seal_numbers.filter(Boolean).map(s=>s.trim()):(r.seal_number?[r.seal_number.trim()]:[]),
-          seal_photo_url:r.seal_photo_url||"",
+          seal_photo_url:(r.seal_photo_url&&!r.seal_photo_url.startsWith("blob:")&&!r.seal_photo_url.startsWith("data:")&&!r.seal_photo_removed)?r.seal_photo_url:"",
           gps_tracking_link:r.gps_tracking_link||"",
           gps_validity_days:parseInt(r.gps_validity_days)||2,
           gps_link_expiry:r.gps_link_expiry||""
         };
+        if(r.seal_photo_file_raw){const _sfd=new FormData();_sfd.append("seal_photo_file",r.seal_photo_file_raw);await D.collection("trip_logs").update(s,_sfd,{$autoCancel:!1});}else if(r.seal_photo_removed){await D.collection("trip_logs").update(s,{seal_photo_file:""},{$autoCancel:!1}).catch(()=>{});}
         await D.collection("trip_logs").update(s,v,{$autoCancel:!1}).catch(async _err=>{
           if(_err?.data?.data?.pod_status||(_err?.message&&_err.message.includes("pod_status"))){
             return await D.collection("trip_logs").update(s,{...v,pod_status:"Uploaded"},{$autoCancel:!1});
