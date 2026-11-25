@@ -213,4 +213,117 @@ router.get('/pl-matrix', async (req, res) => {
   }
 });
 
+/**
+ * GET /analytics/truck-pnl
+ * Individual Truck-wise Profit & Loss statement including EMI, Insurance, Road Tax, Repairs & Depreciation.
+ */
+router.get('/truck-pnl', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const end = endDate ? new Date(endDate + 'T23:59:59.999Z') : new Date();
+    const start = startDate ? new Date(startDate + 'T00:00:00.000Z') : new Date(end.getFullYear(), end.getMonth(), 1);
+    const daysInPeriod = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
+    const monthsFactor = daysInPeriod / 30.4375;
+    const yearsFactor = daysInPeriod / 365;
+
+    const [trucks, trips, fuelLogs, maintLogs, expenses] = await Promise.all([
+      pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }).catch(() => []),
+      pb.collection('trip_logs').getFullList({ $autoCancel: false }).catch(() => []),
+      pb.collection('expenses_fuel').getFullList({ $autoCancel: false }).catch(() => []),
+      pb.collection('expenses_maintenance').getFullList({ $autoCancel: false }).catch(() => []),
+      pb.collection('expenses').getFullList({ $autoCancel: false }).catch(() => [])
+    ]);
+
+    const inRange = (dStr) => {
+      if (!dStr) return false;
+      const t = new Date(dStr).getTime();
+      return !isNaN(t) && t >= start.getTime() && t <= end.getTime();
+    };
+
+    const statements = trucks.map(truck => {
+      const tNum = (truck.truck_number || '').trim().toUpperCase();
+      const tId = truck.id;
+
+      const truckTrips = trips.filter(tr => {
+        const tn = (tr.truck_number || '').trim().toUpperCase();
+        return tn === tNum && inRange(tr.date || tr.created) && (tr.trip_status || '') !== 'Cancelled';
+      });
+
+      const revenue = truckTrips.reduce((s, tr) => s + (Number(tr.revenue) || Number(tr.freight_amount) || 0), 0);
+      const totalKms = truckTrips.reduce((s, tr) => s + (Number(tr.kms) || Number(tr.distance) || 0), 0);
+      const driverBatta = truckTrips.reduce((s, tr) => s + (Number(tr.driver_batta) || Number(tr.enroute_expenses) || 0), 0);
+      const tollCost = truckTrips.reduce((s, tr) => s + (Number(tr.fastag_toll) || Number(tr.toll_charges) || 0), 0);
+
+      const fuelCost = fuelLogs
+        .filter(f => (f.truck_id === tId || (f.truck_number || '').trim().toUpperCase() === tNum) && inRange(f.date || f.created))
+        .reduce((s, f) => s + (Number(f.amount) || Number(f.total_cost) || 0), 0);
+
+      const repairCost = maintLogs
+        .filter(m => (m.truck_id === tId || (m.truck_number || '').trim().toUpperCase() === tNum) && inRange(m.date || m.created))
+        .reduce((s, m) => s + (Number(m.amount) || Number(m.cost) || 0), 0);
+
+      const extraRepair = expenses
+        .filter(e => (e.truck_id === tId || (e.truck_number || '').trim().toUpperCase() === tNum) && inRange(e.date || e.created) && /repair|maint|tyre|service|battery/i.test(e.category || ''))
+        .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+      const repairsTotal = repairCost + extraRepair;
+      const variableTotal = fuelCost + tollCost + driverBatta + repairsTotal;
+      const grossProfit = revenue - variableTotal;
+
+      // Fixed ownership costs pro-rated to period
+      const monthlyEmi = Number(truck.monthly_emi_amount) || 0;
+      const annualIns = Number(truck.annual_insurance_cost) || 0;
+      const annualTax = Number(truck.annual_road_tax_cost) || 0;
+      const purchasePrice = Number(truck.purchase_price) || 0;
+      const depRate = Number(truck.annual_depreciation_rate) || (purchasePrice > 0 ? 15 : 0);
+
+      const emiCost = monthlyEmi * monthsFactor;
+      const insuranceCost = annualIns * yearsFactor;
+      const taxCost = annualTax * yearsFactor;
+      const depreciationCost = purchasePrice * (depRate / 100) * yearsFactor;
+      const fixedTotal = emiCost + insuranceCost + taxCost + depreciationCost;
+
+      const netProfit = grossProfit - fixedTotal;
+      const netMarginPct = revenue > 0 ? Number(((netProfit / revenue) * 100).toFixed(1)) : 0;
+
+      return {
+        truck_id: tId,
+        truck_number: truck.truck_number,
+        truck_size: truck.truck_size || truck.vehicle_class || '32 FT',
+        trips_count: truckTrips.length,
+        total_kms: Math.round(totalKms),
+        revenue: Math.round(revenue),
+        variable_costs: {
+          fuel: Math.round(fuelCost),
+          tolls: Math.round(tollCost),
+          driver_batta: Math.round(driverBatta),
+          repairs: Math.round(repairsTotal),
+          total: Math.round(variableTotal)
+        },
+        gross_profit: Math.round(grossProfit),
+        fixed_costs: {
+          emi: Math.round(emiCost),
+          insurance: Math.round(insuranceCost),
+          road_tax: Math.round(taxCost),
+          depreciation: Math.round(depreciationCost),
+          total: Math.round(fixedTotal)
+        },
+        net_profit: Math.round(netProfit),
+        net_margin_pct: netMarginPct
+      };
+    });
+
+    statements.sort((a, b) => b.net_profit - a.net_profit);
+
+    res.json({
+      success: true,
+      period: { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0], days: daysInPeriod },
+      statements
+    });
+  } catch (err) {
+    logger.error('Error computing truck-wise P&L:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

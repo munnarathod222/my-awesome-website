@@ -1104,4 +1104,85 @@ router.post('/partner-trucks/verify', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/reservations/auto-recommend
+ * 5-Factor Automatic Vehicle Allocation Scoring Engine:
+ * Location/Deadhead (20) + Availability (25) + Vehicle Type (20) + Permit Validity (15) + Expected Profit (20)
+ */
+router.post('/auto-recommend', async (req, res) => {
+  const { origin = 'Hyderabad', destination = 'Hubli', loading_datetime, vehicle_category = '32FT SXL', expected_freight = 25000 } = req.body;
+  try {
+    const reqTime = loading_datetime ? new Date(loading_datetime).getTime() : Date.now();
+    const [trucks, trips, reservations, docs] = await Promise.all([
+      pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }).catch(() => []),
+      pb.collection('trip_logs').getList(1, 60, { sort: '-date,-created', $autoCancel: false }).then(r => r.items).catch(() => []),
+      pb.collection('truck_reservations').getFullList({ filter: 'status = "Confirmed" || status = "Locked"', $autoCancel: false }).catch(() => []),
+      pb.collection('truck_documents').getFullList({ $autoCancel: false }).catch(() => [])
+    ]);
+
+    const nowMs = Date.now();
+    const candidates = trucks.map(truck => {
+      const tNum = (truck.truck_number || '').trim().toUpperCase();
+      // 1. Availability (25 pts)
+      const activeTrip = trips.find(tr => (tr.truck_number || '').trim().toUpperCase() === tNum && !['Completed', 'Cancelled', 'Delivered'].includes(tr.trip_status || ''));
+      const conflictRes = reservations.find(r => (r.truck_number || '').trim().toUpperCase() === tNum && Math.abs(new Date(r.loading_datetime || r.reserved_from).getTime() - reqTime) < 24 * 3600000);
+      let availScore = 25;
+      let availLabel = 'Available Now';
+      if (conflictRes) {
+        availScore = 0;
+        availLabel = 'Reserved (' + (conflictRes.booking_number || 'Locked') + ')';
+      } else if (activeTrip) {
+        availScore = 10;
+        availLabel = 'In Transit (' + (activeTrip.route || 'Active') + ')';
+      }
+
+      // 2. Vehicle Type Match (20 pts)
+      const tSize = (truck.truck_size || truck.vehicle_class || '32 FT').toUpperCase();
+      const reqCat = (vehicle_category || '32FT SXL').toUpperCase();
+      let typeScore = 12;
+      if (reqCat.includes('32') && tSize.includes('32')) typeScore = 20;
+      else if (reqCat.includes('17') && (tSize.includes('17') || tSize.includes('20') || tSize.includes('24'))) typeScore = 18;
+      else if (reqCat.includes('24') && tSize.includes('24')) typeScore = 20;
+
+      // 3. Location & Deadhead Distance (20 pts)
+      const lastTrip = trips.find(tr => (tr.truck_number || '').trim().toUpperCase() === tNum);
+      const lastLoc = lastTrip && lastTrip.route ? lastTrip.route.split(/->|➔|\s+to\s+/i).pop().trim() : 'Hyderabad';
+      const sameOrigin = origin && lastLoc.toLowerCase().includes(origin.toLowerCase().slice(0, 4));
+      const locScore = sameOrigin ? 20 : 12;
+      const deadheadKm = sameOrigin ? 12 : 140;
+
+      // 4. Permit & Compliance Validity (15 pts)
+      const truckDocs = docs.filter(d => d.truck_id === truck.id || (d.truck_number || '').trim().toUpperCase() === tNum);
+      const hasExpiredDoc = truckDocs.some(d => d.expiry_date && new Date(d.expiry_date).getTime() < nowMs);
+      const permitScore = hasExpiredDoc ? 5 : 15;
+
+      // 5. Expected Net Profitability (20 pts)
+      const freight = Number(expected_freight) || 25000;
+      const estFuel = Math.round((deadheadKm * 18) + (freight * 0.35));
+      const estProfit = Math.round(freight - estFuel - (freight * 0.12));
+      const profitScore = estProfit > 10000 ? 20 : (estProfit > 4000 ? 15 : 8);
+
+      const totalScore = availScore + typeScore + locScore + permitScore + profitScore;
+      return {
+        truck_id: truck.id,
+        truck_number: truck.truck_number,
+        vehicle_type: tSize,
+        driver_name: truck.driver_name || truck.assigned_driver_name || 'Assigned Pilot',
+        score: totalScore,
+        availability_label: availLabel,
+        last_location: lastLoc,
+        deadhead_km: deadheadKm,
+        permit_valid: !hasExpiredDoc,
+        expected_profit: estProfit
+      };
+    });
+
+    candidates.sort((a, b) => b.score - a.score);
+    return res.json({ success: true, recommendations: candidates });
+  } catch (err) {
+    logger.error('Error in auto-recommend:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
