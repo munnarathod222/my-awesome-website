@@ -1185,4 +1185,56 @@ router.post('/auto-recommend', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/reservations/client-trips
+ * Returns client record + trip_logs scoped strictly to the specified client.
+ */
+router.get('/client-trips', async (req, res) => {
+  try {
+    await ensurePbAuth();
+    const { clientId = '', clientName = '', companyName = '', email = '' } = req.query;
+    const allClients = await pb.collection('clients').getFullList({ $autoCancel: false }).catch(() => []);
+    const cNameL = String(clientName || '').trim().toLowerCase();
+    const compL = String(companyName || '').trim().toLowerCase();
+    const emailL = String(email || '').trim().toLowerCase();
+
+    let matchedClient = null;
+    if (clientId && !String(clientId).startsWith('client-')) {
+      matchedClient = allClients.find(c => c.id === clientId) || null;
+    }
+    if (!matchedClient && emailL) {
+      matchedClient = allClients.find(c => (c.email || '').trim().toLowerCase() === emailL) || null;
+    }
+    if (!matchedClient && (cNameL || compL)) {
+      matchedClient = allClients.find(c => {
+        const cn = (c.client_name || '').trim().toLowerCase();
+        const co = (c.company_name || '').trim().toLowerCase();
+        return (cNameL && (cn === cNameL || co === cNameL || cn.includes(cNameL) || cNameL.includes(cn))) ||
+               (compL && (cn === compL || co === compL || co.includes(compL) || compL.includes(co)));
+      }) || null;
+    }
+
+    const allTrips = await pb.collection('trip_logs').getFullList({ sort: '-date', $autoCancel: false }).catch(() => []);
+    const mId = matchedClient ? matchedClient.id : (clientId && !String(clientId).startsWith('client-') ? String(clientId) : '');
+    const mName = matchedClient ? (matchedClient.client_name || '').trim().toLowerCase() : cNameL;
+    const mComp = matchedClient ? (matchedClient.company_name || '').trim().toLowerCase() : compL;
+    const mEmail = matchedClient ? (matchedClient.email || '').trim().toLowerCase() : emailL;
+
+    const trips = allTrips.filter(t => {
+      if (mId && t.client_id === mId) return true;
+      const tc = (t.client_name || '').trim().toLowerCase();
+      const te = (t.client_email || '').trim().toLowerCase();
+      if (mEmail && te && te === mEmail) return true;
+      if (mName && tc && (tc === mName || tc.includes(mName) || mName.includes(tc))) return true;
+      if (mComp && tc && (tc === mComp || tc.includes(mComp) || mComp.includes(tc))) return true;
+      return false;
+    });
+
+    return res.json({ success: true, client: matchedClient, trips });
+  } catch (err) {
+    logger.error('Error fetching client trips:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
