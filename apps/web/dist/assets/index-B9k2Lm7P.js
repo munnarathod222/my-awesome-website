@@ -26,106 +26,110 @@ return false;
 }
 
 
+
 const JBC_PORTAL_DATA = {
   client: {
-    badge: "CORPORATE SHIPPER PORTAL",
-    eyebrow: "BUILT FOR ENTERPRISE SUPPLY CHAINS",
-    title: "Enterprise Linehaul & Dedicated Container Logistics",
-    subtitle: "Book Full Truck Load (FTL) containers online, monitor live GPS transit milestones, and download verified PODs from one unified command center.",
-    pills: ["Integrated Live GPS", "On-Time SLA Delivery", "FTL 17FT to 32FT MXL", "24x7 Control Room"],
+    badge: "CORPORATE SHIPPER COMMAND",
+    eyebrow: "ENTERPRISE FREIGHT & LINEHAUL",
+    title: "Move Freight Across India With Precision.",
+    subtitle: "Dedicated 17FT to 32FT MXL container fleets, integrated live GPS visibility, and verified digital PODs engineered for modern enterprise supply chains.",
+    pills: ["Integrated Live GPS", "SLA-Backed Delivery", "FTL 17FT - 32FT MXL", "24x7 Control Room"],
     servicesHeading: "Services & Capabilities We Provide",
-    servicesSub: "Everything your logistics & dispatch team needs to move freight reliably across India.",
+    servicesSub: "End-to-end Full Truck Load (FTL) execution built for reliability, speed, and financial transparency.",
     services: [
-      { icon: "🛰️", title: "Integrated Live GPS Tracking", desc: "Real-time highway visibility, route milestones, dock arrival alerts, and shareable live tracking links for your team." },
-      { icon: "⏱️", title: "Timely SLA-Backed Delivery", desc: "Disciplined dock-in and dock-out scheduling with proactive control-room monitoring on every dispatch." },
-      { icon: "🚛", title: "Full Truck Load (FTL) Fleet", desc: "Dedicated 17FT, 20FT, 24FT SXL, 32FT SXL, and 32FT MXL closed-container and open-body vehicles." },
-      { icon: "📅", title: "Future & Recurring Bookings", desc: "Reserve trucks for today, next week, or automated weekly & monthly contract schedules in seconds." },
-      { icon: "📄", title: "Digital POD & LR Vault", desc: "Instant multi-page Proof of Delivery previews, courier dispatch tracking, and 1-click document downloads." },
-      { icon: "🧾", title: "Transparent GST Billing", desc: "Clear freight, advance, toll, and net balance statements with instant CSV export for your accounts team." }
+      { tag: "VISIBILITY", title: "Integrated Live GPS Tracking", desc: "Real-time highway telemetry, automated dock arrival alerts, and shareable tracking links for every consignment.", span: "lg:col-span-2" },
+      { tag: "RELIABILITY", title: "Timely SLA-Backed Delivery", desc: "Disciplined dock-in and dock-out scheduling with proactive control-room exception handling.", span: "" },
+      { tag: "CAPACITY", title: "Full Truck Load (FTL) Containers", desc: "Dedicated 17FT, 20FT, 24FT SXL, 32FT SXL, and 32FT MXL closed-body & open vehicles.", span: "" },
+      { tag: "SCHEDULING", title: "Future & Recurring Bookings", desc: "Reserve trucks for today, next week, or automated weekly & monthly dispatch contracts in seconds.", span: "lg:col-span-2" },
+      { tag: "DOCUMENTATION", title: "Digital POD & LR Vault", desc: "Instant multi-page Proof of Delivery previews, courier AWB tracking, and 1-click downloads.", span: "" },
+      { tag: "FINANCE", title: "Transparent GST Billing", desc: "Clear freight, advance, toll, and net balance statements with instant CSV export.", span: "lg:col-span-2" }
     ],
-    stepsHeading: "Start Moving Freight in 3 Simple Steps",
+    stepsHeading: "Start Shipping in 3 Steps",
     steps: [
-      { n: "01", t: "Book Online or Request Quote", d: "Select vehicle size (17FT–32FT MXL), origin, destination & loading slot." },
-      { n: "02", t: "Track Live With Integrated GPS", d: "Follow truck placement, transit milestones & ETA in real time." },
-      { n: "03", t: "Download Verified POD & Settle", d: "Access signed multi-page PODs & GST statements from your portal." }
+      { n: "01", t: "Book Online or Request Rate", d: "Choose your vehicle configuration, corridor, and preferred dock placement slot." },
+      { n: "02", t: "Track Live With GPS", d: "Monitor vehicle placement, highway milestones, and ETA updates in real time." },
+      { n: "03", t: "Download POD & Settle", d: "Access verified multi-page PODs and GST statements directly from your portal." }
     ],
     joinTitle: "New Corporate Shipper? Partner With Jai Bhavani Cargo",
-    joinDesc: "Get dedicated contract lanes, priority truck placement, and real-time POD visibility.",
-    joinUrl: "https://wa.me/917794072244?text=" + encodeURIComponent("Hello Jai Bhavani Cargo, we would like to partner with you as a Corporate Client for FTL/Container shipments."),
+    joinDesc: "Onboard for dedicated contract lanes, guaranteed placement & real-time POD visibility.",
+    joinUrl: "https://wa.me/917794072244?text=" + encodeURIComponent("Hello Jai Bhavani Cargo, we would like to partner as a Corporate Shipper."),
     joinBtn: "Partner With Us",
-    accent: "from-emerald-500/20 via-cyan-500/10 to-slate-950",
-    border: "border-emerald-500/30",
-    pillCls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-    btnCls: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30",
-    svgColor: "#10b981",
+    accentGlow: "rgba(16,185,129,0.16)",
+    accentText: "text-emerald-400",
+    accentBorder: "border-emerald-500/30",
+    pillCls: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+    btnCls: "bg-emerald-500 hover:bg-emerald-400 text-slate-950",
+    strokeColor: "#10b981",
     formTitle: "Client Sign In",
     formSub: "Access your shipments, online truck booking & POD vault"
   },
   transporter: {
-    badge: "CARRIER & FLEET PARTNER NETWORK",
-    eyebrow: "BUILT FOR FLEET OWNERS & TRANSPORTERS",
-    title: "Grow Your Fleet With Consistent Pan-India Loads",
-    subtitle: "Partner with Jai Bhavani Cargo for steady contract corridors, transparent freight terms, and fast digital settlements.",
-    pills: ["Consistent Contract Loads", "Upfront Rate Clarity", "Fast Digital Payouts", "Single-Window Dispatch"],
+    badge: "CARRIER PARTNER NETWORK",
+    eyebrow: "FLEET OWNERS & TRANSPORTERS",
+    title: "Consistent Pan-India Loads. Zero Guesswork.",
+    subtitle: "Attach your commercial fleet to steady corporate corridors with upfront freight terms, coordinated return loads, and fast digital payouts.",
+    pills: ["Regular Contract Lanes", "Upfront Rate Clarity", "Fast Digital Payouts", "Single-Window Dispatch"],
     servicesHeading: "Why Fleet Owners Partner With Us",
-    servicesSub: "Designed to maximize your truck utilization and eliminate payment uncertainty.",
+    servicesSub: "Engineered to maximize your monthly truck utilization and keep settlements transparent.",
     services: [
-      { icon: "🛣️", title: "Consistent Pan-India Lanes", desc: "Regular FMCG, e-commerce, and industrial cargo dispatches across high-demand national corridors." },
-      { icon: "💰", title: "Upfront Freight & Clear Terms", desc: "Documented freight rates, detention rules, and toll terms agreed clearly before every dispatch." },
-      { icon: "⚡", title: "Fast Digital Settlements", desc: "Timely trip advances and streamlined balance payouts directly upon verified POD closure." },
-      { icon: "🔄", title: "Minimal Empty Return Miles", desc: "Coordinated return-load planning across southern, western, and northern logistics hubs." },
-      { icon: "📋", title: "Single-Window Dispatch Desk", desc: "Dedicated operations coordinator for loading dock schedules, gate passes, and LR paperwork." },
-      { icon: "🤝", title: "Long-Term Fleet Attachment", desc: "Attach your 17FT, 20FT, 24FT, or 32FT SXL/MXL vehicles for steady monthly utilization." }
+      { tag: "CORRIDORS", title: "Consistent Pan-India Lanes", desc: "Steady FMCG, e-commerce, and industrial cargo dispatches across high-demand national routes.", span: "lg:col-span-2" },
+      { tag: "TRANSPARENCY", title: "Upfront Freight & Terms", desc: "Documented freight rates, detention rules, and toll terms agreed clearly before dispatch.", span: "" },
+      { tag: "PAYOUTS", title: "Fast Digital Settlements", desc: "Timely trip advances and streamlined balance payouts upon verified POD closure.", span: "" },
+      { tag: "UTILIZATION", title: "Minimal Empty Return Miles", desc: "Coordinated return-load planning across major southern, western, and northern hubs.", span: "lg:col-span-2" },
+      { tag: "OPERATIONS", title: "Single-Window Dispatch Desk", desc: "Dedicated coordinator for dock schedules, gate passes, and LR documentation.", span: "" },
+      { tag: "GROWTH", title: "Long-Term Fleet Attachment", desc: "Attach 17FT, 20FT, 24FT, or 32FT SXL/MXL vehicles for consistent utilization.", span: "lg:col-span-2" }
     ],
-    stepsHeading: "Attach Your Fleet in 3 Simple Steps",
+    stepsHeading: "Attach Your Fleet in 3 Steps",
     steps: [
-      { n: "01", t: "Share Fleet & Route Details", d: "Connect with our partner desk with your vehicle sizes & preferred lanes." },
-      { n: "02", t: "Receive Verified Load Dispatches", d: "Get clear loading schedules, upfront rates & digital LR coordination." },
-      { n: "03", t: "Upload POD & Receive Payout", d: "Fast verification and transparent settlement straight to your account." }
+      { n: "01", t: "Share Fleet & Lanes", d: "Connect with our partner desk with your vehicle types and preferred corridors." },
+      { n: "02", t: "Receive Verified Loads", d: "Get clear dock schedules, upfront freight confirmation, and digital LR support." },
+      { n: "03", t: "Close POD & Get Paid", d: "Fast POD verification and transparent digital settlement to your account." }
     ],
-    joinTitle: "Want to Attach Your Trucks? Join Our Carrier Network",
-    joinDesc: "Partner with us for steady FTL & container loads with transparent, timely payouts.",
-    joinUrl: "https://wa.me/917794072244?text=" + encodeURIComponent("Hello Jai Bhavani Cargo, I am a Transporter and want to attach my fleet to your network."),
+    joinTitle: "Want to Attach Your Fleet? Join Our Carrier Network",
+    joinDesc: "Partner with us for steady FTL & container dispatches with transparent settlements.",
+    joinUrl: "https://wa.me/917794072244?text=" + encodeURIComponent("Hello Jai Bhavani Cargo, I am a Transporter and want to attach my trucks to your network."),
     joinBtn: "Attach Your Fleet",
-    accent: "from-amber-500/20 via-orange-500/10 to-slate-950",
-    border: "border-amber-500/30",
-    pillCls: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    btnCls: "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/30",
-    svgColor: "#f59e0b",
+    accentGlow: "rgba(245,158,11,0.16)",
+    accentText: "text-amber-400",
+    accentBorder: "border-amber-500/30",
+    pillCls: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    btnCls: "bg-amber-400 hover:bg-amber-300 text-slate-950",
+    strokeColor: "#f59e0b",
     formTitle: "Transporter Sign In",
     formSub: "Manage partner vehicles, load tenders & settlements"
   },
   driver: {
     badge: "HIGHWAY PILOT CONSOLE",
-    eyebrow: "BUILT FOR PROFESSIONAL DRIVERS",
-    title: "Respect, Safety & Smooth Trips for Every Highway Pilot",
-    subtitle: "Clear loading & unloading instructions, instant mobile bill/POD uploads, and transparent advance & batta tracking.",
-    pills: ["Clear Dock Details", "Easy Mobile POD Upload", "Transparent Batta", "24x7 Highway Support"],
-    servicesHeading: "Designed to Support You on Every Mile",
-    servicesSub: "No paperwork confusion — everything you need for a smooth, safe trip right on your phone.",
+    eyebrow: "PROFESSIONAL COMMERCIAL DRIVERS",
+    title: "Built for Every Mile on the Highway.",
+    subtitle: "Clear loading dock instructions, fast mobile bill and POD uploads, transparent batta tracking, and 24x7 highway assistance.",
+    pills: ["Clear Dock Details", "Mobile POD Upload", "Transparent Batta", "24x7 Highway Support"],
+    servicesHeading: "Designed to Support Every Highway Pilot",
+    servicesSub: "Zero paperwork confusion — everything you need for a safe, smooth trip in one place.",
     services: [
-      { icon: "🗺️", title: "Clear Trip & Dock Instructions", desc: "Exact loading/unloading addresses, hub contacts, and route guidance in one easy mobile screen." },
-      { icon: "📸", title: "Fast Mobile POD & Bill Uploads", desc: "Snap and upload fuel bills, toll receipts, and signed PODs straight from your phone." },
-      { icon: "💵", title: "Transparent Batta & Advances", desc: "Clear visibility of your trip advances, highway allowances, and settlement status." },
-      { icon: "🛟", title: "24x7 Highway Assistance", desc: "One-tap access to our operations control room for any route, tyre, or breakdown support." },
-      { icon: "🛡️", title: "Safety-First Scheduling", desc: "Realistic transit timelines and respectful coordination with every highway pilot." },
-      { icon: "📲", title: "Instant Trip Assignments", desc: "Receive new dispatch allocations and dock updates immediately without delays." }
+      { tag: "NAVIGATION", title: "Clear Trip & Dock Instructions", desc: "Exact loading/unloading addresses, hub contacts, and route guidance on your phone.", span: "lg:col-span-2" },
+      { tag: "MOBILE", title: "Fast POD & Bill Uploads", desc: "Snap and upload fuel bills, toll receipts, and signed PODs directly from the road.", span: "" },
+      { tag: "EARNINGS", title: "Transparent Batta & Advances", desc: "Clear visibility of trip advances, highway allowances, and settlement status.", span: "" },
+      { tag: "SAFETY", title: "24x7 Highway Assistance", desc: "Direct control-room support for any route, tyre, or mechanical emergency.", span: "lg:col-span-2" },
+      { tag: "RESPECT", title: "Safety-First Scheduling", desc: "Realistic transit timelines and respectful coordination on every dispatch.", span: "" },
+      { tag: "DISPATCH", title: "Instant Trip Assignments", desc: "Receive new trip allocations and dock updates immediately without delays.", span: "lg:col-span-2" }
     ],
     stepsHeading: "Smooth Highway Operations in 3 Steps",
     steps: [
-      { n: "01", t: "Check Your Assigned Trip", d: "View truck number, loading dock, route & consignee contact." },
-      { n: "02", t: "Update Milestones & Expenses", d: "Log fuel/toll bills and dock arrival updates from your phone." },
-      { n: "03", t: "Upload POD & Close Trip", d: "Snap clear delivery POD photos for fast settlement." }
+      { n: "01", t: "View Assigned Trip", d: "Check vehicle number, loading dock, route & consignee contact." },
+      { n: "02", t: "Log Milestones & Bills", d: "Upload fuel/toll receipts and arrival updates straight from your phone." },
+      { n: "03", t: "Upload POD & Close", d: "Submit clear delivery POD photos for fast trip settlement." }
     ],
     joinTitle: "Experienced HMV Driver? Drive With Jai Bhavani Cargo",
     joinDesc: "Join our highway pilot team with regular routes, timely batta, and respectful operations.",
     joinUrl: "https://wa.me/917794072244?text=" + encodeURIComponent("Hello Jai Bhavani Cargo, I am an experienced HMV Driver interested in joining your fleet."),
     joinBtn: "Apply as Pilot",
-    accent: "from-cyan-500/20 via-blue-500/10 to-slate-950",
-    border: "border-cyan-500/30",
-    pillCls: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-    btnCls: "bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-600/30",
-    svgColor: "#06b6d4",
+    accentGlow: "rgba(6,182,212,0.16)",
+    accentText: "text-cyan-400",
+    accentBorder: "border-cyan-500/30",
+    pillCls: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
+    btnCls: "bg-cyan-400 hover:bg-cyan-300 text-slate-950",
+    strokeColor: "#06b6d4",
     formTitle: "Driver Sign In",
     formSub: "View assigned trips, route updates & POD uploads"
   }
@@ -1631,7 +1635,7 @@ return e.jsxs(e.Fragment,{children:[
     ]})
   })
 ]});
-},cj=()=>{const _dk=async(pin,salt)=>{const enc=new TextEncoder(),km=await crypto.subtle.importKey("raw",enc.encode(String(pin)),{name:"PBKDF2"},!1,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:1e5,hash:"SHA-256"},km,{name:"AES-GCM",length:256},!1,["encrypt","decrypt"])},_b2h=b=>Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join(""),_h2b=h=>{const b=new Uint8Array(h.length/2);for(let i=0;i<b.length;i++)b[i]=parseInt(h.substr(i*2,2),16);return b},_encV=async(pin,data)=>{const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await _dk(pin,salt),cip=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(data)));return{salt:_b2h(salt),iv:_b2h(iv),ciphertext:_b2h(cip),user:data.user,enrolledAt:new Date().toISOString()}},_decV=async(pin,vault)=>{const key=await _dk(pin,_h2b(vault.salt)),buf=await crypto.subtle.decrypt({name:"AES-GCM",iv:_h2b(vault.iv)},key,_h2b(vault.ciphertext));return JSON.parse(new TextDecoder().decode(buf))};const{login:s,isAuthenticated:t,currentUser:a}=xt();ls(),es().state?.from?.pathname;const[jbcPortalMode,setJbcPortalMode]=h.useState(()=>{try{const sp=new URLSearchParams(window.location.search);if(sp.get("portal")==="admin"||window.location.pathname==="/admin-login")return"admin";if(sp.get("portal")==="transporter")return"transporter";if(sp.get("portal")==="driver"||window.location.pathname==="/driver-login")return"driver";if(window.location.pathname==="/transporter-login")return"transporter"}catch(_){}return"client"}),[jbcLogoClicks,setJbcLogoClicks]=h.useState(0),[n,i]=h.useState(""),[o,l]=h.useState(""),[c,d]=h.useState(!1),[m,u]=h.useState(""),[x,p]=h.useState(null),[f,v]=h.useState("credentials"),[g,y]=h.useState(["","","",""]),[S,P]=h.useState(""),w=[h.useRef(null),h.useRef(null),h.useRef(null),h.useRef(null)];h.useEffect(()=>{if(t&&a){const b=a?.role==="Client"||a?.role==="client"?"/client-portal":"/dashboard";window.location.href=b}},[t,a]),h.useEffect(()=>{const lo=parseInt(localStorage.getItem("jbc_pin_lockout_until")||"0",10);if(lo>Date.now()){v("credentials"),P(`PIN locked for ${Math.ceil((lo-Date.now())/6e4)} min. Use full password.`)}else{const b=localStorage.getItem("jbc_device_pin_profile");if(b)try{const N=JSON.parse(b),uMeta=N?.user||(N?.email?N:null);uMeta&&uMeta.email&&(p(uMeta),i(uMeta.email),v("pin"))}catch{}}},[]);const k=(b,N)=>{if(!/^\d*$/.test(N))return;const D=N.slice(-1),j=[...g];j[b]=D,y(j),D&&b<3&&w[b+1].current?.focus();const E=j.join("");E.length===4&&K(E)},O=(b,N)=>{N.key==="Backspace"&&!g[b]&&b>0&&w[b-1].current?.focus()},K=async b=>{d(!0),P("");try{const lo=parseInt(localStorage.getItem("jbc_pin_lockout_until")||"0",10);if(lo>Date.now()){P(`PIN login locked. Wait ${Math.ceil((lo-Date.now())/6e4)} min or use password.`),v("credentials");return}const raw=localStorage.getItem("jbc_device_pin_profile");if(!raw){P("Device PIN profile expired. Please sign in with full credentials."),v("credentials");return}const vault=JSON.parse(raw);let sessionData=null;if(vault.salt&&vault.iv&&vault.ciphertext){try{sessionData=await _decV(b,vault)}catch(e){const cur=parseInt(localStorage.getItem("jbc_pin_failed_attempts")||"0",10)+1;localStorage.setItem("jbc_pin_failed_attempts",cur.toString());if(cur>=5){localStorage.setItem("jbc_pin_lockout_until",(Date.now()+3e5).toString()),P("Too many failed attempts. Locked for 5 minutes. Use full password."),v("credentials")}else{P(`Incorrect 4-digit Security PIN. ${5-cur} attempts remaining.`),y(["","","",""]),w[0].current?.focus()}return}}else if(vault.pin){if(b===vault.pin)sessionData=vault;else{P("Incorrect 4-digit Security PIN. Please try again."),y(["","","",""]),w[0].current?.focus();return}}localStorage.removeItem("jbc_pin_failed_attempts"),localStorage.removeItem("jbc_pin_lockout_until");if(sessionData?.token&&sessionData?.user){try{$.authStore.save(sessionData.token,sessionData.user)}catch{}}if(sessionData?.email&&sessionData?.password){try{await s(sessionData.email,sessionData.password)}catch{}}else if(sessionData?.user){localStorage.setItem("app_auth_user",JSON.stringify(sessionData.user)),localStorage.setItem("app_session_timestamp",Date.now().toString())}X.success(`Welcome back, ${sessionData?.user?.name||sessionData?.name||"User"}! Security PIN Verified.`),window.location.replace("/dashboard")}catch(N){console.error(N),P("PIN authentication failed. Please sign in with full credentials.")}finally{d(!1)}},A=async b=>{if(b&&b.preventDefault(),u(""),!n||!o){u("Please fill in all fields.");return}d(!0);try{const N=await s(n.trim(),o),uObj={id:N?.id||"usr_saved",email:n.trim(),name:N?.name||N?.full_name||"Fleet Operator",role:N?.role||"super_admin"},sess={user:uObj,email:n.trim(),password:o,token:$.authStore?.token||""};const existingRaw=localStorage.getItem("jbc_device_pin_profile");let targetPin="2525";if(existingRaw){try{const ev=JSON.parse(existingRaw);ev.pin&&(targetPin=ev.pin)}catch{}}const vault=await _encV(targetPin,sess);localStorage.setItem("jbc_device_pin_profile",JSON.stringify(vault)),p(uObj),X.success("Logged in successfully!"),window.location.replace("/dashboard")}catch(N){console.error(N);const D=N?.message||N?.response?.message||"";D.includes("pending approval")?u("Your account is pending approval. Please wait for admin confirmation."):D.includes("rejected")?u("Your request has been rejected. Contact administrator."):u("Invalid email or password. Please check your login credentials.")}finally{d(!1)}};if (jbcPortalMode !== "admin") {
+},cj=()=>{const _dk=async(pin,salt)=>{const enc=new TextEncoder(),km=await crypto.subtle.importKey("raw",enc.encode(String(pin)),{name:"PBKDF2"},!1,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:1e5,hash:"SHA-256"},km,{name:"AES-GCM",length:256},!1,["encrypt","decrypt"])},_b2h=b=>Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join(""),_h2b=h=>{const b=new Uint8Array(h.length/2);for(let i=0;i<b.length;i++)b[i]=parseInt(h.substr(i*2,2),16);return b},_encV=async(pin,data)=>{const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await _dk(pin,salt),cip=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(data)));return{salt:_b2h(salt),iv:_b2h(iv),ciphertext:_b2h(cip),user:data.user,enrolledAt:new Date().toISOString()}},_decV=async(pin,vault)=>{const key=await _dk(pin,_h2b(vault.salt)),buf=await crypto.subtle.decrypt({name:"AES-GCM",iv:_h2b(vault.iv)},key,_h2b(vault.ciphertext));return JSON.parse(new TextDecoder().decode(buf))};const{login:s,isAuthenticated:t,currentUser:a}=xt();ls(),es().state?.from?.pathname;const[jbcPortalMode,setJbcPortalMode]=h.useState(()=>{try{const sp=new URLSearchParams(window.location.search);if(sp.get("portal")==="admin"||window.location.pathname==="/admin-login")return"admin";if(sp.get("portal")==="transporter")return"transporter";if(sp.get("portal")==="driver"||window.location.pathname==="/driver-login")return"driver";if(window.location.pathname==="/transporter-login")return"transporter"}catch(_){}return"client"}),[jbcLogoClicks,setJbcLogoClicks]=h.useState(0),[jbcQuoteOrigin,setJbcQuoteOrigin]=h.useState("Hyderabad"),[jbcQuoteDest,setJbcQuoteDest]=h.useState("Mumbai"),[jbcQuoteTruck,setJbcQuoteTruck]=h.useState("32FT SXL"),[n,i]=h.useState(""),[o,l]=h.useState(""),[c,d]=h.useState(!1),[m,u]=h.useState(""),[x,p]=h.useState(null),[f,v]=h.useState("credentials"),[g,y]=h.useState(["","","",""]),[S,P]=h.useState(""),w=[h.useRef(null),h.useRef(null),h.useRef(null),h.useRef(null)];h.useEffect(()=>{if(t&&a){const b=a?.role==="Client"||a?.role==="client"?"/client-portal":"/dashboard";window.location.href=b}},[t,a]),h.useEffect(()=>{const lo=parseInt(localStorage.getItem("jbc_pin_lockout_until")||"0",10);if(lo>Date.now()){v("credentials"),P(`PIN locked for ${Math.ceil((lo-Date.now())/6e4)} min. Use full password.`)}else{const b=localStorage.getItem("jbc_device_pin_profile");if(b)try{const N=JSON.parse(b),uMeta=N?.user||(N?.email?N:null);uMeta&&uMeta.email&&(p(uMeta),i(uMeta.email),v("pin"))}catch{}}},[]);const k=(b,N)=>{if(!/^\d*$/.test(N))return;const D=N.slice(-1),j=[...g];j[b]=D,y(j),D&&b<3&&w[b+1].current?.focus();const E=j.join("");E.length===4&&K(E)},O=(b,N)=>{N.key==="Backspace"&&!g[b]&&b>0&&w[b-1].current?.focus()},K=async b=>{d(!0),P("");try{const lo=parseInt(localStorage.getItem("jbc_pin_lockout_until")||"0",10);if(lo>Date.now()){P(`PIN login locked. Wait ${Math.ceil((lo-Date.now())/6e4)} min or use password.`),v("credentials");return}const raw=localStorage.getItem("jbc_device_pin_profile");if(!raw){P("Device PIN profile expired. Please sign in with full credentials."),v("credentials");return}const vault=JSON.parse(raw);let sessionData=null;if(vault.salt&&vault.iv&&vault.ciphertext){try{sessionData=await _decV(b,vault)}catch(e){const cur=parseInt(localStorage.getItem("jbc_pin_failed_attempts")||"0",10)+1;localStorage.setItem("jbc_pin_failed_attempts",cur.toString());if(cur>=5){localStorage.setItem("jbc_pin_lockout_until",(Date.now()+3e5).toString()),P("Too many failed attempts. Locked for 5 minutes. Use full password."),v("credentials")}else{P(`Incorrect 4-digit Security PIN. ${5-cur} attempts remaining.`),y(["","","",""]),w[0].current?.focus()}return}}else if(vault.pin){if(b===vault.pin)sessionData=vault;else{P("Incorrect 4-digit Security PIN. Please try again."),y(["","","",""]),w[0].current?.focus();return}}localStorage.removeItem("jbc_pin_failed_attempts"),localStorage.removeItem("jbc_pin_lockout_until");if(sessionData?.token&&sessionData?.user){try{$.authStore.save(sessionData.token,sessionData.user)}catch{}}if(sessionData?.email&&sessionData?.password){try{await s(sessionData.email,sessionData.password)}catch{}}else if(sessionData?.user){localStorage.setItem("app_auth_user",JSON.stringify(sessionData.user)),localStorage.setItem("app_session_timestamp",Date.now().toString())}X.success(`Welcome back, ${sessionData?.user?.name||sessionData?.name||"User"}! Security PIN Verified.`),window.location.replace("/dashboard")}catch(N){console.error(N),P("PIN authentication failed. Please sign in with full credentials.")}finally{d(!1)}},A=async b=>{if(b&&b.preventDefault(),u(""),!n||!o){u("Please fill in all fields.");return}d(!0);try{const N=await s(n.trim(),o),uObj={id:N?.id||"usr_saved",email:n.trim(),name:N?.name||N?.full_name||"Fleet Operator",role:N?.role||"super_admin"},sess={user:uObj,email:n.trim(),password:o,token:$.authStore?.token||""};const existingRaw=localStorage.getItem("jbc_device_pin_profile");let targetPin="2525";if(existingRaw){try{const ev=JSON.parse(existingRaw);ev.pin&&(targetPin=ev.pin)}catch{}}const vault=await _encV(targetPin,sess);localStorage.setItem("jbc_device_pin_profile",JSON.stringify(vault)),p(uObj),X.success("Logged in successfully!"),window.location.replace("/dashboard")}catch(N){console.error(N);const D=N?.message||N?.response?.message||"";D.includes("pending approval")?u("Your account is pending approval. Please wait for admin confirmation."):D.includes("rejected")?u("Your request has been rejected. Contact administrator."):u("Invalid email or password. Please check your login credentials.")}finally{d(!1)}};if (jbcPortalMode !== "admin") {
     const pd = JBC_PORTAL_DATA[jbcPortalMode] || JBC_PORTAL_DATA.client;
     const switchPortal = (mode) => {
       setJbcPortalMode(mode);
@@ -1656,80 +1660,120 @@ return e.jsxs(e.Fragment,{children:[
         P(err?.message || "Invalid credentials. Please check and try again.");
       } finally { d(!1); }
     };
+    const quickQuoteUrl = "https://wa.me/917794072244?text=" + encodeURIComponent("Hello Jai Bhavani Cargo, please share a quote for " + jbcQuoteTruck + " from " + jbcQuoteOrigin + " to " + jbcQuoteDest + ".");
+    const fleetSpecs = [
+      { size: "17FT SXL", cap: "6.5 Tons", body: "Closed Container" },
+      { size: "20FT", cap: "8 Tons", body: "Standard Container" },
+      { size: "24FT SXL", cap: "10 Tons", body: "Medium Linehaul" },
+      { size: "32FT SXL", cap: "15 Tons", body: "Single Axle High Cube" },
+      { size: "32FT MXL", cap: "18 Tons", body: "Multi-Axle Heavy" }
+    ];
     return e.jsxs("div", {
-      className: "min-h-screen bg-[#04070f] text-slate-100 font-sans py-8 px-4 sm:px-6 lg:px-10 space-y-10",
+      className: "min-h-screen bg-[#03050a] text-slate-100 font-sans relative overflow-x-hidden",
       children: [
-        e.jsxs("div", {
-          className: "w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-white/10 bg-slate-950/95 shadow-2xl",
+        e.jsx("div", {
+          className: "pointer-events-none absolute inset-0 opacity-30",
+          style: { backgroundImage: "radial-gradient(circle at 18% 18%, " + pd.accentGlow + ", transparent 45%), linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)", backgroundSize: "100% 100%, 48px 48px, 48px 48px" }
+        }),
+
+        e.jsxs("section", {
+          className: "relative z-10 w-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-8 pb-14 lg:pt-12 lg:pb-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[calc(100vh-56px)]",
           children: [
             e.jsxs("div", {
-              className: "lg:col-span-7 relative p-6 sm:p-10 flex flex-col justify-between bg-gradient-to-br " + pd.accent + " border-b lg:border-b-0 lg:border-r border-white/10 overflow-hidden",
+              className: "lg:col-span-7 space-y-7",
               children: [
-                e.jsx("div", {
-                  className: "absolute inset-0 opacity-20 bg-cover bg-center pointer-events-none",
-                  style: { backgroundImage: "url('/Gemini_Generated_Image_mkql9fmkql9fmkqlqqq.png')" }
-                }),
                 e.jsxs("div", {
-                  className: "relative z-10 space-y-6",
+                  className: "flex flex-wrap items-center gap-3",
                   children: [
                     e.jsxs("div", {
-                      className: "flex flex-wrap items-center justify-between gap-3",
+                      onClick: () => {
+                        const next = jbcLogoClicks + 1;
+                        if (next >= 3) { setJbcPortalMode("admin"); setJbcLogoClicks(0); }
+                        else setJbcLogoClicks(next);
+                      },
+                      className: "inline-flex items-center gap-2.5 cursor-pointer select-none",
                       children: [
-                        e.jsxs("div", {
-                          onClick: () => {
-                            const next = jbcLogoClicks + 1;
-                            if (next >= 3) { setJbcPortalMode("admin"); setJbcLogoClicks(0); }
-                            else setJbcLogoClicks(next);
-                          },
-                          className: "flex items-center gap-3 cursor-pointer select-none",
-                          children: [
-                            e.jsx("div", { className: "w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center font-black text-white text-sm shadow-lg", children: "JB" }),
-                            e.jsxs("div", {
-                              children: [
-                                e.jsx("div", { className: "text-base font-extrabold text-white tracking-tight", children: "Jai Bhavani Cargo" }),
-                                e.jsx("div", { className: "text-[11px] text-slate-400", children: pd.eyebrow })
-                              ]
-                            })
-                          ]
-                        }),
-                        e.jsx("span", { className: "px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wider border " + pd.pillCls, children: pd.badge })
+                        e.jsx("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center font-black text-slate-950 text-xs shadow-lg", children: "JB" }),
+                        e.jsx("span", { className: "text-sm font-extrabold tracking-tight text-white", children: "Jai Bhavani Cargo" })
                       ]
                     }),
+                    e.jsx("span", { className: "text-slate-600", children: "/" }),
+                    e.jsx("span", { className: "px-3 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase border " + pd.pillCls, children: pd.badge })
+                  ]
+                }),
+
+                e.jsxs("div", {
+                  className: "space-y-4 max-w-2xl",
+                  children: [
+                    e.jsx("div", { className: "text-xs font-bold tracking-[0.2em] uppercase " + pd.accentText, children: pd.eyebrow }),
+                    e.jsx("h1", { className: "text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.05]", children: pd.title }),
+                    e.jsx("p", { className: "text-sm sm:text-base text-slate-300/90 leading-relaxed max-w-xl", children: pd.subtitle })
+                  ]
+                }),
+
+                e.jsxs("div", {
+                  className: "relative rounded-2xl border border-white/10 bg-slate-950/70 backdrop-blur-md p-5 overflow-hidden",
+                  children: [
                     e.jsxs("div", {
-                      className: "rounded-2xl border " + pd.border + " bg-slate-950/75 backdrop-blur-md p-6 flex items-center justify-between gap-4",
+                      className: "flex items-center justify-between mb-3",
                       children: [
-                        e.jsxs("div", {
-                          className: "space-y-2.5 max-w-lg",
-                          children: [
-                            e.jsx("h1", { className: "text-2xl sm:text-4xl font-black text-white leading-tight tracking-tight", children: pd.title }),
-                            e.jsx("p", { className: "text-xs sm:text-sm text-slate-300 leading-relaxed", children: pd.subtitle })
-                          ]
-                        }),
-                        e.jsx("svg", {
-                          viewBox: "0 0 120 90",
-                          className: "hidden sm:block w-32 h-24 shrink-0 opacity-90",
-                          fill: "none",
-                          children: [
-                            e.jsx("rect", { x: "8", y: "26", width: "68", height: "38", rx: "6", stroke: pd.svgColor, strokeWidth: "2.5", fill: pd.svgColor, fillOpacity: "0.14" }),
-                            e.jsx("path", { d: "M76 38H98L110 52V64H76V38Z", stroke: pd.svgColor, strokeWidth: "2.5", fill: pd.svgColor, fillOpacity: "0.2" }),
-                            e.jsx("circle", { cx: "28", cy: "68", r: "8", stroke: "#fff", strokeWidth: "2.5", fill: "#0f172a" }),
-                            e.jsx("circle", { cx: "92", cy: "68", r: "8", stroke: "#fff", strokeWidth: "2.5", fill: "#0f172a" }),
-                            e.jsx("path", { d: "M16 14H56M24 8H48", stroke: pd.svgColor, strokeWidth: "2", strokeLinecap: "round", opacity: "0.7" })
-                          ]
-                        })
+                        e.jsx("span", { className: "text-[11px] font-mono uppercase tracking-wider text-slate-400", children: "Pan-India Linehaul Corridor Network" }),
+                        e.jsxs("span", { className: "inline-flex items-center gap-1.5 text-[11px] font-bold " + pd.accentText, children: [e.jsx("span", { className: "w-2 h-2 rounded-full bg-current animate-ping" }), "Live Dispatch Grid"] })
                       ]
                     }),
-                    e.jsx("div", {
-                      className: "flex flex-wrap gap-2",
-                      children: pd.pills.map((pl, idx) => e.jsxs("span", {
-                        className: "px-3 py-1.5 rounded-xl bg-slate-900/80 border border-white/10 text-xs font-bold text-slate-200 flex items-center gap-1.5",
-                        children: [e.jsx("span", { className: "text-emerald-400", children: "✓" }), pl]
-                      }, idx))
+                    e.jsxs("svg", {
+                      viewBox: "0 0 600 130",
+                      className: "w-full h-24 sm:h-28",
+                      fill: "none",
+                      children: [
+                        e.jsx("path", { d: "M60 95 Q160 20 280 55 T540 35", stroke: pd.strokeColor, strokeWidth: "2", strokeDasharray: "6 5", opacity: "0.75" }),
+                        e.jsx("path", { d: "M120 35 Q250 105 390 65 T520 95", stroke: "#38bdf8", strokeWidth: "1.5", strokeDasharray: "4 4", opacity: "0.45" }),
+                        [
+                          { x: 60, y: 95, label: "Mumbai" },
+                          { x: 120, y: 35, label: "Delhi NCR" },
+                          { x: 280, y: 55, label: "Hyderabad" },
+                          { x: 390, y: 65, label: "Bengaluru" },
+                          { x: 520, y: 95, label: "Chennai" },
+                          { x: 540, y: 35, label: "Kolkata" }
+                        ].map(nd => e.jsxs("g", {
+                          children: [
+                            e.jsx("circle", { cx: nd.x, cy: nd.y, r: "5", fill: pd.strokeColor }),
+                            e.jsx("circle", { cx: nd.x, cy: nd.y, r: "10", stroke: pd.strokeColor, strokeWidth: "1", opacity: "0.4" }),
+                            e.jsx("text", { x: nd.x, y: nd.y + 18, textAnchor: "middle", fill: "#94a3b8", fontSize: "10", fontFamily: "monospace", children: nd.label })
+                          ]
+                        }, nd.label))
+                      ]
                     })
                   ]
                 }),
-                e.jsxs("div", {
-                  className: "relative z-10 mt-6 p-4 rounded-2xl bg-slate-900/90 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3",
+
+                jbcPortalMode === "client" ? e.jsxs("div", {
+                  className: "rounded-2xl border " + pd.accentBorder + " bg-slate-900/60 backdrop-blur-md p-4 space-y-3",
+                  children: [
+                    e.jsx("div", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-300", children: "Instant FTL Route & Rate Inquiry" }),
+                    e.jsxs("div", {
+                      className: "grid grid-cols-1 sm:grid-cols-4 gap-2.5",
+                      children: [
+                        e.jsx("select", {
+                          value: jbcQuoteTruck,
+                          onChange: ev => setJbcQuoteTruck(ev.target.value),
+                          className: "h-10 px-3 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold text-white",
+                          children: ["17FT SXL", "20FT", "24FT SXL", "32FT SXL", "32FT MXL"].map(sz => e.jsx("option", { value: sz, children: sz }, sz))
+                        }),
+                        e.jsx("input", { type: "text", value: jbcQuoteOrigin, onChange: ev => setJbcQuoteOrigin(ev.target.value), placeholder: "Origin City", className: "h-10 px-3 rounded-xl bg-slate-950 border border-white/10 text-xs text-white" }),
+                        e.jsx("input", { type: "text", value: jbcQuoteDest, onChange: ev => setJbcQuoteDest(ev.target.value), placeholder: "Destination City", className: "h-10 px-3 rounded-xl bg-slate-950 border border-white/10 text-xs text-white" }),
+                        e.jsx("a", {
+                          href: quickQuoteUrl,
+                          target: "_blank",
+                          rel: "noreferrer",
+                          className: "h-10 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center shadow-lg transition " + pd.btnCls,
+                          children: "Get Quote →"
+                        })
+                      ]
+                    })
+                  ]
+                }) : e.jsxs("div", {
+                  className: "rounded-2xl border " + pd.accentBorder + " bg-slate-900/60 backdrop-blur-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3",
                   children: [
                     e.jsxs("div", {
                       children: [
@@ -1741,107 +1785,121 @@ return e.jsxs(e.Fragment,{children:[
                       href: pd.joinUrl,
                       target: "_blank",
                       rel: "noreferrer",
-                      className: "px-4 py-2.5 rounded-xl text-xs font-extrabold whitespace-nowrap text-center shadow-lg transition " + pd.btnCls,
+                      className: "px-5 py-2.5 rounded-xl text-xs font-extrabold whitespace-nowrap text-center shadow-lg transition " + pd.btnCls,
                       children: pd.joinBtn + " →"
                     })
                   ]
                 })
               ]
             }),
-            e.jsxs("div", {
-              className: "lg:col-span-5 p-6 sm:p-9 flex flex-col justify-center space-y-6 bg-slate-950",
-              children: [
-                e.jsxs("div", {
-                  className: "space-y-2",
-                  children: [
-                    e.jsx("div", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Select Portal" }),
-                    e.jsx("div", {
-                      className: "grid grid-cols-3 gap-2",
-                      children: [
-                        { id: "client", icon: "🏢", title: "Client Login", sub: "Shipments & POD" },
-                        { id: "transporter", icon: "🚚", title: "Transporter Login", sub: "Fleet & Loads" },
-                        { id: "driver", icon: "🛞", title: "Driver Login", sub: "Trips & Updates" }
-                      ].map(opt => e.jsxs("button", {
-                        type: "button",
-                        onClick: () => switchPortal(opt.id),
-                        className: "p-3 rounded-2xl border text-left transition-all cursor-pointer " + (jbcPortalMode === opt.id ? "bg-slate-800/90 border-white/40 ring-1 ring-white/30 text-white shadow-lg" : "bg-slate-900/60 border-white/10 text-slate-400 hover:text-white hover:border-white/25"),
+
+            e.jsx("div", {
+              className: "lg:col-span-5",
+              children: e.jsxs("div", {
+                className: "rounded-3xl border border-white/15 bg-slate-950/90 backdrop-blur-2xl p-6 sm:p-8 shadow-2xl space-y-6",
+                children: [
+                  e.jsxs("div", {
+                    className: "grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-900 border border-white/10",
+                    children: [
+                      { id: "client", label: "Client" },
+                      { id: "transporter", label: "Transporter" },
+                      { id: "driver", label: "Driver" }
+                    ].map(opt => e.jsx("button", {
+                      type: "button",
+                      onClick: () => switchPortal(opt.id),
+                      className: "py-2.5 px-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer " + (jbcPortalMode === opt.id ? "bg-white text-slate-950 shadow-md" : "text-slate-400 hover:text-white"),
+                      children: opt.label
+                    }, opt.id))
+                  }),
+
+                  e.jsxs("div", {
+                    className: "space-y-1",
+                    children: [
+                      e.jsx("h2", { className: "text-2xl font-black text-white tracking-tight", children: pd.formTitle }),
+                      e.jsx("p", { className: "text-xs text-slate-400", children: pd.formSub })
+                    ]
+                  }),
+
+                  S && e.jsx("div", { className: "p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-xs text-rose-300 font-semibold", children: S }),
+
+                  e.jsxs("form", {
+                    onSubmit: handlePortalSubmit,
+                    autoComplete: "off",
+                    className: "space-y-4",
+                    children: [
+                      e.jsxs("div", {
+                        className: "space-y-1.5",
                         children: [
-                          e.jsx("div", { className: "text-base mb-1", children: opt.icon }),
-                          e.jsx("div", { className: "text-xs font-extrabold leading-tight", children: opt.title }),
-                          e.jsx("div", { className: "text-[10px] text-slate-400 mt-0.5", children: opt.sub })
+                          e.jsx("label", { className: "text-xs font-bold text-slate-300", children: "Registered Email / User ID" }),
+                          e.jsx(H, { type: "text", name: "portal_identity", autoComplete: "off", value: n, onChange: ev => i(ev.target.value), placeholder: "name@company.com", className: "h-11 bg-slate-900/90 border-white/10 text-white rounded-xl text-xs", required: true })
                         ]
-                      }, opt.id))
-                    })
-                  ]
-                }),
-                e.jsxs("div", {
-                  className: "space-y-1",
-                  children: [
-                    e.jsx("h2", { className: "text-2xl font-black text-white", children: pd.formTitle }),
-                    e.jsx("p", { className: "text-xs text-slate-400", children: pd.formSub })
-                  ]
-                }),
-                S && e.jsx("div", { className: "p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-xs text-rose-300 font-semibold", children: S }),
-                e.jsxs("form", {
-                  onSubmit: handlePortalSubmit,
-                  className: "space-y-4",
-                  children: [
-                    e.jsxs("div", {
-                      className: "space-y-1.5",
-                      children: [
-                        e.jsx("label", { className: "text-xs font-bold text-slate-300", children: "Registered Email / User ID" }),
-                        e.jsx(H, { type: "text", value: n, onChange: ev => i(ev.target.value), placeholder: "name@company.com", className: "h-11 bg-slate-900 border-slate-800 text-white rounded-xl text-xs", required: true })
-                      ]
-                    }),
-                    e.jsxs("div", {
-                      className: "space-y-1.5",
-                      children: [
-                        e.jsx("label", { className: "text-xs font-bold text-slate-300", children: "Password" }),
-                        e.jsx(H, { type: "password", value: o, onChange: ev => l(ev.target.value), placeholder: "••••••••", className: "h-11 bg-slate-900 border-slate-800 text-white rounded-xl text-xs", required: true })
-                      ]
-                    }),
-                    e.jsx(q, {
-                      type: "submit",
-                      disabled: c,
-                      className: "w-full h-11 rounded-xl font-extrabold text-xs shadow-lg cursor-pointer " + pd.btnCls,
-                      children: c ? "Signing In..." : ("Sign In to " + pd.formTitle.replace(" Sign In", " Portal"))
-                    })
-                  ]
-                }),
-                e.jsxs("div", {
-                  className: "pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-500",
-                  children: [
-                    e.jsx("span", { children: "Need portal credentials?" }),
-                    e.jsx("a", { href: pd.joinUrl, target: "_blank", rel: "noreferrer", className: "text-cyan-400 hover:underline font-bold", children: "Contact Operations Desk" })
-                  ]
-                })
-              ]
+                      }),
+                      e.jsxs("div", {
+                        className: "space-y-1.5",
+                        children: [
+                          e.jsx("label", { className: "text-xs font-bold text-slate-300", children: "Password" }),
+                          e.jsx(H, { type: "password", name: "portal_secret", autoComplete: "new-password", value: o, onChange: ev => l(ev.target.value), placeholder: "Enter your password", className: "h-11 bg-slate-900/90 border-white/10 text-white rounded-xl text-xs", required: true })
+                        ]
+                      }),
+                      e.jsx(q, {
+                        type: "submit",
+                        disabled: c,
+                        className: "w-full h-11 rounded-xl font-extrabold text-xs shadow-lg cursor-pointer transition " + pd.btnCls,
+                        children: c ? "Signing In..." : ("Sign In to " + pd.formTitle.replace(" Sign In", " Portal"))
+                      })
+                    ]
+                  }),
+
+                  e.jsxs("div", {
+                    className: "pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400",
+                    children: [
+                      e.jsx("span", { children: "Need new portal access?" }),
+                      e.jsx("a", { href: pd.joinUrl, target: "_blank", rel: "noreferrer", className: "font-bold hover:underline " + pd.accentText, children: pd.joinBtn + " →" })
+                    ]
+                  })
+                ]
+              })
             })
           ]
         }),
 
-        e.jsxs("div", {
-          className: "w-full max-w-7xl mx-auto space-y-5",
-          children: [
-            e.jsxs("div", {
-              className: "flex flex-col sm:flex-row sm:items-end justify-between gap-2",
+        e.jsx("section", {
+          className: "relative z-10 border-y border-white/10 bg-slate-950/70 py-5",
+          children: e.jsx("div", {
+            className: "max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3",
+            children: fleetSpecs.map(fsItem => e.jsxs("div", {
+              className: "px-4 py-3 rounded-xl bg-slate-900/60 border border-white/10 flex items-center justify-between",
               children: [
                 e.jsxs("div", {
                   children: [
-                    e.jsx("h2", { className: "text-xl sm:text-2xl font-black text-white tracking-tight", children: pd.servicesHeading }),
-                    e.jsx("p", { className: "text-xs sm:text-sm text-slate-400 mt-1", children: pd.servicesSub })
+                    e.jsx("div", { className: "text-xs font-black text-white font-mono", children: fsItem.size }),
+                    e.jsx("div", { className: "text-[10px] text-slate-400", children: fsItem.body })
                   ]
                 }),
-                e.jsx("span", { className: "px-3 py-1 rounded-full text-[11px] font-bold border " + pd.pillCls, children: "Jai Bhavani Cargo Network" })
+                e.jsx("span", { className: "text-[11px] font-mono font-bold " + pd.accentText, children: fsItem.cap })
+              ]
+            }, fsItem.size))
+          })
+        }),
+
+        e.jsxs("section", {
+          className: "relative z-10 max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-14 space-y-8",
+          children: [
+            e.jsxs("div", {
+              className: "max-w-2xl space-y-2",
+              children: [
+                e.jsx("div", { className: "text-[11px] font-bold uppercase tracking-[0.2em] " + pd.accentText, children: "CAPABILITIES" }),
+                e.jsx("h2", { className: "text-2xl sm:text-3xl font-black text-white tracking-tight", children: pd.servicesHeading }),
+                e.jsx("p", { className: "text-sm text-slate-400", children: pd.servicesSub })
               ]
             }),
             e.jsx("div", {
-              className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
+              className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4",
               children: pd.services.map((srv, idx) => e.jsxs("div", {
-                className: "p-5 rounded-2xl bg-slate-900/70 border border-white/10 hover:border-white/25 transition-all space-y-2.5",
+                className: "p-6 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-white/25 transition-all space-y-3 " + (srv.span || ""),
                 children: [
-                  e.jsx("div", { className: "w-10 h-10 rounded-xl bg-slate-950 border border-white/10 flex items-center justify-center text-xl", children: srv.icon }),
-                  e.jsx("h3", { className: "text-sm font-extrabold text-white", children: srv.title }),
+                  e.jsx("span", { className: "inline-block px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold border " + pd.pillCls, children: srv.tag }),
+                  e.jsx("h3", { className: "text-base font-extrabold text-white", children: srv.title }),
                   e.jsx("p", { className: "text-xs text-slate-400 leading-relaxed", children: srv.desc })
                 ]
               }, idx))
@@ -1849,22 +1907,35 @@ return e.jsxs(e.Fragment,{children:[
           ]
         }),
 
-        e.jsxs("div", {
-          className: "w-full max-w-7xl mx-auto rounded-3xl border border-white/10 bg-slate-900/50 p-6 sm:p-8 space-y-5",
-          children: [
-            e.jsx("h3", { className: "text-lg font-black text-white", children: pd.stepsHeading }),
-            e.jsx("div", {
-              className: "grid grid-cols-1 md:grid-cols-3 gap-4",
-              children: pd.steps.map(st => e.jsxs("div", {
-                className: "p-4 rounded-2xl bg-slate-950/80 border border-white/10 space-y-1.5",
+        e.jsx("section", {
+          className: "relative z-10 max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pb-14",
+          children: e.jsxs("div", {
+            className: "rounded-3xl border border-white/10 bg-slate-900/50 p-6 sm:p-10 space-y-6",
+            children: [
+              e.jsxs("div", {
+                className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4",
                 children: [
-                  e.jsx("span", { className: "text-xs font-mono font-black text-cyan-400", children: "STEP " + st.n }),
-                  e.jsx("div", { className: "text-sm font-extrabold text-white", children: st.t }),
-                  e.jsx("div", { className: "text-xs text-slate-400", children: st.d })
+                  e.jsx("h3", { className: "text-xl font-black text-white", children: pd.stepsHeading }),
+                  e.jsx("a", { href: pd.joinUrl, target: "_blank", rel: "noreferrer", className: "px-5 py-2.5 rounded-xl text-xs font-extrabold " + pd.btnCls, children: pd.joinBtn + " →" })
                 ]
-              }, st.n))
-            })
-          ]
+              }),
+              e.jsx("div", {
+                className: "grid grid-cols-1 md:grid-cols-3 gap-4",
+                children: pd.steps.map(st => e.jsxs("div", {
+                  className: "p-5 rounded-2xl bg-slate-950/90 border border-white/10 space-y-2",
+                  children: [
+                    e.jsx("span", { className: "text-xs font-mono font-black " + pd.accentText, children: "STEP " + st.n }),
+                    e.jsx("div", { className: "text-sm font-extrabold text-white", children: st.t }),
+                    e.jsx("div", { className: "text-xs text-slate-400 leading-relaxed", children: st.d })
+                  ]
+                }, st.n))
+              }),
+              e.jsx("div", {
+                className: "pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-400 font-mono",
+                children: ["GST Registered Logistics Entity", "Digital LR & e-Way Bill Ready", "24x7 Operations Control Room", "Pan-India FTL Container Network"].map(tr => e.jsx("span", { children: "✓ " + tr }, tr))
+              })
+            ]
+          })
         })
       ]
     });
