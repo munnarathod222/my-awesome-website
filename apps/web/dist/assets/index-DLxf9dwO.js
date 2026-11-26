@@ -122,13 +122,13 @@ const JBC_PORTAL_DATA = {
     ],
     joinTitle: "Experienced HMV Driver? Drive With Jai Bhavani Cargo",
     joinDesc: "Join our highway pilot team with regular routes, timely batta, and respectful operations.",
-    joinUrl: "https://wa.me/917794072244?text=" + encodeURIComponent("Hello Jai Bhavani Cargo, I am an experienced HMV Driver interested in joining your fleet."),
+    joinUrl: "/apply/driver",
     joinBtn: "Apply as Pilot",
     accentGlow: "rgba(6,182,212,0.16)",
     accentText: "text-cyan-400",
     accentBorder: "border-cyan-500/30",
     pillCls: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
-    btnCls: "bg-cyan-400 hover:bg-cyan-300 text-slate-950",
+    btnCls: "bg-sky-500 hover:bg-sky-400 text-white",
     strokeColor: "#06b6d4",
     formTitle: "Driver Sign In",
     formSub: "View assigned trips, route updates & POD uploads"
@@ -1917,7 +1917,7 @@ return e.jsxs(e.Fragment,{children:[
                       href: pd.joinUrl,
                       target: "_blank",
                       rel: "noreferrer",
-                      className: "px-5 py-2.5 rounded-xl text-xs font-extrabold whitespace-nowrap text-center shadow-lg transition " + pd.btnCls,
+                      style: pd.joinBtn === "Apply as Pilot" ? { backgroundColor: "#06b6d4", color: "#020617" } : undefined, className: "px-5 py-2.5 rounded-xl text-xs font-extrabold whitespace-nowrap text-center shadow-lg transition " + pd.btnCls,
                       children: pd.joinBtn + " →"
                     })
                   ]
@@ -2048,7 +2048,7 @@ return e.jsxs(e.Fragment,{children:[
                 className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4",
                 children: [
                   e.jsx("h3", { className: "text-xl font-bold text-white tracking-[-0.015em]", children: pd.stepsHeading }),
-                  e.jsx("a", { href: pd.joinUrl, target: "_blank", rel: "noreferrer", className: "px-5 py-2.5 rounded-xl text-xs font-extrabold " + pd.btnCls, children: pd.joinBtn + " →" })
+                  e.jsx("a", { href: pd.joinUrl, target: "_blank", rel: "noreferrer", style: pd.joinBtn === "Apply as Pilot" ? { backgroundColor: "#06b6d4", color: "#020617" } : undefined, className: "px-5 py-2.5 rounded-xl text-xs font-extrabold " + pd.btnCls, children: pd.joinBtn + " →" })
                 ]
               }),
               e.jsx("div", {
