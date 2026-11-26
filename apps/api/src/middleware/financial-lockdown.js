@@ -12,9 +12,31 @@ export const enforceFinancialLockdown = (resourceName) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Bypass for fallback superadmin or PocketBase _superusers session
+    if (userId === 'usr_munna_superadmin' || req.pocketbaseCollectionName === '_superusers') {
+      return next();
+    }
+
     try {
-      // Fetch fresh user role from database
-      const user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+      // Fetch fresh user role from database (fallback to email lookup or _superusers if needed)
+      let user = null;
+      try {
+        user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+      } catch (lookupErr) {
+        if (req.pocketbaseUserEmail) {
+          user = await pb.collection('users').getFirstListItem(
+            `email = "${String(req.pocketbaseUserEmail).replace(/"/g, '\\"')}"`,
+            { $autoCancel: false }
+          ).catch(() => null);
+        }
+        if (!user) {
+          const superUser = await pb.collection('_superusers').getOne(userId, { $autoCancel: false }).catch(() => null);
+          if (superUser) return next();
+        }
+      }
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid authentication session' });
+      }
       const role = user.role || 'user';
       const email = user.email || userId;
 
