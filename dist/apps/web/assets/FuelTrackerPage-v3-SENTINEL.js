@@ -1,0 +1,1314 @@
+import{r as n,j as e,aB as He,ad as Bt,ak as kt,az as nt,au as fe,ag as je,a8 as St,at as it,ao as Ut,al as Vt,ae as zt,bT as Kt,a2 as ke,by as Wt,aX as Gt,cx as qt,aw as Ht,aS as Jt,be as Se,aO as Zt,aT as Ct,b2 as Lt,as as Xt,bF as Yt,e as Qt,a5 as es,bs as ts,ax as ss,dj as bt,bt as ve,ai as jt,cC as Ue,cv as as,a1 as tt,aC as st,cs as Ve,bu as Nt,a4 as rs,a0 as ls}from"./vendor-react-Bs5V2qFE.js";import{u as Je,k as ae,D as Ze,a as Xe,b as Ye,c as Qe,L as Q,I as ee,S as ne,e as ie,g as ce,h as oe,i as g,j as ct,B as y,t as R,p as B,aZ as Ft,T as Dt,a_ as ns,C as N,l as F,O as z,y as Ce,z as Le,A as X,E as j,F as Fe,G as d,w as E,a$ as is,b0 as cs,d as os,ag as lt,aj as ds,aq as ze,n as xs,s as ms,v as ye,x as we,o as q,q as H,ap as us,V as hs}from"./index-F7L3R9.js";import{f as ps}from"./locationUtils-CJF9iFYv.js";import"./slider-MQ0bc9CC.js";import{i as fs}from"./isBefore-Brnnz_-V.js";import{i as gs}from"./isAfter-BL2Dh4I7.js";import{R as Ke,T as We,B as vt,C as yt,L as bs}from"./generateCategoricalChart-BEnIo3F8.js";import{L as js}from"./LineChart-DmZyY0rc.js";import{C as at}from"./CartesianGrid-BCC_9QQg.js";import{X as rt,Y as Ge}from"./YAxis-C3vl7O1m.js";import{L as wt}from"./Line-D_9erwcV.js";import{B as _t}from"./BarChart-DOVIJigh.js";import{P as Ns,a as vs}from"./PieChart-DFpEcMSh.js";import{C as ys}from"./ComposedChart-veiMxaPT.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";import"./Area-BrwEFUqq.js";const ws=({isOpen:O,onClose:M,transaction:o,cards:u,onSuccess:K})=>{const{currentUser:P}=Je(),[U,T]=n.useState(!1),[p,w]=n.useState({date:"",card_id:"",fuel_amount:"",surcharge_percentage:"1",payment_status:"Pending",waived_amount:"",notes:""});n.useEffect(()=>{O&&w(o?{date:o.date?ae(new Date(o.date),"yyyy-MM-dd"):"",card_id:o.card_id||"",fuel_amount:o.fuel_amount?.toString()||"",surcharge_percentage:o.surcharge_percentage?.toString()||"1",payment_status:o.payment_status||"Pending",waived_amount:o.waived_amount?.toString()||"",notes:o.notes||""}:{date:ae(new Date,"yyyy-MM-dd"),card_id:u.length>0?u[0].id:"",fuel_amount:"",surcharge_percentage:"1",payment_status:"Pending",waived_amount:"",notes:""})},[O,o,u]);const W=async c=>{if(c.preventDefault(),!p.card_id){R.error("Please select a credit card");return}T(!0);try{const A=parseFloat(p.fuel_amount)||0,G=parseFloat(p.surcharge_percentage)||0,C=A*G/100,L={date:p.date+" 12:00:00.000Z",card_id:p.card_id,fuel_amount:A,surcharge_percentage:G,surcharge_amount:C,payment_status:p.payment_status,waived_amount:parseFloat(p.waived_amount)||0,notes:p.notes,user_id:P?.id||B.authStore.model?.id||"",month:ae(new Date(p.date),"yyyy-MM")};o?(await B.collection("fuel_payments").update(o.id,L,{$autoCancel:!1}),R.success("Transaction updated")):(await B.collection("fuel_payments").create(L,{$autoCancel:!1}),R.success("Transaction logged successfully")),K(),M()}catch(A){console.error(A),R.error("Failed to save transaction")}finally{T(!1)}};return e.jsx(Ze,{open:O,onOpenChange:M,children:e.jsxs(Xe,{className:"sm:max-w-[500px] bg-card text-card-foreground rounded-2xl",children:[e.jsx(Ye,{children:e.jsx(Qe,{children:o?"Edit Fuel Payment":"Log Fuel Payment"})}),e.jsxs("form",{onSubmit:W,className:"space-y-4 py-4",children:[e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{children:"Date"}),e.jsx(ee,{type:"date",required:!0,value:p.date,onChange:c=>w({...p,date:c.target.value}),className:"bg-input text-foreground"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{children:"Credit Card"}),e.jsxs(ne,{value:p.card_id,onValueChange:c=>w({...p,card_id:c}),children:[e.jsx(ie,{className:"bg-input text-foreground",children:e.jsx(ce,{placeholder:"Select card"})}),e.jsx(oe,{children:u.map(c=>e.jsxs(g,{value:c.id,children:[c.card_name," (..",c.card_number_last4,")"]},c.id))})]})]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{children:"Fuel Amount (₹)"}),e.jsx(ee,{type:"number",required:!0,step:"0.01",min:"0",value:p.fuel_amount,onChange:c=>w({...p,fuel_amount:c.target.value}),className:"bg-input text-foreground",placeholder:"0.00"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{children:"Surcharge %"}),e.jsx(ee,{type:"number",step:"0.01",min:"0",value:p.surcharge_percentage,onChange:c=>w({...p,surcharge_percentage:c.target.value}),className:"bg-input text-foreground"})]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{children:"Status"}),e.jsxs(ne,{value:p.payment_status,onValueChange:c=>w({...p,payment_status:c}),children:[e.jsx(ie,{className:"bg-input text-foreground",children:e.jsx(ce,{})}),e.jsxs(oe,{children:[e.jsx(g,{value:"Pending",children:"Pending"}),e.jsx(g,{value:"Paid",children:"Paid"}),e.jsx(g,{value:"Failed",children:"Failed"})]})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{children:"Waived Amount (₹)"}),e.jsx(ee,{type:"number",step:"0.01",min:"0",value:p.waived_amount,onChange:c=>w({...p,waived_amount:c.target.value}),className:"bg-input text-foreground",placeholder:"Optional"})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{children:"Notes"}),e.jsx(ee,{type:"text",value:p.notes,onChange:c=>w({...p,notes:c.target.value}),className:"bg-input text-foreground",placeholder:"E.g., Vehicle number, trip reference"})]}),e.jsxs(ct,{className:"mt-6",children:[e.jsx(y,{type:"button",variant:"outline",onClick:M,disabled:U,children:"Cancel"}),e.jsx(y,{type:"submit",disabled:U,children:U?"Saving...":"Save Payment"})]})]})]})})};function _s({isOpen:O,onClose:M,selectedStationId:o,onSuccess:u}){const{currentUser:K}=Je(),[P,U]=n.useState(!1),[T,p]=n.useState([]),[w,W]=n.useState(null),[c,A]=n.useState({station_id:"",payment_date:ae(new Date,"yyyy-MM-dd"),amount:"",payment_method:"Bank Transfer",reference_no:"",notes:""});n.useEffect(()=>{O&&G()},[O]);const G=async()=>{const r=await Ft();if(p(r),o){const a=r.find(i=>i.id===o);if(a){W(a),A(i=>({...i,station_id:a.id,amount:(a.credit_balance||0)>0?(a.credit_balance||0).toString():""}));return}}r.length>0&&(W(r[0]),A(a=>({...a,station_id:r[0].id,amount:(r[0].credit_balance||0)>0?(r[0].credit_balance||0).toString():""})))},C=r=>{const a=T.find(i=>i.id===r);W(a||null),A(i=>({...i,station_id:r,amount:a&&(a.credit_balance||0)>0?(a.credit_balance||0).toString():""}))},L=async r=>{r.preventDefault();const a=parseFloat(c.amount);if(!a||a<=0){R.error("Please enter a valid payment amount");return}if(!w){R.error("Please select a fuel station");return}U(!0);try{await ns(w.id,a);const i={station_name:w.station_name,amount:a,payment_date:`${c.payment_date} 12:00:00.000Z`,payment_method:c.payment_method,reference_no:c.reference_no||"",status:"Completed",notes:`Credit Dues Payment to ${w.station_name}. ${c.notes||""}`.trim(),user_id:K?.id||""};try{await B.collection("fuel_payments").create(i,{$autoCancel:!1})}catch(m){console.log("Fuel payments creation fallback:",m?.message)}try{await B.collection("cashbook").create({entry_type:"Out",category:"Fuel Credit Settlement",amount:a,entry_date:`${c.payment_date} 12:00:00.000Z`,payment_method:c.payment_method,description:`Fuel Credit Settlement for ${w.station_name} (Ref: ${c.reference_no||"N/A"})`,created_by:K?.id||""},{$autoCancel:!1})}catch(m){console.log("Cashbook creation fallback:",m?.message)}R.success(`Successfully paid ₹${a.toLocaleString("en-IN")} to ${w.station_name}!`),u&&u(),M()}catch(i){console.error("Credit payment failed:",i),R.error("Failed to process payment")}finally{U(!1)}};return e.jsx(Ze,{open:O,onOpenChange:r=>!r&&M(),children:e.jsxs(Xe,{className:"sm:max-w-[480px] bg-card text-card-foreground border-border shadow-2xl rounded-2xl",children:[e.jsx(Ye,{children:e.jsxs(Qe,{className:"flex items-center gap-2 text-xl font-bold font-heading text-emerald-400",children:[e.jsx(He,{className:"w-5 h-5 text-emerald-400"}),"Pay Fuel Station Credit (Udhar Settlement)"]})}),e.jsxs("form",{onSubmit:L,className:"space-y-4 py-2",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{className:"font-semibold",children:"Select Fuel Station *"}),e.jsxs(ne,{value:c.station_id,onValueChange:C,children:[e.jsx(ie,{className:"bg-background h-12",children:e.jsx(ce,{placeholder:"Select station..."})}),e.jsx(oe,{children:T.map(r=>e.jsx(g,{value:r.id,children:e.jsxs("div",{className:"flex justify-between items-center gap-4 w-full",children:[e.jsx("span",{className:"font-bold",children:r.station_name}),e.jsxs("span",{className:"font-mono text-amber-400 text-xs",children:["Udhar: ₹",(r.credit_balance||0).toLocaleString("en-IN")]})]})},r.id))})]})]}),w&&e.jsxs("div",{className:"p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-amber-300 font-semibold uppercase tracking-wider",children:"Current Outstanding Credit"}),e.jsxs("p",{className:"text-2xl font-extrabold text-amber-400 font-mono",children:["₹",(w.credit_balance||0).toLocaleString("en-IN")]})]}),e.jsx(Bt,{className:"w-8 h-8 text-amber-400/40"})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{className:"font-semibold",children:"Payment Date *"}),e.jsx(ee,{type:"date",value:c.payment_date,onChange:r=>A(a=>({...a,payment_date:r.target.value})),className:"bg-background",required:!0})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{className:"font-semibold",children:"Payment Amount (₹) *"}),e.jsx(ee,{type:"number",min:"1",step:"any",placeholder:"Enter amount",value:c.amount,onChange:r=>A(a=>({...a,amount:r.target.value})),className:"bg-background font-mono font-bold text-emerald-400 text-lg",required:!0})]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{className:"font-semibold",children:"Payment Method *"}),e.jsxs(ne,{value:c.payment_method,onValueChange:r=>A(a=>({...a,payment_method:r})),children:[e.jsx(ie,{className:"bg-background",children:e.jsx(ce,{})}),e.jsxs(oe,{children:[e.jsx(g,{value:"Bank Transfer",children:"Bank Transfer / NEFT"}),e.jsx(g,{value:"UPI",children:"UPI / PhonePe / GPay"}),e.jsx(g,{value:"Cash",children:"Cash"}),e.jsx(g,{value:"FASTag",children:"FASTag Account"})]})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{className:"font-semibold",children:"UTR / Reference No."}),e.jsx(ee,{placeholder:"e.g. UTR123456789",value:c.reference_no,onChange:r=>A(a=>({...a,reference_no:r.target.value})),className:"bg-background font-mono"})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(Q,{className:"font-semibold",children:"Notes / Remarks"}),e.jsx(Dt,{placeholder:"e.g. Paid via PhonePe by Director Vinod Rathod",value:c.notes,onChange:r=>A(a=>({...a,notes:r.target.value})),className:"bg-background h-20"})]}),e.jsxs(ct,{className:"pt-4 border-t border-border",children:[e.jsx(y,{variant:"outline",type:"button",onClick:M,disabled:P,className:"rounded-xl",children:"Cancel"}),e.jsxs(y,{type:"submit",disabled:P,className:"rounded-xl shadow-md bg-emerald-600 hover:bg-emerald-700 text-white",children:[P?e.jsx(kt,{className:"w-4 h-4 mr-2 animate-spin"}):e.jsx(nt,{className:"w-4 h-4 mr-2"}),"Confirm Payment Out"]})]})]})]})})}function ks({onRefreshRefills:O}){const[M,o]=n.useState([]),[u,K]=n.useState(!0),[P,U]=n.useState(""),[T,p]=n.useState(!1),[w,W]=n.useState(null),[c,A]=n.useState(!1),[G,C]=n.useState(null),L=async()=>{K(!0);try{const l=await Ft();o(l)}catch(l){console.error("Error fetching fuel stations:",l),R.error("Failed to load fuel stations")}finally{K(!1)}};n.useEffect(()=>{L()},[]);const r=()=>{W(null),p(!0)},a=l=>{W(l),p(!0)},i=l=>{C(l),A(!0)},m=async l=>{if(window.confirm(`Are you sure you want to delete ${l.station_name}?`))try{await cs(l.id),R.success("Fuel station deleted successfully"),L()}catch(b){console.error("Failed to delete fuel station:",b),R.error("Failed to delete fuel station")}},k=M.filter(l=>{const b=P.toLowerCase();return(l.station_name||"").toLowerCase().includes(b)||(l.station_code||"").toLowerCase().includes(b)||(l.brand||"").toLowerCase().includes(b)||(l.location||"").toLowerCase().includes(b)||(l.contact_person||"").toLowerCase().includes(b)}),D=M.reduce((l,b)=>l+(Number(b.credit_balance)||0),0),$=M.reduce((l,b)=>l+(Number(b.total_paid)||0),0),J=l=>{switch(l){case"BPCL":return"bg-yellow-500/10 text-yellow-500 border-yellow-500/30";case"IOCL":return"bg-orange-500/10 text-orange-500 border-orange-500/30";case"HPCL":return"bg-blue-500/10 text-blue-500 border-blue-500/30";case"Reliance":return"bg-red-500/10 text-red-500 border-red-500/30";case"Nayara":return"bg-purple-500/10 text-purple-500 border-purple-500/30";case"Shell":return"bg-amber-500/10 text-amber-400 border-amber-500/30";default:return"bg-slate-500/10 text-slate-400 border-slate-500/30"}};return e.jsxs("div",{className:"space-y-6 max-w-full overflow-x-hidden",children:[e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card/60 p-4 rounded-2xl border border-border/50 backdrop-blur-md",children:[e.jsxs("div",{children:[e.jsxs("h2",{className:"text-xl font-bold font-heading flex items-center gap-2 text-foreground",children:[e.jsx(fe,{className:"w-5 h-5 text-primary"}),"Fuel Station Directory & Credit Master"]}),e.jsx("p",{className:"text-xs text-muted-foreground mt-0.5",children:"Manage partner petrol bunks, track fuel credit dues (Udhar), and record credit settlements."})]}),e.jsxs("div",{className:"flex items-center gap-2 w-full sm:w-auto",children:[e.jsxs(y,{onClick:()=>A(!0),variant:"outline",className:"flex-1 sm:flex-initial rounded-xl border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10",children:[e.jsx(He,{className:"w-4 h-4 mr-2"})," Pay Credit Balance"]}),e.jsxs(y,{onClick:r,className:"flex-1 sm:flex-initial rounded-xl shadow-md",children:[e.jsx(je,{className:"w-4 h-4 mr-2"})," Add Fuel Station"]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-4",children:[e.jsx(N,{className:"bg-card/60 border-border/50 p-4 backdrop-blur-md",children:e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-semibold uppercase tracking-wider",children:"Registered Bunks"}),e.jsx("h3",{className:"text-2xl font-bold text-foreground mt-1",children:u?e.jsx(F,{className:"h-8 w-12"}):M.length})]}),e.jsx("div",{className:"p-3 bg-primary/10 text-primary rounded-xl",children:e.jsx(fe,{className:"w-5 h-5"})})]})}),e.jsx(N,{className:"bg-card/60 border-border/50 p-4 backdrop-blur-md",children:e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-semibold uppercase tracking-wider",children:"Total Credit Owed (Udhar)"}),e.jsx("h3",{className:"text-2xl font-bold text-amber-400 font-mono mt-1",children:u?e.jsx(F,{className:"h-8 w-24"}):`₹${D.toLocaleString("en-IN")}`})]}),e.jsx("div",{className:"p-3 bg-amber-500/10 text-amber-400 rounded-xl",children:e.jsx(St,{className:"w-5 h-5"})})]})}),e.jsx(N,{className:"bg-card/60 border-border/50 p-4 backdrop-blur-md",children:e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-semibold uppercase tracking-wider",children:"Total Payments Cleared"}),e.jsx("h3",{className:"text-2xl font-bold text-emerald-400 font-mono mt-1",children:u?e.jsx(F,{className:"h-8 w-24"}):`₹${$.toLocaleString("en-IN")}`})]}),e.jsx("div",{className:"p-3 bg-emerald-500/10 text-emerald-400 rounded-xl",children:e.jsx(nt,{className:"w-5 h-5"})})]})})]}),e.jsxs("div",{className:"relative max-w-md",children:[e.jsx(it,{className:"absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"}),e.jsx(ee,{placeholder:"Search fuel station, code, brand, manager...",value:P,onChange:l=>U(l.target.value),className:"pl-10 bg-background rounded-xl border-border/50"})]}),e.jsx(N,{className:"bg-card/60 border border-border/50 overflow-hidden backdrop-blur-md",children:e.jsx(z,{className:"p-0",children:e.jsxs(Ce,{children:[e.jsx(Le,{className:"bg-muted/30",children:e.jsxs(X,{className:"border-b-border/40",children:[e.jsx(j,{className:"font-semibold text-muted-foreground pl-6 py-4",children:"Station & Brand"}),e.jsx(j,{className:"font-semibold text-muted-foreground py-4",children:"Contact Info"}),e.jsx(j,{className:"font-semibold text-muted-foreground py-4",children:"Location"}),e.jsx(j,{className:"font-semibold text-muted-foreground py-4 text-right",children:"Outstanding Udhar (₹)"}),e.jsx(j,{className:"font-semibold text-muted-foreground py-4 text-right pr-6",children:"Actions"})]})}),e.jsx(Fe,{children:u?Array.from({length:3}).map((l,b)=>e.jsxs(X,{className:"border-b-border/30",children:[e.jsxs(d,{className:"pl-6 py-4",children:[e.jsx(F,{className:"h-5 w-40 mb-1"}),e.jsx(F,{className:"h-4 w-20"})]}),e.jsxs(d,{className:"py-4",children:[e.jsx(F,{className:"h-4 w-32 mb-1"}),e.jsx(F,{className:"h-4 w-28"})]}),e.jsx(d,{className:"py-4",children:e.jsx(F,{className:"h-4 w-44"})}),e.jsx(d,{className:"py-4 text-right",children:e.jsx(F,{className:"h-5 w-24 ml-auto"})}),e.jsx(d,{className:"py-4 text-right pr-6",children:e.jsx(F,{className:"h-8 w-24 ml-auto rounded-lg"})})]},b)):k.length===0?e.jsx(X,{children:e.jsxs(d,{colSpan:5,className:"h-48 text-center text-muted-foreground",children:[e.jsx(fe,{className:"w-10 h-10 opacity-30 mx-auto mb-2"}),"No fuel stations registered yet. Click ",e.jsx("strong",{children:"+ Add Fuel Station"})," to register one."]})}):k.map(l=>{const b=Number(l.credit_balance)||0,Y=ps(l.google_maps_url,l.location||l.station_name);return e.jsxs(X,{className:"hover:bg-muted/20 transition-colors border-b-border/30",children:[e.jsxs(d,{className:"pl-6 py-4",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx(E,{variant:"outline",className:`rounded-md font-extrabold text-[11px] ${J(l.brand)}`,children:l.brand||"Fuel"}),l.station_code&&e.jsx("span",{className:"font-mono text-xs font-semibold px-2 py-0.5 bg-secondary/30 text-secondary-foreground rounded border border-border/40",children:l.station_code})]}),e.jsx("p",{className:"font-bold text-sm text-foreground mt-1.5",children:l.station_name})]}),e.jsxs(d,{className:"py-4",children:[l.contact_person&&e.jsx("p",{className:"text-xs font-medium text-foreground",children:l.contact_person}),l.phone_number?e.jsxs("div",{className:"flex items-center gap-2 mt-1",children:[e.jsxs("a",{href:`tel:${l.phone_number}`,className:"text-xs text-primary hover:underline flex items-center gap-1 font-semibold",children:[e.jsx(Ut,{className:"w-3 h-3"})," ",l.phone_number]}),e.jsxs("a",{href:`https://wa.me/${l.phone_number.replace(/[^0-9]/g,"")}`,target:"_blank",rel:"noreferrer",className:"text-[10px] text-green-400 hover:bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20 flex items-center gap-1",children:[e.jsx(Vt,{className:"w-2.5 h-2.5"})," WA"]})]}):e.jsx("span",{className:"text-xs text-muted-foreground",children:"—"})]}),e.jsx(d,{className:"py-4",children:e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx("p",{className:"text-xs text-muted-foreground truncate max-w-[220px]",title:l.location,children:l.location||"—"}),Y&&e.jsx("a",{href:Y,target:"_blank",rel:"noreferrer",className:"text-rose-500 hover:text-rose-600 shrink-0 p-0.5 hover:bg-rose-500/10 rounded",title:"Open in Google Maps GPS Navigation",children:e.jsx(zt,{className:"w-3.5 h-3.5 fill-rose-500/10"})})]})}),e.jsx(d,{className:"py-4 text-right",children:e.jsxs("span",{className:`font-mono text-base font-extrabold px-2.5 py-1 rounded-md border ${b>0?"bg-amber-500/10 text-amber-400 border-amber-500/20":"bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`,children:["₹",b.toLocaleString("en-IN")]})}),e.jsx(d,{className:"py-4 text-right pr-6",children:e.jsxs("div",{className:"flex items-center justify-end gap-1.5",children:[e.jsxs(y,{variant:"outline",size:"sm",onClick:()=>i(l.id),className:"h-8 px-2.5 text-xs rounded-lg border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10",title:"Pay Credit Dues",children:[e.jsx(He,{className:"w-3.5 h-3.5 mr-1"})," Pay Udhar"]}),e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>a(l),className:"h-8 w-8 rounded-lg text-muted-foreground hover:text-primary",title:"Edit Station",children:e.jsx(Kt,{className:"w-4 h-4"})}),e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>m(l),className:"h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive",title:"Delete Station",children:e.jsx(ke,{className:"w-4 h-4"})})]})})]},l.id)})})]})})}),e.jsx(is,{isOpen:T,onClose:()=>p(!1),station:w,onSuccess:()=>{L(),O&&O()}}),e.jsx(_s,{isOpen:c,onClose:()=>A(!1),selectedStationId:G,onSuccess:()=>{L(),O&&O()}})]})}const Ss=94.5;function Cs({fuelLogs:O=[],trucks:M={},loading:o=!1}){const[u,K]=n.useState(()=>{const a=localStorage.getItem("target_benchmark_mileage");return a?parseFloat(a):4.5}),[P,U]=n.useState(()=>{const a=localStorage.getItem("fuel_diesel_price");return a?parseFloat(a):Ss}),[T,p]=n.useState(""),[w,W]=n.useState(!1),[c,A]=n.useState(!1);n.useEffect(()=>{async function a(){try{const i=await B.collection("company_settings").getFullList({$autoCancel:!1});if(i.length>0){const m=i[0];m.target_mileage&&(K(Number(m.target_mileage)),localStorage.setItem("target_benchmark_mileage",m.target_mileage.toString())),m.diesel_price&&(U(Number(m.diesel_price)),localStorage.setItem("fuel_diesel_price",m.diesel_price.toString()))}}catch(i){console.log("Company settings load note:",i)}}a()},[]);const G=async(a,i)=>{const m=u,k=P;localStorage.setItem("target_benchmark_mileage",m.toString()),localStorage.setItem("fuel_diesel_price",k.toString()),W(!0);try{const D=await B.collection("company_settings").getFullList({$autoCancel:!1}).catch(()=>[]);D.length>0?await B.collection("company_settings").update(D[0].id,{target_mileage:m,diesel_price:k},{$autoCancel:!1}):await B.collection("company_settings").create({company_name:"Jai Bhavani Cargo",target_mileage:m,diesel_price:k},{$autoCancel:!1}),R.success(`Saved! Target: ${m} km/L • Diesel Price: ₹${k}/L`)}catch(D){console.warn("Saved to local storage:",D),R.success(`Benchmark saved to browser storage (${m} km/L, ₹${k}/L)`)}finally{W(!1)}},C=n.useMemo(()=>{const a={};return O.forEach(i=>{const m=i.truck_id||"unknown",k=i.vehicle_name||M[m]||"Unknown Truck",D=Number(i.distance||i.distance_driven||0),$=Number(i.liters||0),J=Number(i.total_cost||i.fuel_cost||0);a[m]||(a[m]={id:m,name:k,totalDistance:0,totalLiters:0,totalCost:0,logCount:0}),a[m].totalDistance+=D,a[m].totalLiters+=$,a[m].totalCost+=J,a[m].logCount+=1}),Object.values(a).map(i=>{const m=i.totalLiters>0?i.totalDistance/i.totalLiters:0,k=i.totalDistance>0?i.totalCost/i.totalDistance:0,D=m>0?i.totalDistance/u:0,$=Math.max(0,i.totalLiters-D),J=$*P,l=m-u;return{...i,avgMileage:Number(m.toFixed(2)),costPerKm:Number(k.toFixed(2)),excessLiters:Number($.toFixed(1)),potentialCostSavings:Number(J.toFixed(0)),mileageVariance:Number(l.toFixed(2)),status:m>=u?"efficient":m>=u*.85?"moderate":"inefficient"}}).sort((i,m)=>m.avgMileage-i.avgMileage)},[O,M,u,P]),L=n.useMemo(()=>{const a=C.reduce((V,re)=>V+re.totalDistance,0),i=C.reduce((V,re)=>V+re.totalLiters,0),m=C.reduce((V,re)=>V+re.totalCost,0),k=i>0?a/i:0,D=C.reduce((V,re)=>V+re.potentialCostSavings,0),$=C.reduce((V,re)=>V+re.excessLiters,0),J=C.filter(V=>V.status==="efficient").length,l=C.filter(V=>V.status==="inefficient").length,b=C.length>0?C[0]:null,Y=C.length>0?C[C.length-1]:null;return{totalDist:a,totalLit:i,totalSpend:m,fleetAvgMileage:Number(k.toFixed(2)),totalPotentialSavings:D,totalExcessLiters:$,efficientCount:J,inefficientCount:l,topPerformer:b,worstPerformer:Y}},[C]),r=n.useMemo(()=>T.trim()?C.filter(a=>a.name.toLowerCase().includes(T.toLowerCase())):C,[C,T]);return e.jsxs("div",{className:"space-y-6",children:[e.jsxs(N,{className:"bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950/80 border-slate-800 text-slate-100 p-4 sm:p-5 rounded-3xl shadow-xl relative overflow-hidden transition-all duration-300",children:[e.jsx("div",{className:"absolute right-0 top-0 translate-x-10 -translate-y-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"}),e.jsxs("div",{className:"flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10",children:[e.jsxs("div",{className:"flex items-center gap-3",children:[e.jsx("div",{className:"p-2.5 bg-blue-500/15 border border-blue-500/30 rounded-2xl text-blue-400",children:e.jsx(Wt,{className:"w-5 h-5"})}),e.jsxs("div",{children:[e.jsxs("h2",{className:"text-sm sm:text-base font-extrabold text-white flex flex-wrap items-center gap-2",children:["Fuel Mileage Benchmark Settings",e.jsxs(E,{className:"bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] font-mono",children:["Target: ",u," km/L"]}),e.jsxs(E,{className:"bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] font-mono",children:["Diesel Price: ₹",P,"/L"]})]}),e.jsx("p",{className:"text-[11px] text-slate-400",children:"Compare individual truck efficiencies against JBC benchmark targets to calculate potential cost savings."})]})]}),e.jsx(y,{size:"sm",variant:"outline",onClick:()=>A(!c),className:"h-8 px-3.5 text-xs border-slate-750 bg-slate-950/50 hover:bg-slate-950 text-slate-300 font-bold rounded-xl flex items-center gap-1.5 self-end md:self-auto",children:c?e.jsx(e.Fragment,{children:"Collapse Settings"}):e.jsx(e.Fragment,{children:"Adjust Settings"})})]}),c&&e.jsxs("div",{className:"mt-5 pt-5 border-t border-slate-800/80 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10 animate-in fade-in slide-in-from-top-3 duration-300",children:[e.jsxs("div",{className:"lg:col-span-6 space-y-1",children:[e.jsx("span",{className:"text-xs font-bold text-slate-300",children:"Configure Benchmark Targets"}),e.jsx("p",{className:"text-[11px] text-slate-400",children:"Adjust benchmark values to calculate cost performance dynamically. Settings are synced with your company profile."})]}),e.jsxs("div",{className:"lg:col-span-3 bg-slate-950/40 p-3 rounded-2xl border border-slate-850/60",children:[e.jsxs("div",{className:"flex justify-between items-center text-[10px] font-bold text-slate-300 mb-1.5",children:[e.jsxs("span",{className:"flex items-center gap-1",children:[e.jsx(Gt,{className:"w-3.5 h-3.5 text-blue-400"})," Target Mileage:"]}),e.jsxs("span",{className:"text-xs font-mono text-emerald-400 font-black",children:[u," km/L"]})]}),e.jsx("input",{type:"range",min:"3.0",max:"7.0",step:"0.1",value:u,onChange:a=>{const i=parseFloat(a.target.value);K(i),localStorage.setItem("target_benchmark_mileage",i.toString())},className:"w-full h-1.5 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-blue-500"}),e.jsxs("div",{className:"flex justify-between text-[8px] text-slate-500 font-mono mt-1",children:[e.jsx("span",{children:"3.0 km/L"}),e.jsxs("span",{children:["Fleet Avg: ",L.fleetAvgMileage," km/L"]}),e.jsx("span",{children:"7.0 km/L"})]})]}),e.jsxs("div",{className:"lg:col-span-3 bg-slate-950/40 p-3 rounded-2xl border border-slate-850/60 flex items-center justify-between gap-3",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-[10px] font-bold text-slate-400 block",children:"Diesel Rate"}),e.jsxs("div",{className:"flex items-center gap-1",children:[e.jsx("span",{className:"text-xs text-slate-500 font-mono",children:"₹"}),e.jsx(ee,{type:"number",value:P,onChange:a=>{const i=Number(a.target.value)||0;U(i),localStorage.setItem("fuel_diesel_price",i.toString())},className:"w-20 h-7 text-xs bg-slate-900 border-slate-700 text-white font-mono rounded-lg text-right font-bold py-0.5 px-2"}),e.jsx("span",{className:"text-[10px] text-slate-500 font-mono",children:"/L"})]})]}),e.jsxs(y,{onClick:()=>G(),disabled:w,size:"sm",className:"h-8 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5",children:[e.jsx(qt,{className:"w-3.5 h-3.5"})," Save"]})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4",children:[e.jsx(N,{className:"bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden",children:e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("div",{className:"text-xs text-slate-400 uppercase font-mono font-extrabold tracking-wider",children:"Fleet Avg Mileage"}),e.jsxs("div",{className:"text-2xl sm:text-3xl font-black font-mono text-white flex items-baseline gap-1",children:[L.fleetAvgMileage," ",e.jsx("span",{className:"text-xs font-normal text-slate-400",children:"km/L"})]}),e.jsxs("div",{className:"text-[11px] font-medium flex items-center gap-1 mt-1",children:[e.jsxs("span",{children:["Target: ",e.jsxs("strong",{className:"text-blue-400 font-mono",children:[u," km/L"]})]}),L.fleetAvgMileage>=u?e.jsx(E,{className:"bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]",children:"On Target"}):e.jsx(E,{className:"bg-rose-500/20 text-rose-400 border-rose-500/30 text-[10px]",children:"Below Target"})]})]}),e.jsx("div",{className:"p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400",children:e.jsx(fe,{className:"w-6 h-6"})})]})}),e.jsx(N,{className:"bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden",children:e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("div",{className:"text-xs text-emerald-400 uppercase font-mono font-extrabold tracking-wider",children:"Potential Fuel Savings"}),e.jsxs("div",{className:"text-2xl sm:text-3xl font-black font-mono text-emerald-400 flex items-baseline gap-0.5",children:["₹",L.totalPotentialSavings.toLocaleString("en-IN")]}),e.jsx("div",{className:"text-[11px] text-slate-400 flex items-center gap-1 mt-1 font-mono",children:e.jsxs("span",{children:["Excess Fuel: ",e.jsxs("strong",{children:[L.totalExcessLiters.toLocaleString("en-IN")," L"]})]})})]}),e.jsx("div",{className:"p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400",children:e.jsx(Ht,{className:"w-6 h-6"})})]})}),e.jsx(N,{className:"bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden",children:e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("div",{className:"text-xs text-amber-400 uppercase font-mono font-extrabold tracking-wider",children:"Top Performing Truck"}),L.topPerformer?e.jsxs(e.Fragment,{children:[e.jsx("div",{className:"text-lg font-bold text-white truncate max-w-[170px]",title:L.topPerformer.name,children:L.topPerformer.name}),e.jsxs("div",{className:"text-xs font-mono font-extrabold text-emerald-400",children:[L.topPerformer.avgMileage," km/L ",e.jsxs("span",{className:"text-[10px] text-slate-400 font-normal",children:["(",L.topPerformer.costPerKm?`₹${L.topPerformer.costPerKm}/km`:"",")"]})]})]}):e.jsx("div",{className:"text-xs text-slate-500",children:"No truck data"})]}),e.jsx("div",{className:"p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400",children:e.jsx(Jt,{className:"w-6 h-6"})})]})}),e.jsx(N,{className:"bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden",children:e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("div",{className:"text-xs text-rose-400 uppercase font-mono font-extrabold tracking-wider",children:"Below Benchmark Trucks"}),e.jsxs("div",{className:"text-2xl sm:text-3xl font-black font-mono text-rose-400",children:[L.inefficientCount," ",e.jsxs("span",{className:"text-xs text-slate-400 font-normal",children:["/ ",C.length," Trucks"]})]}),e.jsx("div",{className:"text-[10px] text-slate-400 mt-1",children:"Requires driver training & maintenance check"})]}),e.jsx("div",{className:"p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400",children:e.jsx(Se,{className:"w-6 h-6"})})]})})]}),e.jsxs(N,{className:"bg-slate-900 border-slate-800 text-slate-100 rounded-3xl p-5 shadow-xl space-y-4",children:[e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4",children:[e.jsxs("div",{children:[e.jsxs("h3",{className:"text-base font-extrabold text-white flex items-center gap-2",children:[e.jsx(Zt,{className:"w-5 h-5 text-blue-400"})," Individual Vehicle Mileage vs Target Benchmark (",u," km/L)"]}),e.jsx("p",{className:"text-xs text-slate-400 mt-0.5",children:"Real-time audit comparing actual mileage against target benchmark."})]}),e.jsx("div",{className:"w-full sm:w-64",children:e.jsx(ee,{placeholder:"Search truck...",value:T,onChange:a=>p(a.target.value),className:"h-9 bg-slate-950 border-slate-800 text-xs rounded-xl text-white"})})]}),e.jsx("div",{className:"w-full overflow-x-auto -webkit-overflow-scrolling-touch",children:e.jsxs(Ce,{children:[e.jsx(Le,{children:e.jsxs(X,{className:"border-slate-800 hover:bg-transparent",children:[e.jsx(j,{className:"text-xs text-slate-400 font-mono",children:"TRUCK NAME"}),e.jsx(j,{className:"text-xs text-slate-400 font-mono text-center",children:"TOTAL DISTANCE"}),e.jsx(j,{className:"text-xs text-slate-400 font-mono text-center",children:"TOTAL DIESEL"}),e.jsx(j,{className:"text-xs text-slate-400 font-mono text-center",children:"ACTUAL MILEAGE"}),e.jsx(j,{className:"text-xs text-slate-400 font-mono text-center",children:"TARGET VARIANCE"}),e.jsx(j,{className:"text-xs text-slate-400 font-mono text-right",children:"EXCESS FUEL COST"}),e.jsx(j,{className:"text-xs text-slate-400 font-mono text-center",children:"STATUS"})]})}),e.jsx(Fe,{children:r.length===0?e.jsx(X,{children:e.jsx(d,{colSpan:7,className:"text-center text-xs text-slate-500 py-8",children:"No fuel logs found matching truck search."})}):r.map(a=>e.jsxs(X,{className:"border-slate-800/60 hover:bg-slate-800/40 text-xs",children:[e.jsx(d,{className:"font-extrabold text-white font-mono",children:a.name}),e.jsxs(d,{className:"text-center font-mono text-slate-300",children:[a.totalDistance.toLocaleString()," km"]}),e.jsxs(d,{className:"text-center font-mono text-slate-300",children:[a.totalLiters.toLocaleString()," L"]}),e.jsxs(d,{className:"text-center font-mono font-black text-sm text-white",children:[a.avgMileage," ",e.jsx("span",{className:"text-[10px] text-slate-400 font-normal",children:"km/L"})]}),e.jsx(d,{className:"text-center font-mono",children:a.mileageVariance>=0?e.jsxs("span",{className:"text-emerald-400 font-bold",children:["+",a.mileageVariance," km/L"]}):e.jsxs("span",{className:"text-rose-400 font-bold",children:[a.mileageVariance," km/L"]})}),e.jsx(d,{className:"text-right font-mono font-bold",children:a.potentialCostSavings>0?e.jsxs("span",{className:"text-rose-400",children:["₹",a.potentialCostSavings.toLocaleString("en-IN")]}):e.jsx("span",{className:"text-emerald-400",children:"₹0 (On Target)"})}),e.jsxs(d,{className:"text-center",children:[a.status==="efficient"&&e.jsx(E,{className:"bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]",children:"Optimal"}),a.status==="moderate"&&e.jsx(E,{className:"bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]",children:"Acceptable"}),a.status==="inefficient"&&e.jsx(E,{className:"bg-rose-500/20 text-rose-400 border-rose-500/30 text-[10px]",children:"Below Target"})]})]},a.id))})]})})]})]})}const Ls=[{id:"fuel_theft",label:"🛢️ Fuel Theft / Pilferage",desc:"Unauthorized siphoning, fuel station slip mismatch, or fake receipt"},{id:"excessive_idling",label:"⏱️ Excessive Engine Idling",desc:"AC running during loading dock wait or overnight rest idling"},{id:"vehicle_problem",label:"🔧 Vehicle Mechanical Problem",desc:"Clogged fuel injector, choked air filter, brake binding, or turbo loss"},{id:"driver_behaviour",label:"👨‍✈️ Driver Driving Behaviour",desc:"High RPM cruising, aggressive acceleration, or speeding > 65 km/h"},{id:"overloading",label:"⚖️ Overloading / Aerodynamic Drag",desc:"Payload exceeding GVW limit or improper tarpaulin wind resistance"}];function Mt({isOpen:O,onClose:M,log:o,onSuccess:u}){const{currentUser:K}=Je(),[P,U]=n.useState(!1),[T,p]=n.useState([]),[w,W]=n.useState(""),[c,A]=n.useState("Warning Issued"),[G,C]=n.useState("Under Investigation"),[L,r]=n.useState(""),a=o?.expected_mileage||5.8,i=o?.actual_mileage||(o?.distance&&o?.liters?Number(o.distance)/Number(o.liters):4.7),m=a>0?Math.max(0,Math.round((a-i)/a*100)):0,k=o?.distance&&a>0?Math.max(0,Math.round((Number(o.liters||0)-Number(o.distance)/a)*10)/10):0,D=Math.round(k*(o?.fuel_price||94.5));n.useEffect(()=>{if(O&&o){if(o.root_causes)try{const l=typeof o.root_causes=="string"?JSON.parse(o.root_causes):o.root_causes;p(Array.isArray(l)?l:[o.root_causes])}catch{p(o.root_causes.split(",").map(b=>b.trim()))}else p([]);W(o.investigation_notes||o.driver_interview_notes||""),A(o.action_taken||"Warning Issued"),C(o.investigation_status||"Under Investigation"),r(o.financial_loss_inr?o.financial_loss_inr.toString():D.toString())}},[O,o]);const $=l=>{p(b=>b.includes(l)?b.filter(Y=>Y!==l):[...b,l])},J=async l=>{if(l?.preventDefault(),!!o?.id){if(T.length===0){R.error("Please select at least one root cause category.");return}U(!0);try{const b=JSON.stringify(T),Y=parseFloat(L)||D;await B.collection("fuel_tracker").update(o.id,{is_anomaly:!0,expected_mileage:a,efficiency_drop_pct:m,excess_liters_lost:k,financial_loss_inr:Y,investigation_status:G,root_causes:b,investigation_notes:w,action_taken:c},{$autoCancel:!1});try{await B.collection("fuel_investigations").create({fuel_log_id:o.id,truck_number:o.truck_number||o.vehicle_name||"Fleet Truck",driver_name:o.driver_name||"Driver",trip_id:o.trip_id||"Refill Log",refill_date:o.date||new Date().toISOString().split("T")[0],expected_mileage:a,actual_mileage:Math.round(i*100)/100,efficiency_drop_pct:m,excess_liters_lost:k,financial_loss_inr:Y,root_causes:b,driver_interview_notes:w,action_taken:c,status:G,investigated_by:K?.name||K?.email||"Operations Admin",resolution_notes:`Efficiency drop of ${m}% investigated. Root causes: ${T.join(", ")}.`},{$autoCancel:!1})}catch(V){console.warn("Investigation record save notice:",V)}R.success("Fuel anomaly investigation logged successfully!"),u?.(),M()}catch(b){console.error("Failed to save investigation:",b),R.error(b.message||"Failed to save investigation record")}finally{U(!1)}}};return o?e.jsx(Ze,{open:O,onOpenChange:l=>!l&&!P&&M(),children:e.jsxs(Xe,{className:"w-[95vw] max-w-2xl max-h-[90vh] p-0 flex flex-col overflow-hidden bg-slate-950 border-slate-800 text-slate-100 rounded-3xl",children:[e.jsx(Ye,{className:"p-5 pb-3 border-b border-slate-800 bg-slate-900/90 shrink-0",children:e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2.5",children:[e.jsx("div",{className:"p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30",children:e.jsx(Ct,{className:"w-5 h-5"})}),e.jsxs("div",{children:[e.jsx(Qe,{className:"text-lg font-bold text-white flex items-center gap-2",children:"Fuel Fraud & Mileage Loss Investigation"}),e.jsxs(os,{className:"text-xs text-slate-400",children:["Investigate efficiency drop for ",e.jsx("strong",{className:"text-white",children:o.truck_number||o.vehicle_name||"Truck"})]})]})]}),e.jsxs(E,{className:"bg-rose-500/20 text-rose-300 border-rose-500/40 text-xs font-mono font-bold",children:[m,"% EFFICIENCY LOSS"]})]})}),e.jsxs("div",{className:"flex-1 overflow-y-auto p-5 space-y-5",children:[e.jsxs("div",{className:"p-4 rounded-2xl bg-gradient-to-r from-rose-950/40 via-slate-900 to-amber-950/30 border border-rose-500/40 space-y-3 shadow-lg",children:[e.jsxs("div",{className:"flex items-center justify-between text-xs",children:[e.jsxs("span",{className:"font-bold text-rose-400 flex items-center gap-1.5",children:[e.jsx(Se,{className:"w-4 h-4"})," ⚠️ Fuel efficiency dropped ",m,"%."]}),e.jsxs("span",{className:"text-[11px] font-mono text-slate-400",children:["Date: ",o.date?o.date.split("T")[0]:"Recent Refill"]})]}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-center",children:[e.jsxs("div",{className:"p-2 bg-slate-950/80 rounded-xl border border-slate-800",children:[e.jsx("span",{className:"text-[10px] text-slate-500 uppercase block",children:"Expected"}),e.jsxs("strong",{className:"text-white text-sm",children:[a," km/L"]})]}),e.jsxs("div",{className:"p-2 bg-slate-950/80 rounded-xl border border-slate-800",children:[e.jsx("span",{className:"text-[10px] text-slate-500 uppercase block",children:"Actual"}),e.jsxs("strong",{className:"text-rose-400 text-sm",children:[Math.round(i*100)/100," km/L"]})]}),e.jsxs("div",{className:"p-2 bg-slate-950/80 rounded-xl border border-slate-800",children:[e.jsx("span",{className:"text-[10px] text-slate-500 uppercase block",children:"Diesel Wasted"}),e.jsxs("strong",{className:"text-amber-400 text-sm",children:["~",k," Liters"]})]}),e.jsxs("div",{className:"p-2 bg-slate-950/80 rounded-xl border border-slate-800",children:[e.jsx("span",{className:"text-[10px] text-slate-500 uppercase block",children:"Cost Loss"}),e.jsx("strong",{className:"text-emerald-400 text-sm",children:lt(D)})]})]})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs(Q,{className:"text-xs font-bold text-slate-300 uppercase tracking-wider",children:["Select Discovered Root Causes ",e.jsx("span",{className:"text-rose-400",children:"*"})]}),e.jsx("span",{className:"text-[11px] text-slate-500",children:"Multi-select applicable factors"})]}),e.jsx("div",{className:"space-y-2",children:Ls.map(l=>{const b=T.includes(l.id);return e.jsxs("div",{onClick:()=>$(l.id),className:`p-3 rounded-2xl border cursor-pointer transition-all flex items-start gap-3 select-none ${b?"bg-amber-500/15 border-amber-500/50 text-white shadow-md":"bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700"}`,children:[e.jsx(ds,{checked:b,onCheckedChange:()=>$(l.id),className:"mt-0.5"}),e.jsxs("div",{className:"space-y-0.5 flex-1",children:[e.jsx("div",{className:"text-xs font-bold",children:l.label}),e.jsx("div",{className:"text-[11px] text-slate-400",children:l.desc})]})]},l.id)})})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(Q,{className:"text-xs font-semibold text-slate-300",children:"Driver Interview & Fleet Inspection Notes"}),e.jsx(Dt,{placeholder:"e.g. Driver Ramesh interviewed; stated 4-hour traffic jam at Solapur bypass with AC running. Tank cap seal was intact. Workshop inspection scheduled for injector cleaning.",value:w,onChange:l=>W(l.target.value),rows:3,className:"bg-slate-900 border-slate-800 text-xs rounded-xl text-white placeholder:text-slate-500 focus-visible:ring-amber-500"})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-3",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(Q,{className:"text-xs font-semibold text-slate-300",children:"Action Taken"}),e.jsxs(ne,{value:c,onValueChange:A,children:[e.jsx(ie,{className:"bg-slate-900 border-slate-800 text-xs h-9 rounded-xl",children:e.jsx(ce,{})}),e.jsxs(oe,{className:"bg-slate-900 border-slate-800 text-white",children:[e.jsx(g,{value:"Warning Issued",className:"text-xs",children:"⚠️ First Warning Issued to Driver"}),e.jsx(g,{value:"Driver Salary Deduction",className:"text-xs",children:"💰 Driver Fuel Siphoning Deduction"}),e.jsx(g,{value:"Workshop Job Card Created",className:"text-xs",children:"🔧 Maintenance Job Card Created"}),e.jsx(g,{value:"Fuel Station Audited",className:"text-xs",children:"🏪 Fuel Station Quantity Audited"}),e.jsx(g,{value:"Dismissed - Valid Traffic/Hill Route",className:"text-xs",children:"✅ Dismissed (Valid Ghat/Traffic Route)"}),e.jsx(g,{value:"Under Surveillance",className:"text-xs",children:"🔍 Flagged Under Telematics Watch"})]})]})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(Q,{className:"text-xs font-semibold text-slate-300",children:"Investigation Status"}),e.jsxs(ne,{value:G,onValueChange:C,children:[e.jsx(ie,{className:"bg-slate-900 border-slate-800 text-xs h-9 rounded-xl",children:e.jsx(ce,{})}),e.jsxs(oe,{className:"bg-slate-900 border-slate-800 text-white",children:[e.jsx(g,{value:"Under Investigation",className:"text-xs text-amber-400",children:"⏳ Under Investigation"}),e.jsx(g,{value:"Recovery Initiated",className:"text-xs text-rose-400",children:"💵 Recovery / Deduction Initiated"}),e.jsx(g,{value:"Resolved - Maintenance",className:"text-xs text-sky-400",children:"🔧 Resolved (Vehicle Serviced)"}),e.jsx(g,{value:"Closed - No Theft",className:"text-xs text-emerald-400",children:"✅ Closed (Legitimate Route Cause)"})]})]})]})]})]}),e.jsxs(ct,{className:"p-4 border-t border-slate-800 bg-slate-900/90 shrink-0 flex items-center justify-between gap-3",children:[e.jsx(y,{type:"button",variant:"ghost",onClick:M,disabled:P,className:"text-xs text-slate-400 hover:text-white",children:"Cancel"}),e.jsxs(y,{type:"button",onClick:J,disabled:P,className:"bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow px-5",children:[P?e.jsx(kt,{className:"w-3.5 h-3.5 animate-spin mr-1.5"}):e.jsx(nt,{className:"w-3.5 h-3.5 mr-1.5"}),"Save & Resolve Investigation"]})]})]})}):null}function Fs({fuelLogs:O=[],trucks:M={},loading:o=!1,onRefresh:u}){
+  const [subTab, setSubTab] = n.useState("sensor_bleed");
+  const [K, P] = n.useState("");
+  const [U, T] = n.useState("all");
+  const [p, w] = n.useState("all");
+  const [W, c] = n.useState(null);
+  
+  // Theft Reports & Driver Bleed State
+  const [theftReports, setTheftReports] = n.useState([]);
+  const [theftLoading, setTheftLoading] = n.useState(!1);
+  const [driverSearch, setDriverSearch] = n.useState("");
+  const [selectedDriver, setSelectedDriver] = n.useState(null);
+  const [previewDocUrl, setPreviewDocUrl] = n.useState(null);
+  const [isDeducting, setIsDeducting] = n.useState(!1);
+
+  const fetchTheftReports = async () => {
+    setTheftLoading(!0);
+    try {
+      const records = await B.collection("fuel_theft_reports").getFullList({
+        sort: "-incident_date",
+        $autoCancel: !1
+      });
+      setTheftReports(records || []);
+    } catch (err) {
+      console.warn("Theft reports fetch notice:", err?.message);
+    } finally {
+      setTheftLoading(!1);
+    }
+  };
+
+  n.useEffect(() => {
+    fetchTheftReports();
+  }, []);
+
+  const handleDeleteTheftReport = async (inc) => {
+    if (!inc || !inc.id) return;
+    if (!window.confirm("Delete this fraud sentinel log permanently?")) return;
+    try {
+      await B.collection("fuel_theft_reports").delete(inc.id, { $autoCancel: !1 });
+      setTheftReports(prev => prev.filter(r => r.id !== inc.id));
+      setSelectedDriver(prev => {
+        if (!prev) return null;
+        const nextInc = (prev.incidents || []).filter(i => i.id !== inc.id);
+        if (nextInc.length === 0) return null;
+        return { ...prev, count: nextInc.length, incidents: nextInc };
+      });
+      if (typeof toast !== "undefined") toast.success("Fraud sentinel log deleted.");
+    } catch (err) {
+      console.error("Failed to delete theft report:", err);
+      if (typeof toast !== "undefined") toast.error("Failed to delete log: " + (err?.message || "Error"));
+    }
+  };
+
+  const handleDeleteAllDriverTheftReports = async (drv) => {
+    if (!drv || !drv.incidents || drv.incidents.length === 0) return;
+    if (!window.confirm("Delete all " + drv.incidents.length + " fraud sentinel log(s) for " + drv.driver_name + "?")) return;
+    try {
+      for (const inc of drv.incidents) {
+        if (inc.id) await B.collection("fuel_theft_reports").delete(inc.id, { $autoCancel: !1 }).catch(() => {});
+      }
+      const deletedIds = new Set(drv.incidents.map(i => i.id));
+      setTheftReports(prev => prev.filter(r => !deletedIds.has(r.id)));
+      if (selectedDriver && selectedDriver.driver_name === drv.driver_name) setSelectedDriver(null);
+      if (typeof toast !== "undefined") toast.success("Deleted all fraud sentinel logs for " + drv.driver_name);
+    } catch (err) {
+      if (typeof toast !== "undefined") toast.error("Failed to delete logs: " + (err?.message || "Error"));
+    }
+  };
+
+  // 1-Click Advance Deduction
+  const handleQuickDeduct = async (report) => {
+    if (!report || !report.id) return;
+    setIsDeducting(!0);
+    try {
+      const loss = Number(report.bleeding_amount || 0);
+      const drv = report.driver_name || "Driver";
+      const trk = report.truck_number || "Truck";
+      const advR = await B.collection("expenses_driver_advance").create({
+        driver_name: drv,
+        amount: loss,
+        date: report.incident_date || new Date().toISOString(),
+        location: report.petrol_pump_name || trk,
+        payment_mode: "Fuel Theft Recovery",
+        notes: "Automatic recovery: Fuel sensor shortfall of " + report.stolen_liters + "L on " + trk + " at ₹" + report.fuel_rate + "/L"
+      }, { $autoCancel: !1 });
+
+      await B.collection("fuel_theft_reports").update(report.id, {
+        status: "Deducted from Salary / Advance",
+        advance_deduction_id: advR.id
+      }, { $autoCancel: !1 });
+
+      R.success("₹" + loss.toLocaleString("en-IN") + " deducted from " + drv + "'s advance/salary!");
+      await fetchTheftReports();
+
+      if (selectedDriver) {
+        setSelectedDriver(prev => prev ? {
+          ...prev,
+          total_recovered: prev.total_recovered + loss,
+          net_unrecovered: Math.max(0, prev.net_unrecovered - loss),
+          incidents: prev.incidents.map(inc => inc.id === report.id ? { ...inc, status: "Deducted from Salary / Advance", advance_deduction_id: advR.id } : inc)
+        } : null);
+      }
+    } catch (err) {
+      console.error("Deduct advance error:", err);
+      R.error("Deduction error: " + (err.message || "Error"));
+    } finally {
+      setIsDeducting(!1);
+    }
+  };
+
+  // Driver Bleed Aggregation
+  const driverBleed = n.useMemo(() => {
+    let totalBleed = 0, totalShortL = 0, totalRec = 0;
+    const dMap = new Map();
+    const sMap = new Map();
+
+    theftReports.forEach(rep => {
+      const bAmt = Number(rep.bleeding_amount || 0);
+      const sL = Number(rep.stolen_liters || 0);
+      const isRec = rep.status === "Deducted from Salary / Advance" || !!rep.advance_deduction_id;
+
+      totalBleed += bAmt;
+      totalShortL += sL;
+      if (isRec) totalRec += bAmt;
+
+      const dKey = rep.driver_id || rep.driver_name || "Driver";
+      const exD = dMap.get(dKey) || {
+        driver_id: rep.driver_id || "",
+        driver_name: rep.driver_name || "Driver",
+        truck_number: rep.truck_number || "—",
+        count: 0,
+        total_bleed: 0,
+        stolen_liters: 0,
+        total_recovered: 0,
+        net_unrecovered: 0,
+        incidents: []
+      };
+      exD.count += 1;
+      exD.total_bleed += bAmt;
+      exD.stolen_liters = Math.round((exD.stolen_liters + sL) * 100) / 100;
+      if (isRec) exD.total_recovered += bAmt;
+      exD.net_unrecovered = Math.max(0, exD.total_bleed - exD.total_recovered);
+      if (rep.truck_number) exD.truck_number = rep.truck_number;
+      exD.incidents.push(rep);
+      dMap.set(dKey, exD);
+
+      const sKey = (rep.petrol_pump_name || "").trim();
+      if (sKey && sKey.toLowerCase() !== "none" && sKey.toLowerCase() !== "fuel station") {
+        const exS = sMap.get(sKey) || { pump_name: sKey, count: 0, total_loss: 0, stolen_liters: 0 };
+        exS.count += 1;
+        exS.total_loss += bAmt;
+        exS.stolen_liters = Math.round((exS.stolen_liters + sL) * 100) / 100;
+        sMap.set(sKey, exS);
+      }
+    });
+
+    const driverList = Array.from(dMap.values()).map(d => {
+      let risk_level = "low";
+      if (d.total_bleed >= 5000 || d.stolen_liters >= 50 || d.count >= 3) risk_level = "critical";
+      else if (d.total_bleed >= 2000 || d.stolen_liters >= 20 || d.count >= 2) risk_level = "moderate";
+      return { ...d, risk_level };
+    }).sort((a, b) => b.net_unrecovered - a.net_unrecovered || b.total_bleed - a.total_bleed);
+
+    const stationList = Array.from(sMap.values()).sort((a, b) => b.count - a.count || b.total_loss - a.total_loss);
+
+    return {
+      totalBleed,
+      totalShortL: Math.round(totalShortL * 100) / 100,
+      totalRec,
+      netUnrecovered: Math.max(0, totalBleed - totalRec),
+      totalIncidents: theftReports.length,
+      driverList,
+      stationList,
+      topBleeder: driverList[0] || null
+    };
+  }, [theftReports]);
+
+  // Filtered Driver Leaderboard
+  const filteredDrivers = n.useMemo(() => {
+    if (!driverSearch.trim()) return driverBleed.driverList;
+    const q = driverSearch.toLowerCase();
+    return driverBleed.driverList.filter(d => 
+      (d.driver_name && d.driver_name.toLowerCase().includes(q)) ||
+      (d.truck_number && d.truck_number.toLowerCase().includes(q))
+    );
+  }, [driverBleed.driverList, driverSearch]);
+
+  // 🖨️ PRINT SETTLEMENT MEMO FOR DRIVER
+  const printDriverSettlement = (d) => {
+    if (!d) return;
+    const w = window.open("", "_blank", "width=850,height=900");
+    if (!w) {
+      R.error("Pop-up blocked. Please allow pop-ups to print settlement memo.");
+      return;
+    }
+    const todayStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const memoRef = "JBC/THEFT/" + (d.truck_number || "TRK").replace(/\s+/g, "") + "/" + Date.now().toString().slice(-6);
+
+    const exhibitsHtml = (d.incidents || []).flatMap((inc, idx) => {
+      const arr = [];
+      const bills = inc.fuel_bill_file ? (Array.isArray(inc.fuel_bill_file) ? inc.fuel_bill_file : [inc.fuel_bill_file]) : [];
+      bills.forEach(f => {
+        arr.push('<div style="flex:1; min-width:180px; max-width:260px; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#ffffff; text-align:center;"><div style="font-size:9px; font-weight:bold; color:#475569; margin-bottom:4px;">Exhibit ' + (idx + 1) + 'A: Billed Pump Slip (' + (inc.truck_number || d.truck_number) + ')</div><img src="https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/' + inc.id + '/' + f + '" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:4px;" alt="Pump Slip" /></div>');
+      });
+      const proofs = inc.sensor_proof_file ? (Array.isArray(inc.sensor_proof_file) ? inc.sensor_proof_file : [inc.sensor_proof_file]) : [];
+      proofs.forEach(f => {
+        arr.push('<div style="flex:1; min-width:180px; max-width:260px; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#ffffff; text-align:center;"><div style="font-size:9px; font-weight:bold; color:#475569; margin-bottom:4px;">Exhibit ' + (idx + 1) + 'B: IoT Sensor Graph (' + (inc.truck_number || d.truck_number) + ')</div><img src="https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/' + inc.id + '/' + f + '" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:4px;" alt="Sensor Graph" /></div>');
+      });
+      if (arr.length === 0 && inc.expense_id) {
+        arr.push('<div style="flex:1; min-width:180px; max-width:260px; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#ffffff; text-align:center;"><div style="font-size:9px; font-weight:bold; color:#475569; margin-bottom:4px;">Exhibit ' + (idx + 1) + 'A: Linked Refill Receipt (' + (inc.truck_number || d.truck_number) + ')</div><img src="https://www.jaibhavanicargo.com/api/files/expenses/' + (inc.expense_id.id || inc.expense_id) + '/fuel_1795115668351_whats_app_image_2026_11_20_at_00_42_45_7kcrmgo7of.jpeg" style="max-height:140px; max-width:100%; object-fit:contain; border-radius:4px;" alt="Expense Slip" /></div>');
+      }
+      return arr;
+    }).join("");
+
+    const rowsHtml = (d.incidents || []).map((inc, i) => `
+      <tr>
+        <td style="text-align:center;">${i + 1}</td>
+        <td>${inc.incident_date ? inc.incident_date.split("T")[0] : "—"}</td>
+        <td style="font-weight:bold;">${inc.truck_number || d.truck_number}</td>
+        <td>${inc.petrol_pump_name || "Fuel Station"}</td>
+        <td style="text-align:right; font-family:monospace;">${inc.billed_liters || 0} L</td>
+        <td style="text-align:right; font-family:monospace;">${inc.sensor_liters || 0} L</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">-${inc.stolen_liters || 0} L</td>
+        <td style="text-align:right; font-family:monospace;">₹${inc.fuel_rate || 94.5}</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">₹${Number(inc.bleeding_amount || 0).toLocaleString("en-IN")}</td>
+        <td style="text-align:center; font-size:10px;">${inc.status || "Reported"}</td>
+        <td style="font-size:10px; font-style:italic;">${inc.notes || "—"}</td>
+      </tr>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fuel Theft Settlement Memo - ${d.driver_name}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 12px; font-size: 11px; line-height: 1.35; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .company-title { font-size: 18px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; color: #0f172a; }
+    .company-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+    .memo-badge { display: inline-block; background: #be123c; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; }
+    .ref-box { text-align: right; font-size: 10px; color: #64748b; font-family: monospace; }
+    .ref-title { font-weight: bold; font-size: 11px; color: #0f172a; }
+    
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; }
+    .meta-item { display: flex; justify-content: space-between; font-size: 11px; }
+    .meta-label { color: #64748b; }
+    .meta-val { font-weight: bold; color: #0f172a; }
+
+    .kpi-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+    .kpi-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center; background: #ffffff; }
+    .kpi-box.bleed { background: #fff1f2; border-color: #fecdd3; }
+    .kpi-box.rec { background: #f0fdf4; border-color: #bbf7d0; }
+    .kpi-title { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+    .kpi-val { font-size: 15px; font-weight: 900; margin-top: 2px; font-family: monospace; }
+    .kpi-box.bleed .kpi-val { color: #be123c; }
+    .kpi-box.rec .kpi-val { color: #16a34a; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10px; }
+    th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; font-size: 9px; text-transform: uppercase; font-weight: bold; }
+    td { border: 1px solid #cbd5e1; padding: 5px 6px; }
+
+    .clause-box { background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #be123c; border-radius: 4px; padding: 8px 10px; margin-bottom: 20px; font-size: 10px; text-align: justify; line-height: 1.4; }
+    
+    .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; margin-top: 25px; page-break-inside: avoid; }
+    .sig-box { border-top: 1px dashed #475569; padding-top: 6px; }
+    .sig-title { font-weight: bold; font-size: 10px; color: #0f172a; }
+    .sig-sub { font-size: 9px; color: #64748b; margin-top: 2px; }
+
+    .print-actions { margin-bottom: 12px; display: flex; gap: 8px; }
+    .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid #0f172a; background: #0f172a; color: #fff; cursor: pointer; font-size: 11px; font-weight: bold; }
+    .btn-secondary { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions no-print">
+    <button class="btn" onclick="window.print()">🖨️ Print Document</button>
+    <button class="btn btn-secondary" onclick="window.close()">✕ Close Window</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <h1 class="company-title">JAI BHAVANI CARGO</h1>
+      <div class="company-sub">Fleet Operations & Fuel Telematics Audit Division • Tel: +91 96669 73085</div>
+      <div class="memo-badge">Driver Fuel Shortfall Settlement Statement</div>
+    </div>
+    <div class="ref-box">
+      <div class="ref-title">AUDIT MEMORANDUM</div>
+      <div>Ref: ${memoRef}</div>
+      <div>Date: ${todayStr}</div>
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div>
+      <div class="meta-item"><span class="meta-label">Driver Name:</span> <span class="meta-val">${d.driver_name}</span></div>
+      <div class="meta-item"><span class="meta-label">Assigned Truck:</span> <span class="meta-val">${d.truck_number}</span></div>
+    </div>
+    <div>
+      <div class="meta-item"><span class="meta-label">Audit Scope:</span> <span class="meta-val">${d.count} Disparity Incident(s)</span></div>
+      <div class="meta-item"><span class="meta-label">Generated By:</span> <span class="meta-val">Fleet Management Portal</span></div>
+    </div>
+  </div>
+
+  <div class="kpi-container">
+    <div class="kpi-box">
+      <div class="kpi-title">Pilfered Fuel</div>
+      <div class="kpi-val" style="color:#d97706;">${d.stolen_liters} L</div>
+    </div>
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Total Bleed Loss</div>
+      <div class="kpi-val">₹${d.total_bleed.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box rec">
+      <div class="kpi-title">Recouped via Advance</div>
+      <div class="kpi-val">₹${d.total_recovered.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Net Balance Due</div>
+      <div class="kpi-val">₹${d.net_unrecovered.toLocaleString("en-IN")}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:20px; text-align:center;">#</th>
+        <th>Date</th>
+        <th>Vehicle</th>
+        <th>Petrol Pump</th>
+        <th style="text-align:right;">Billed</th>
+        <th style="text-align:right;">Sensor</th>
+        <th style="text-align:right;">Shortfall</th>
+        <th style="text-align:right;">Rate</th>
+        <th style="text-align:right;">Loss (₹)</th>
+        <th style="text-align:center;">Status</th>
+        <th>Notes / Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+
+  ${exhibitsHtml ? `
+  <div style="margin: 12px 0 10px 0; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: #f8fafc; page-break-inside: avoid;">
+    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #334155; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px;">
+      Attached Fuel Slips & Telematics Evidence (Exhibit Audit Documentation)
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      ${exhibitsHtml}
+    </div>
+  </div>
+  ` : ''}
+
+  <div class="clause-box">
+    <strong>DRIVER SETTLEMENT & RECOVERY ACKNOWLEDGMENT:</strong><br>
+    I, <strong>${d.driver_name}</strong>, assigned to Vehicle No. <strong>${d.truck_number}</strong>, hereby acknowledge the fuel intake shortfall of <strong>${d.stolen_liters} Liters</strong> recorded by the IoT fuel tank sensor during the fuel refill operations itemized above. I confirm and accept the net financial loss of <strong>₹${d.net_unrecovered.toLocaleString("en-IN")}</strong>, and I agree to have this amount settled and adjusted against my driver trip advance ledger and/or salary without dispute.
+  </div>
+
+  <div class="sig-grid">
+    <div class="sig-box">
+      <div class="sig-title">Driver Signature / Thumb Impression</div>
+      <div class="sig-sub">Name: ${d.driver_name}</div>
+      <div class="sig-sub">Date: ________________________</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-title">Fleet Manager / Authorized Signature</div>
+      <div class="sig-sub">For: JAI BHAVANI CARGO</div>
+      <div class="sig-sub">Date: ${todayStr}</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+  };
+
+  // 🖨️ PRINT FLEET THEFT REPORT
+  const printFleetTheftSummary = () => {
+    const w = window.open("", "_blank", "width=900,height=900");
+    if (!w) {
+      R.error("Pop-up blocked. Please allow pop-ups to print fleet report.");
+      return;
+    }
+    const todayStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const memoRef = "JBC/FLEET-AUDIT/" + Date.now().toString().slice(-6);
+
+    const driverRowsHtml = driverBleed.driverList.map((d, i) => `
+      <tr>
+        <td style="text-align:center; font-weight:bold;">#${i + 1}</td>
+        <td style="font-weight:bold;">${d.driver_name}</td>
+        <td style="font-family:monospace;">${d.truck_number}</td>
+        <td style="text-align:center;">${d.count}</td>
+        <td style="text-align:right; font-family:monospace; color:#d97706; font-weight:bold;">${d.stolen_liters} L</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">₹${d.total_bleed.toLocaleString("en-IN")}</td>
+        <td style="text-align:right; font-family:monospace; color:#16a34a;">₹${d.total_recovered.toLocaleString("en-IN")}</td>
+        <td style="text-align:right; font-family:monospace; font-weight:bold; color:#be123c;">₹${d.net_unrecovered.toLocaleString("en-IN")}</td>
+        <td style="text-align:center; font-size:10px; font-weight:bold;">${d.risk_level.toUpperCase()}</td>
+      </tr>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Fuel Theft Audit Report</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 12px; font-size: 11px; line-height: 1.35; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .company-title { font-size: 18px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; color: #0f172a; }
+    .company-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+    .memo-badge { display: inline-block; background: #0f172a; color: #fff; font-weight: bold; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; }
+    
+    .kpi-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+    .kpi-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center; background: #ffffff; }
+    .kpi-box.bleed { background: #fff1f2; border-color: #fecdd3; }
+    .kpi-title { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+    .kpi-val { font-size: 15px; font-weight: 900; margin-top: 2px; font-family: monospace; }
+    .kpi-box.bleed .kpi-val { color: #be123c; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10px; }
+    th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; font-size: 9px; text-transform: uppercase; font-weight: bold; }
+    td { border: 1px solid #cbd5e1; padding: 5px 6px; }
+
+    .print-actions { margin-bottom: 12px; display: flex; gap: 8px; }
+    .btn { padding: 6px 12px; border-radius: 6px; border: 1px solid #0f172a; background: #0f172a; color: #fff; cursor: pointer; font-size: 11px; font-weight: bold; }
+    .btn-secondary { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions no-print">
+    <button class="btn" onclick="window.print()">🖨️ Print Report</button>
+    <button class="btn btn-secondary" onclick="window.close()">✕ Close Window</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <h1 class="company-title">JAI BHAVANI CARGO</h1>
+      <div class="company-sub">Fleet Operations & Fuel Telematics Audit Division • Tel: +91 96669 73085</div>
+      <div class="memo-badge">Comprehensive Fleet Fuel Theft & Disparity Audit</div>
+    </div>
+    <div style="text-align:right; font-size:10px; color:#64748b; font-family:monospace;">
+      <div style="font-weight:bold; font-size:11px; color:#0f172a;">EXECUTIVE AUDIT</div>
+      <div>Ref: ${memoRef}</div>
+      <div>Date: ${todayStr}</div>
+    </div>
+  </div>
+
+  <div class="kpi-container">
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Total Fleet Bleed</div>
+      <div class="kpi-val">₹${driverBleed.totalBleed.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Total Liters Pilfered</div>
+      <div class="kpi-val" style="color:#d97706;">${driverBleed.totalShortL} L</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-title">Recouped via Advances</div>
+      <div class="kpi-val" style="color:#16a34a;">₹${driverBleed.totalRec.toLocaleString("en-IN")}</div>
+    </div>
+    <div class="kpi-box bleed">
+      <div class="kpi-title">Net Unrecovered Loss</div>
+      <div class="kpi-val">₹${driverBleed.netUnrecovered.toLocaleString("en-IN")}</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:12px; margin-bottom:6px; color:#0f172a;">Driver Bleed & Shortfall Scorecard</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:25px; text-align:center;">Rank</th>
+        <th>Driver Name</th>
+        <th>Assigned Truck</th>
+        <th style="text-align:center;">Refills</th>
+        <th style="text-align:right;">Shortfall (L)</th>
+        <th style="text-align:right;">Total Bleed (₹)</th>
+        <th style="text-align:right;">Recouped (₹)</th>
+        <th style="text-align:right;">Net Due (₹)</th>
+        <th style="text-align:center;">Risk Level</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${driverRowsHtml || '<tr><td colspan="9" style="text-align:center; padding:15px; color:#64748b;">No theft records logged.</td></tr>'}
+    </tbody>
+  </table>
+
+  <div style="margin-top:30px; border-top:1px dashed #64748b; padding-top:8px; display:flex; justify-content:space-between; font-size:10px; color:#64748b;">
+    <div>Certified True Copy of Telematics Records • JAI BHAVANI CARGO</div>
+    <div>Authorized Signatory: ____________________________________</div>
+  </div>
+</body>
+</html>`;
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+  };
+
+  // Existing Mileage Drop Calculation
+  const A = 94.5;
+  const G = n.useMemo(() => {
+    const r = [];
+    return (O || []).forEach(a => {
+      const i = a.truck_id || a.vehicle_id || a.truck_number,
+        m = Object.values(M).find(re => re.id === i || re.truck_number === i) || {},
+        k = Number(a.expected_mileage || m.expected_mileage || 5.8),
+        D = parseFloat(a.distance || a.kms || a.distance_driven || 0),
+        $ = parseFloat(a.liters || a.fuel_amount || 0),
+        J = D > 0 && $ > 0 ? D / $ : 0;
+      if (J > 0 && k > 0) {
+        const oe = (k - J) / k;
+        if (oe >= 0.1) {
+          const te = Math.max(0, $ - D / k),
+            de = te * A;
+          r.push({
+            id: a.id,
+            date: a.date,
+            truck_id: i,
+            truck_number: a.truck_number || m.truck_number || "Unknown Truck",
+            driver_name: a.driver_name || m.driver_name || "Fleet Driver",
+            actual_mileage: Number(J.toFixed(2)),
+            expected_mileage: k,
+            efficiency_drop_pct: Number((oe * 100).toFixed(1)),
+            distance_driven: D,
+            liters: $,
+            excess_liters_lost: Number(te.toFixed(1)),
+            financial_loss_inr: Math.round(de),
+            notes: a.notes || "",
+            raw_log: a
+          });
+        }
+      }
+    }), r.sort((a, i) => new Date(i.date || 0) - new Date(a.date || 0));
+  }, [O, M, A]);
+
+  const L = n.useMemo(() => {
+    let r = 0, a = 0;
+    return G.forEach(i => {
+      r += i.excess_liters_lost || 0, a += i.financial_loss_inr || 0;
+    }), {
+      totalAnomalies: G.length,
+      totalLitersLost: Math.round(r),
+      totalCostLost: Math.round(a)
+    };
+  }, [G]);
+
+  const fmtInr = (amt) => "₹" + Number(amt || 0).toLocaleString("en-IN");
+
+  return e.jsxs("div", {
+    className: "space-y-4 sm:space-y-6 pb-20 sm:pb-12 text-slate-100",
+    children: [
+      // Top Header Card
+      e.jsxs("div", {
+        className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl",
+        children: [
+          e.jsxs("div", {
+            className: "space-y-1",
+            children: [
+              e.jsxs("div", {
+                className: "flex flex-wrap items-center gap-2",
+                children: [
+                  e.jsx(E, {
+                    className: "bg-rose-500/20 text-rose-300 border-rose-500/30 text-[10px] font-mono font-bold",
+                    children: "AI PILFERAGE & SENSOR FRAUD SENTINEL"
+                  }),
+                  e.jsx("span", { className: "text-xs text-slate-400", children: "Live Telematics & Disparity Tracking" })
+                ]
+              }),
+              e.jsxs("h2", {
+                className: "text-lg sm:text-2xl font-black text-white font-heading flex items-center gap-2",
+                children: [
+                  e.jsx(Ct, { className: "w-5 h-5 sm:w-6 sm:h-6 text-rose-400 shrink-0" }),
+                  " Fuel Theft Prevention & Driver Bleed Analytics"
+                ]
+              }),
+              e.jsx("p", {
+                className: "text-xs text-slate-400 mt-0.5",
+                children: "Compare billed fuel slips against IoT tank sensor ingest, monitor driver bleed, and recover losses with 1-click salary deductions."
+              })
+            ]
+          }),
+          e.jsxs("div", {
+            className: "flex flex-wrap items-center gap-2 w-full sm:w-auto",
+            children: [
+              e.jsxs(y, {
+                size: "sm",
+                variant: "outline",
+                onClick: printFleetTheftSummary,
+                className: "flex-1 sm:flex-initial h-9 rounded-xl border-slate-700 bg-slate-800 text-xs font-bold shadow-sm text-slate-200 hover:bg-slate-700",
+                children: [e.jsx("span", { className: "mr-1.5", children: "🖨️" }), " Print Fleet Audit"]
+              }),
+              e.jsxs(y, {
+                size: "sm",
+                variant: "outline",
+                onClick: () => { u?.(); fetchTheftReports(); R.info("Refreshed telematics and theft reports."); },
+                className: "flex-1 sm:flex-initial h-9 rounded-xl border-slate-700 bg-slate-800 text-xs font-bold shadow-sm text-slate-200 hover:bg-slate-700",
+                children: [e.jsx(Lt, { className: "w-3.5 h-3.5 mr-1.5" }), " Refresh Telematics"]
+              })
+            ]
+          })
+        ]
+      }),
+
+      // Sub-Tab Switcher Pills (Horizontal swipe on mobile)
+      e.jsxs("div", {
+        className: "flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900/80 border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar",
+        children: [
+          e.jsxs("button", {
+            type: "button",
+            onClick: () => setSubTab("sensor_bleed"),
+            className: "flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-all " + (subTab === "sensor_bleed" ? "bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg" : "text-slate-400 hover:text-white"),
+            children: [
+              "🩸 Driver Bleed & Sensor Scams",
+              e.jsx(E, { className: "ml-1 bg-white/20 text-white font-mono text-[10px] px-1.5 py-0 border-none", children: driverBleed.totalIncidents })
+            ]
+          }),
+          e.jsxs("button", {
+            type: "button",
+            onClick: () => setSubTab("mileage_anomaly"),
+            className: "flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-all " + (subTab === "mileage_anomaly" ? "bg-slate-800 text-white shadow" : "text-slate-400 hover:text-white"),
+            children: [
+              "📉 Mileage Drop Sentinel",
+              e.jsx(E, { className: "ml-1 bg-slate-700 text-slate-300 font-mono text-[10px] px-1.5 py-0 border-none", children: L.totalAnomalies })
+            ]
+          })
+        ]
+      }),
+
+      // SUB-TAB 1: DRIVER BLEED & SENSOR THEFT
+      subTab === "sensor_bleed" ? e.jsxs("div", {
+        className: "space-y-4 sm:space-y-6",
+        children: [
+          // 4 KPI Cards (Responsive 2x2 grid on mobile, 4-col on desktop)
+          e.jsxs("div", {
+            className: "grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4",
+            children: [
+              e.jsxs(N, {
+                className: "rounded-2xl border-rose-500/30 bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 p-3 sm:p-4 space-y-1 shadow-lg",
+                children: [
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-rose-300 uppercase font-bold", children: "Total Fleet Bleed" }),
+                  e.jsx("div", { className: "text-lg sm:text-2xl font-black text-rose-400 font-mono", children: fmtInr(driverBleed.totalBleed) }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-400 truncate", children: "Sensor shortfall loss" })
+                ]
+              }),
+              e.jsxs(N, {
+                className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
+                children: [
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Diesel Pilfered" }),
+                  e.jsx("div", { className: "text-lg sm:text-2xl font-black text-amber-400 font-mono", children: driverBleed.totalShortL.toLocaleString("en-IN") + " L" }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-400 truncate", children: "Billed vs sensor fill" })
+                ]
+              }),
+              e.jsxs(N, {
+                className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
+                children: [
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Top Bleeding Driver" }),
+                  e.jsx("div", { className: "text-xs sm:text-base font-black text-white truncate", children: driverBleed.topBleeder ? driverBleed.topBleeder.driver_name : "No Bleeders" }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] font-mono text-rose-400 font-bold truncate", children: driverBleed.topBleeder ? "Loss " + fmtInr(driverBleed.topBleeder.total_bleed) : "Zero pilferage" })
+                ]
+              }),
+              e.jsxs(N, {
+                className: "rounded-2xl border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 p-3 sm:p-4 space-y-1 shadow-lg",
+                children: [
+                  e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-emerald-300 uppercase font-bold", children: "Recouped via Advance" }),
+                  e.jsx("div", { className: "text-lg sm:text-2xl font-black text-emerald-400 font-mono", children: fmtInr(driverBleed.totalRec) }),
+                  e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-400 truncate", children: fmtInr(driverBleed.netUnrecovered) + " unrecovered" })
+                ]
+              })
+            ]
+          }),
+
+          // Search Bar
+          e.jsxs("div", {
+            className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5",
+            children: [
+              e.jsx("input", {
+                placeholder: "Search bleeder by driver name, truck number...",
+                value: driverSearch,
+                onChange: e => setDriverSearch(e.target.value),
+                className: "w-full sm:w-80 h-10 px-3.5 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
+              }),
+              e.jsxs("span", {
+                className: "text-xs text-slate-400 font-mono text-right",
+                children: ["Showing ", filteredDrivers.length, " driver(s) with recorded shortfalls"]
+              })
+            ]
+          }),
+
+          // Driver Leaderboard Card (Responsive: Native Card View on Mobile, Full Table on Desktop)
+          e.jsxs(N, {
+            className: "rounded-3xl border-slate-800 bg-slate-900/90 overflow-hidden shadow-xl",
+            children: [
+              e.jsx("div", {
+                className: "p-4 sm:p-5 border-b border-slate-800 bg-slate-900/60",
+                children: e.jsxs("div", {
+                  children: [
+                    e.jsx("h3", { className: "text-sm sm:text-base font-bold text-white", children: "Driver Bleed Leaderboard & Risk Scorecard" }),
+                    e.jsx("p", { className: "text-xs text-slate-400 mt-0.5", children: "Ranks drivers by company rupees bled via fuel dispenser short-filling." })
+                  ]
+                })
+              }),
+
+              // 📱 Mobile Cards View (Hidden on md+, Visible on mobile)
+              e.jsx("div", {
+                className: "md:hidden p-3 space-y-3",
+                children: filteredDrivers.length === 0 ? e.jsx("div", {
+                  className: "text-center py-12 text-slate-500 text-xs",
+                  children: theftReports.length === 0 ? "No fuel sensor theft records yet. Use 'Report Scam' while logging a fuel refill to audit sensor shortfalls." : "No drivers match your search."
+                }) : filteredDrivers.map((d, idx) => e.jsxs("div", {
+                  key: d.driver_id || d.driver_name,
+                  onClick: () => setSelectedDriver(d),
+                  className: "p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/90 space-y-3 cursor-pointer hover:border-slate-700 active:scale-[0.99] transition-all shadow-md",
+                  children: [
+                    // Header: Rank, Driver, Truck, Risk
+                    e.jsxs("div", {
+                      className: "flex items-start justify-between gap-2",
+                      children: [
+                        e.jsxs("div", {
+                          className: "flex items-center gap-2.5",
+                          children: [
+                            e.jsx("span", {
+                              className: "inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black font-mono shrink-0 " + (idx === 0 ? "bg-rose-500/20 text-rose-300 border border-rose-500/40" : "bg-slate-800 text-slate-300"),
+                              children: "#" + (idx + 1)
+                            }),
+                            e.jsxs("div", {
+                              children: [
+                                e.jsx("div", { className: "font-bold text-white text-sm leading-tight", children: d.driver_name }),
+                                e.jsxs("div", { className: "text-[11px] text-slate-400 font-mono mt-0.5", children: ["Truck: ", d.truck_number] })
+                              ]
+                            })
+                          ]
+                        }),
+                        e.jsx("div", {
+                          children: d.risk_level === "critical"
+                            ? e.jsx(E, { className: "bg-rose-500/20 text-rose-300 border-rose-500/40 text-[10px] font-bold px-2 py-0.5", children: "🔴 Critical" })
+                            : d.risk_level === "moderate"
+                            ? e.jsx(E, { className: "bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-bold px-2 py-0.5", children: "🟡 Moderate" })
+                            : e.jsx(E, { className: "bg-blue-500/20 text-blue-300 border-blue-500/40 text-[10px] font-bold px-2 py-0.5", children: "🔵 Watchlist" })
+                        })
+                      ]
+                    }),
+
+                    // 3 Metric Tiles
+                    e.jsxs("div", {
+                      className: "grid grid-cols-3 gap-2 text-center text-xs font-mono pt-0.5",
+                      children: [
+                        e.jsxs("div", {
+                          className: "p-2 rounded-xl bg-slate-900 border border-slate-800",
+                          children: [
+                            e.jsx("span", { className: "text-[9px] text-slate-400 uppercase block font-sans", children: "Pilfered" }),
+                            e.jsxs("span", { className: "font-bold text-amber-400 text-xs", children: [d.stolen_liters.toLocaleString("en-IN"), " L"] }),
+                            e.jsxs("span", { className: "text-[9px] text-slate-500 block font-sans mt-0.5", children: [d.count, " refill(s)"] })
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "p-2 rounded-xl bg-rose-950/30 border border-rose-500/20",
+                          children: [
+                            e.jsx("span", { className: "text-[9px] text-rose-400/80 uppercase block font-sans font-bold", children: "Total Bleed" }),
+                            e.jsx("span", { className: "font-black text-rose-400 text-xs", children: fmtInr(d.total_bleed) }),
+                            e.jsx("span", { className: "text-[9px] text-rose-300/60 block font-sans mt-0.5", children: "Company loss" })
+                          ]
+                        }),
+                        e.jsxs("div", {
+                          className: "p-2 rounded-xl bg-emerald-950/20 border border-emerald-500/20",
+                          children: [
+                            e.jsx("span", { className: "text-[9px] text-emerald-400/80 uppercase block font-sans font-bold", children: "Recouped" }),
+                            e.jsx("span", { className: "font-black text-emerald-400 text-xs", children: fmtInr(d.total_recovered) }),
+                            e.jsx("span", { className: "text-[9px] text-emerald-300/60 block font-sans mt-0.5", children: d.net_unrecovered > 0 ? "Pending" : "Cleared" })
+                          ]
+                        })
+                      ]
+                    }),
+
+                    // Mobile Action Button Row with Print
+                    e.jsxs("div", {
+                      className: "flex items-center gap-2 pt-1",
+                      children: [
+                        e.jsx(y, {
+                          size: "sm",
+                          variant: "outline",
+                          onClick: ev => { ev.stopPropagation(); setSelectedDriver(d); },
+                          className: "flex-1 h-8 rounded-xl border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold",
+                          children: "Audit Timeline (" + d.count + ")"
+                        }),
+                        e.jsx(y, {
+                          size: "sm",
+                          variant: "outline",
+                          onClick: ev => { ev.stopPropagation(); printDriverSettlement(d); },
+                          className: "h-8 px-3 rounded-xl border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-bold",
+                          children: "🖨️ Print"
+                        }),
+                        e.jsx(y, {
+                          size: "sm",
+                          variant: "outline",
+                          onClick: ev => { ev.stopPropagation(); handleDeleteAllDriverTheftReports(d); },
+                          className: "h-8 px-2.5 rounded-xl border-rose-500/40 bg-rose-950/50 hover:bg-rose-600 hover:text-white text-rose-300 text-xs font-bold",
+                          title: "Delete all fraud sentinel logs for this driver",
+                          children: "🗑️"
+                        })
+                      ]
+                    })
+                  ]
+                }))
+              }),
+
+              // 🖥️ Desktop Table View (Hidden on mobile, Visible on md+)
+              e.jsx("div", {
+                className: "hidden md:block overflow-x-auto",
+                children: e.jsxs("table", {
+                  className: "w-full text-left text-xs",
+                  children: [
+                    e.jsx("thead", {
+                      className: "bg-slate-950/80 border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400",
+                      children: e.jsxs("tr", {
+                        children: [
+                          e.jsx("th", { className: "p-3 pl-5 text-center w-12", children: "Rank" }),
+                          e.jsx("th", { className: "p-3", children: "Driver & Truck" }),
+                          e.jsx("th", { className: "p-3 text-center", children: "Refills" }),
+                          e.jsx("th", { className: "p-3 text-right", children: "Liters Pilfered" }),
+                          e.jsx("th", { className: "p-3 text-right", children: "Total Bleed (₹)" }),
+                          e.jsx("th", { className: "p-3 text-right", children: "Recovered (₹)" }),
+                          e.jsx("th", { className: "p-3 text-center", children: "Risk Level" }),
+                          e.jsx("th", { className: "p-3 pr-5 text-right", children: "Actions" })
+                        ]
+                      })
+                    }),
+                    e.jsx("tbody", {
+                      className: "divide-y divide-slate-800/60",
+                      children: filteredDrivers.length === 0 ? e.jsx("tr", {
+                        children: e.jsx("td", {
+                          colSpan: 8,
+                          className: "text-center py-12 text-slate-500 text-xs",
+                          children: theftReports.length === 0 ? "No fuel sensor theft records yet. Use 'Report Scam' while logging a fuel refill to audit sensor shortfalls." : "No drivers match your search."
+                        })
+                      }) : filteredDrivers.map((d, idx) => e.jsxs("tr", {
+                        key: d.driver_id || d.driver_name,
+                        onClick: () => setSelectedDriver(d),
+                        className: "hover:bg-slate-800/40 transition-colors cursor-pointer",
+                        children: [
+                          e.jsx("td", {
+                            className: "p-3 pl-5 text-center font-mono font-bold text-slate-400",
+                            children: idx === 0 ? e.jsx("span", { className: "inline-flex items-center justify-center w-6 h-6 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40", children: "#1" }) : "#" + (idx + 1)
+                          }),
+                          e.jsxs("td", {
+                            className: "p-3",
+                            children: [
+                              e.jsx("div", { className: "font-bold text-white text-sm", children: d.driver_name }),
+                              e.jsxs("span", { className: "text-[10px] text-slate-400 font-mono", children: ["Truck: ", d.truck_number] })
+                            ]
+                          }),
+                          e.jsx("td", {
+                            className: "p-3 text-center",
+                            children: e.jsxs(E, { variant: "outline", className: "border-slate-700 bg-slate-800 text-slate-300 font-mono text-[10px]", children: [d.count, " refill(s)"] })
+                          }),
+                          e.jsx("td", {
+                            className: "p-3 text-right font-mono font-bold text-amber-400",
+                            children: d.stolen_liters.toLocaleString("en-IN") + " L"
+                          }),
+                          e.jsx("td", {
+                            className: "p-3 text-right font-mono font-black text-sm text-rose-400",
+                            children: fmtInr(d.total_bleed)
+                          }),
+                          e.jsx("td", {
+                            className: "p-3 text-right font-mono text-xs text-emerald-400 font-bold",
+                            children: fmtInr(d.total_recovered)
+                          }),
+                          e.jsx("td", {
+                            className: "p-3 text-center",
+                            children: d.risk_level === "critical" ? e.jsx(E, { className: "bg-rose-500/20 text-rose-300 border-rose-500/40 text-[10px] font-bold animate-pulse", children: "🔴 Critical Bleeder" }) : d.risk_level === "moderate" ? e.jsx(E, { className: "bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-bold", children: "🟡 Moderate Bleed" }) : e.jsx(E, { className: "bg-blue-500/20 text-blue-300 border-blue-500/40 text-[10px] font-bold", children: "🔵 Watchlist" })
+                          }),
+                          e.jsx("td", {
+                            className: "p-3 pr-5 text-right",
+                            onClick: ev => ev.stopPropagation(),
+                            children: e.jsxs("div", {
+                              className: "flex items-center justify-end gap-1.5",
+                              children: [
+                                e.jsx(y, {
+                                  size: "sm",
+                                  variant: "outline",
+                                  onClick: () => setSelectedDriver(d),
+                                  className: "h-7 text-xs px-2.5 rounded-lg border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold",
+                                  children: "Audit Timeline"
+                                }),
+                                e.jsx(y, {
+                                  size: "sm",
+                                  variant: "outline",
+                                  onClick: ev => { ev.stopPropagation(); printDriverSettlement(d); },
+                                  className: "h-7 text-xs px-2 rounded-lg border-rose-500/30 bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 font-bold",
+                                  children: "🖨️ Print"
+                                })
+                              ]
+                            })
+                          })
+                        ]
+                      }))
+                    })
+                  ]
+                })
+              })
+            ]
+          }),
+
+          // Station Collusion Hotspots Card
+          driverBleed.stationList.length > 0 ? e.jsxs(N, {
+            className: "rounded-3xl border-slate-800 bg-slate-900/80 p-4 sm:p-5 space-y-3",
+            children: [
+              e.jsxs("div", {
+                className: "border-b border-slate-800 pb-2.5",
+                children: [
+                  e.jsx("h3", { className: "text-sm font-bold text-white", children: "⛽ Petrol Pump Collusion Hotspots" }),
+                  e.jsx("p", { className: "text-[11px] text-slate-400", children: "Petrol stations where trucks repeatedly report sensor shortfalls across multiple refills." })
+                ]
+              }),
+              e.jsx("div", {
+                className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3",
+                children: driverBleed.stationList.map(st => e.jsxs("div", {
+                  key: st.pump_name,
+                  className: "p-3 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5",
+                  children: [
+                    e.jsxs("div", {
+                      className: "flex items-center justify-between",
+                      children: [
+                        e.jsx("span", { className: "font-bold text-xs text-white truncate max-w-[200px]", children: st.pump_name }),
+                        e.jsxs(E, { className: "bg-rose-500/20 text-rose-300 border-rose-500/30 text-[10px] font-mono", children: [st.count, " theft(s)"] })
+                      ]
+                    }),
+                    e.jsxs("div", {
+                      className: "flex items-baseline justify-between pt-1",
+                      children: [
+                        e.jsx("span", { className: "text-[11px] text-slate-400", children: "Total Lost:" }),
+                        e.jsxs("span", { className: "font-mono font-black text-rose-400 text-xs", children: [fmtInr(st.total_loss), " (", st.stolen_liters, " L)"] })
+                      ]
+                    })
+                  ]
+                }))
+              })
+            ]
+          }) : null
+        ]
+      }) : (
+        // SUB-TAB 2: MILEAGE DROP SENTINEL (EXISTING)
+        e.jsxs("div", {
+          className: "space-y-4 sm:space-y-6",
+          children: [
+            // KPI Cards
+            e.jsxs("div", {
+              className: "grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4",
+              children: [
+                e.jsxs(N, {
+                  className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
+                  children: [
+                    e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Flagged Drops" }),
+                    e.jsxs("div", { className: "text-xl sm:text-2xl font-black text-rose-400 font-mono flex items-center gap-1.5", children: [e.jsx(Se, { className: "w-4 h-4 sm:w-5 sm:h-5 text-rose-400 shrink-0" }), " ", L.totalAnomalies] }),
+                    e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-500 truncate", children: ">10% drop" })
+                  ]
+                }),
+                e.jsxs(N, {
+                  className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
+                  children: [
+                    e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Diesel Wasted" }),
+                    e.jsxs("div", { className: "text-xl sm:text-2xl font-black text-amber-400 font-mono", children: [L.totalLitersLost.toLocaleString("en-IN"), " L"] }),
+                    e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-500 truncate", children: "Excess liters vs target" })
+                  ]
+                }),
+                e.jsxs(N, {
+                  className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
+                  children: [
+                    e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Cost Loss" }),
+                    e.jsx("div", { className: "text-xl sm:text-2xl font-black text-emerald-400 font-mono", children: fmtInr(L.totalCostLost) }),
+                    e.jsx("p", { className: "text-[9px] sm:text-[10px] text-slate-500 truncate", children: "Lost fuel value" })
+                  ]
+                }),
+                e.jsxs(N, {
+                  className: "rounded-2xl border-slate-800 bg-slate-900/80 p-3 sm:p-4 space-y-1",
+                  children: [
+                    e.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase font-bold", children: "Sentinel Status" }),
+                    e.jsx("div", { className: "text-base sm:text-lg font-black text-white truncate", children: L.totalAnomalies > 0 ? "Action Required" : "Optimal" }),
+                    e.jsx("p", { className: "text-[9px] sm:text-[10px] font-mono text-slate-400", children: L.totalAnomalies + " flagged" })
+                  ]
+                })
+              ]
+            }),
+
+            // Search Bar
+            e.jsx("input", {
+              placeholder: "Search truck number, driver...",
+              value: K,
+              onChange: e => P(e.target.value),
+              className: "w-full sm:w-72 h-10 px-3.5 rounded-xl border border-slate-800 bg-slate-900 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
+            }),
+
+            // Mileage Drops List
+            e.jsxs(N, {
+              className: "rounded-3xl border-slate-800 bg-slate-900/90 overflow-hidden shadow-xl",
+              children: [
+                e.jsx("div", {
+                  className: "p-4 sm:p-5 border-b border-slate-800 bg-slate-900/60",
+                  children: e.jsxs("div", {
+                    children: [
+                      e.jsx("h3", { className: "text-sm sm:text-base font-bold text-white", children: "Mileage Drop Incidents (>10% Below Target)" }),
+                      e.jsx("p", { className: "text-xs text-slate-400 mt-0.5", children: "Trips where actual mileage plummeted vs the vehicle target mileage." })
+                    ]
+                  })
+                }),
+                e.jsx("div", {
+                  className: "p-3 sm:p-4 space-y-3",
+                  children: G.length === 0 ? e.jsx("div", {
+                    className: "text-center py-12 text-slate-500 text-xs",
+                    children: "No mileage drop anomalies detected. Fleet is operating within normal efficiency."
+                  }) : G.map(r => e.jsxs("div", {
+                    key: r.id,
+                    className: "p-3.5 sm:p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-2.5",
+                    children: [
+                      e.jsxs("div", {
+                        className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2",
+                        children: [
+                          e.jsxs("div", {
+                            className: "flex items-center gap-2",
+                            children: [
+                              e.jsx(E, { className: "bg-rose-500/20 text-rose-300 font-mono text-[10px]", children: r.date ? r.date.split("T")[0] : "—" }),
+                              e.jsx("span", { className: "font-mono font-bold text-white text-sm", children: r.truck_number }),
+                              e.jsxs("span", { className: "text-xs text-slate-400", children: ["• ", r.driver_name] })
+                            ]
+                          }),
+                          e.jsx(y, {
+                            size: "sm",
+                            onClick: () => c(r),
+                            className: "h-8 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow",
+                            children: "Investigate Drop"
+                          })
+                        ]
+                      }),
+                      e.jsxs("div", {
+                        className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono pt-1",
+                        children: [
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-slate-900 border border-slate-800", children: [e.jsx("span", { className: "text-[9px] text-slate-400 block font-sans", children: "Actual Mileage" }), r.actual_mileage, " km/L"] }),
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-slate-900 border border-slate-800", children: [e.jsx("span", { className: "text-[9px] text-slate-400 block font-sans", children: "Expected" }), r.expected_mileage, " km/L"] }),
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-rose-950/40 border border-rose-500/20 text-rose-400 font-bold", children: [e.jsx("span", { className: "text-[9px] text-rose-400/80 block font-sans", children: "Efficiency Drop" }), "-", r.efficiency_drop_pct, "%"] }),
+                          e.jsxs("div", { className: "p-2 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 font-black", children: [e.jsx("span", { className: "text-[9px] text-rose-300/80 block font-sans", children: "Loss Value" }), fmtInr(r.financial_loss_inr)] })
+                        ]
+                      })
+                    ]
+                  }))
+                })
+              ]
+            })
+          ]
+        })
+      ),
+
+      // Driver Audit Drilldown Modal (Mobile Drawer Sheet on phones, Center Modal on Desktops)
+      selectedDriver ? e.jsx("div", {
+        className: "fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in-50",
+        children: e.jsxs("div", {
+          className: "bg-slate-950 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 max-w-2xl w-full max-h-[92vh] sm:max-h-[85vh] overflow-y-auto space-y-4 text-white shadow-2xl",
+          children: [
+            // Modal Header
+            e.jsxs("div", {
+              className: "flex items-start justify-between border-b border-slate-800 pb-3",
+              children: [
+                e.jsxs("div", {
+                  className: "space-y-0.5",
+                  children: [
+                    e.jsxs("h3", { className: "text-base sm:text-lg font-bold text-white flex items-center gap-2", children: [e.jsx(Ct, { className: "w-5 h-5 text-rose-400 shrink-0" }), "Fuel Theft Audit: ", selectedDriver.driver_name] }),
+                    e.jsxs("p", { className: "text-xs text-slate-400", children: ["Truck: ", selectedDriver.truck_number, " • Total Shortfall: ", selectedDriver.stolen_liters, " L"] })
+                  ]
+                }),
+                e.jsx(y, { size: "sm", variant: "ghost", onClick: () => setSelectedDriver(null), className: "h-8 w-8 text-slate-400 hover:text-white p-0 rounded-full", children: "✕" })
+              ]
+            }),
+            // Profile KPI Banner
+            e.jsxs("div", {
+              className: "grid grid-cols-3 gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-center",
+              children: [
+                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono block", children: "Total Bleed" }), e.jsx("div", { className: "text-sm sm:text-base font-black font-mono text-rose-400 mt-0.5", children: fmtInr(selectedDriver.total_bleed) })] }),
+                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono block", children: "Recouped" }), e.jsx("div", { className: "text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5", children: fmtInr(selectedDriver.total_recovered) })] }),
+                e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 uppercase font-mono block", children: "Net Loss" }), e.jsx("div", { className: "text-sm sm:text-base font-black font-mono text-amber-400 mt-0.5", children: fmtInr(selectedDriver.net_unrecovered) })] })
+              ]
+            }),
+            // Incidents List
+            e.jsxs("div", {
+              className: "space-y-3 pt-1",
+              children: [
+                e.jsxs("h4", { className: "text-xs font-bold uppercase tracking-wider text-slate-400", children: ["Theft & Sensor Disparity Incidents (", selectedDriver.incidents.length, ")"] }),
+                selectedDriver.incidents.map((inc, i) => {
+                  const isRec = inc.status === "Deducted from Salary / Advance" || !!inc.advance_deduction_id;
+                  const billFiles = inc.fuel_bill_file ? (Array.isArray(inc.fuel_bill_file) ? inc.fuel_bill_file : [inc.fuel_bill_file]) : [];
+                  const proofFiles = inc.sensor_proof_file ? (Array.isArray(inc.sensor_proof_file) ? inc.sensor_proof_file : [inc.sensor_proof_file]) : [];
+                  const evidenceItems = [];
+                  billFiles.forEach((f, fi) => {
+                    evidenceItems.push({
+                      title: "Pump Bill Slip #" + (fi + 1),
+                      tag: "Pump Slip",
+                      url: B.files ? B.files.getUrl(inc, f) : ("https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/" + inc.id + "/" + f)
+                    });
+                  });
+                  proofFiles.forEach((f, fi) => {
+                    evidenceItems.push({
+                      title: "Sensor Graph #" + (fi + 1),
+                      tag: "IoT Graph",
+                      url: B.files ? B.files.getUrl(inc, f) : ("https://www.jaibhavanicargo.com/api/files/fuel_theft_reports/" + inc.id + "/" + f)
+                    });
+                  });
+                  if (evidenceItems.length === 0 && inc.expense_id) {
+                    evidenceItems.push({
+                      title: "Fuel Expense Receipt",
+                      tag: "Fuel Bill",
+                      url: "https://www.jaibhavanicargo.com/api/files/expenses/" + (inc.expense_id.id || inc.expense_id) + "/fuel_1795115668351_whats_app_image_2026_11_20_at_00_42_45_7kcrmgo7of.jpeg"
+                    });
+                  }
+                  return e.jsxs("div", {
+                    key: inc.id || i,
+                    className: "p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs",
+                    children: [
+                      e.jsxs("div", {
+                        className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2",
+                        children: [
+                          e.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [e.jsx(E, { className: "bg-rose-500/20 text-rose-300 font-mono text-[10px]", children: inc.incident_date ? inc.incident_date.split("T")[0] : "—" }), e.jsx("span", { className: "font-mono font-bold text-white", children: inc.truck_number }), inc.petrol_pump_name ? e.jsxs("span", { className: "text-slate-400 text-[11px]", children: ["@ ", inc.petrol_pump_name] }) : null] }),
+                          e.jsxs("div", {
+                            className: "flex items-center gap-2 self-end sm:self-auto",
+                            children: [
+                              e.jsx(E, { className: isRec ? "bg-emerald-500/20 text-emerald-300 text-[10px]" : "bg-amber-500/20 text-amber-300 text-[10px]", children: inc.status || "Reported" }),
+                              !isRec ? e.jsxs(y, {
+                                size: "sm",
+                                disabled: isDeducting,
+                                onClick: () => handleQuickDeduct(inc),
+                                className: "h-7 text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg px-2.5",
+                                children: ["⚡ Deduct ", fmtInr(inc.bleeding_amount)]
+                              }) : null,
+                              e.jsx(y, {
+                                size: "sm",
+                                variant: "outline",
+                                onClick: () => handleDeleteTheftReport(inc),
+                                className: "h-7 text-xs border-rose-500/40 bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-300 font-bold rounded-lg px-2",
+                                title: "Delete this fraud sentinel log",
+                                children: "🗑️ Delete"
+                              })
+                            ]
+                          })
+                        ]
+                      }),
+                      e.jsxs("div", {
+                        className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono",
+                        children: [
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-slate-950", children: [e.jsx("span", { className: "text-[9px] text-slate-500 block font-sans", children: "BILLED" }), inc.billed_liters, " L"] }),
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-slate-950", children: [e.jsx("span", { className: "text-[9px] text-slate-500 block font-sans", children: "SENSOR" }), inc.sensor_liters, " L"] }),
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-rose-950/40 text-rose-400 font-bold", children: [e.jsx("span", { className: "text-[9px] text-rose-400/70 block font-sans", children: "SHORT" }), "-", inc.stolen_liters, " L"] }),
+                          e.jsxs("div", { className: "p-1.5 rounded-lg bg-rose-950/50 text-rose-300 font-black", children: [e.jsx("span", { className: "text-[9px] text-rose-300/70 block font-sans", children: "LOSS" }), fmtInr(inc.bleeding_amount)] })
+                        ]
+                      }),
+                      inc.notes ? e.jsxs("p", { className: "text-[11px] text-slate-400 italic bg-slate-950/40 p-2 rounded-lg", children: ['"', inc.notes, '"'] }) : null,
+                      evidenceItems.length > 0 ? e.jsxs("div", {
+                        className: "pt-2 border-t border-slate-800 space-y-2",
+                        children: [
+                          e.jsxs("div", {
+                            className: "flex items-center justify-between text-[11px]",
+                            children: [
+                              e.jsxs("span", {
+                                className: "font-bold text-slate-300 flex items-center gap-1.5",
+                                children: ["📸 Attached Receipts & Evidence (", evidenceItems.length, ")"]
+                              }),
+                              e.jsx("span", {
+                                className: "text-[10px] text-slate-500 italic",
+                                children: "Tap image to enlarge"
+                              })
+                            ]
+                          }),
+                          e.jsx("div", {
+                            className: "grid grid-cols-2 sm:grid-cols-3 gap-2.5",
+                            children: evidenceItems.map((ev, evi) => e.jsxs("div", {
+                              key: evi,
+                              onClick: () => setPreviewDocUrl(ev.url),
+                              className: "group relative rounded-xl border border-slate-700/80 bg-slate-950 p-1.5 cursor-pointer hover:border-rose-500/70 transition shadow hover:scale-[1.02]",
+                              children: [
+                                e.jsx("div", {
+                                  className: "h-28 w-full rounded-lg overflow-hidden bg-slate-900 flex items-center justify-center",
+                                  children: e.jsx("img", {
+                                    src: ev.url,
+                                    alt: ev.title,
+                                    className: "h-full w-full object-cover group-hover:opacity-90 transition"
+                                  })
+                                }),
+                                e.jsxs("div", {
+                                  className: "flex items-center justify-between pt-1 px-0.5",
+                                  children: [
+                                    e.jsx("span", {
+                                      className: "text-[10px] font-bold text-white truncate max-w-[100px]",
+                                      children: ev.tag
+                                    }),
+                                    e.jsx("span", {
+                                      className: "text-[9px] font-mono text-rose-300 group-hover:underline",
+                                      children: "🔍 View"
+                                    })
+                                  ]
+                                })
+                              ]
+                            }))
+                          })
+                        ]
+                      }) : null
+                    ]
+                  });
+                })
+              ]
+            }),
+            // Bottom Action Bar: Print Settlement Memo & Close
+            e.jsxs("div", {
+              className: "flex flex-col sm:flex-row items-center gap-2 pt-2",
+              children: [
+                e.jsxs(y, {
+                  onClick: () => printDriverSettlement(selectedDriver),
+                  className: "w-full sm:w-auto flex-1 h-10 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2",
+                  children: [
+                    e.jsx("span", { className: "text-base", children: "🖨️" }),
+                    " Print Settlement Memo (₹" + selectedDriver.net_unrecovered.toLocaleString("en-IN") + " Due)"
+                  ]
+                }),
+                e.jsx(y, {
+                  onClick: () => setSelectedDriver(null),
+                  className: "w-full sm:w-auto h-10 px-5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 text-xs font-bold",
+                  children: "Close Audit"
+                })
+              ]
+            })
+          ]
+        })
+      }) : null,
+
+      // High-Resolution Responsive Lightbox Previewer
+      previewDocUrl ? e.jsx("div", {
+        className: "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md",
+        onClick: () => setPreviewDocUrl(null),
+        children: e.jsxs("div", {
+          className: "bg-zinc-950 border border-zinc-800 rounded-3xl p-4 max-w-2xl w-full text-white space-y-3 shadow-2xl animate-in fade-in zoom-in-95",
+          onClick: ev => ev.stopPropagation(),
+          children: [
+            e.jsxs("div", {
+              className: "flex items-center justify-between border-b border-zinc-800 pb-2",
+              children: [
+                e.jsxs("div", {
+                  className: "flex items-center gap-2",
+                  children: [
+                    e.jsx("span", { className: "text-base", children: "📷" }),
+                    e.jsx("span", { className: "text-sm font-bold text-white", children: "Attached Fuel Receipt / Sensor Proof Preview" })
+                  ]
+                }),
+                e.jsx("button", {
+                  type: "button",
+                  onClick: () => setPreviewDocUrl(null),
+                  className: "h-8 w-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center font-bold text-sm",
+                  children: "✕"
+                })
+              ]
+            }),
+            e.jsx("div", {
+              className: "max-h-[70vh] flex items-center justify-center overflow-auto p-2 bg-black/60 rounded-2xl border border-zinc-800/80",
+              children: e.jsx("img", {
+                src: previewDocUrl,
+                alt: "Evidence Receipt",
+                className: "max-h-[65vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+              })
+            }),
+            e.jsxs("div", {
+              className: "flex items-center justify-between pt-1",
+              children: [
+                e.jsx("a", {
+                  href: previewDocUrl,
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                  className: "text-xs text-rose-400 hover:text-rose-300 font-bold underline flex items-center gap-1",
+                  children: "↗ Open Full Resolution in New Tab"
+                }),
+                e.jsx(y, {
+                  size: "sm",
+                  onClick: () => setPreviewDocUrl(null),
+                  className: "h-8 px-4 bg-zinc-800 text-white hover:bg-zinc-700 text-xs font-bold rounded-xl",
+                  children: "Close"
+                })
+              ]
+            })
+          ]
+        })
+      }) : null,
+
+      // Investigation Modal (Existing)
+      W && e.jsx(Mt, {
+        isOpen: !!W,
+        onClose: () => c(null),
+        log: W,
+        onSuccess: () => { u?.(); }
+      })
+    ]
+  });
+}const qe=["#10B981","#6366F1","#F59E0B","#EF4444","#8B5CF6","#EC4899"],Ws=({cards:t=[],transactions:txs=[],fuelLogs:fls=[]})=>{const now=new Date();const curYear=now.getFullYear();const curMonthIdx=now.getMonth();const curMonth=curYear+"-"+String(curMonthIdx+1).padStart(2,"0");const isCurrentMonth=(dateVal)=>{if(!dateVal)return false;const s=String(dateVal).trim();if(s.length>=7&&s.slice(0,7)===curMonth)return true;const dt=new Date(s);return!isNaN(dt.getTime())&&dt.getFullYear()===curYear&&dt.getMonth()===curMonthIdx;};let locLogs=[];try{const raw=localStorage.getItem('jc_fuel_logs');if(raw)locLogs=JSON.parse(raw);}catch(e){}const rawItems=[];(txs||[]).forEach(tx=>{if(!tx)return;const amt=Number(tx.fuel_amount||tx.amount||0);if(amt<=0)return;rawItems.push({id:tx.id||"",fuel_tracker_id:tx.fuel_tracker_id||"",date:tx.date||"",amount:amt,waived:Number(tx.waived_amount||tx.surcharge_amount||amt*0.01||0),card_id:tx.card_id||tx.credit_card_id||"",notes:tx.notes||tx.description||"Fuel Payment"});});(fls||[]).forEach(fl=>{if(!fl)return;const amt=Number(fl.total_cost||fl.cost||0);if(amt<=0)return;const isCC=fl.payment_method==="Credit Card"||fl.payment_method==="Credit"||Boolean(fl.credit_card_id);if(!isCC)return;rawItems.push({id:fl.id||"",fuel_tracker_id:fl.id||"",date:fl.date||"",amount:amt,waived:amt*0.01,card_id:fl.credit_card_id||fl.card_id||"",notes:fl.truck_number?fl.truck_number+" Refill":(fl.notes||"Diesel Refill")});});(locLogs||[]).forEach(fl=>{if(!fl)return;const amt=Number(fl.cost||fl.total_cost||0);if(amt<=0)return;const isCC=fl.payment_method==="Credit Card"||Boolean(fl.credit_card_id);if(!isCC)return;rawItems.push({id:fl.id||"",fuel_tracker_id:fl.id||"",date:fl.date||"",amount:amt,waived:amt*0.01,card_id:fl.credit_card_id||fl.card_id||"",notes:fl.vehicle_number?fl.vehicle_number+" Refill":"Diesel Refill"});});const seenTrackerIds=new Set();const seenRecordIds=new Set();const seenDayAmount=new Set();const canonicalBills=[];for(const item of rawItems){if(!isCurrentMonth(item.date))continue;if(item.id&&seenRecordIds.has(item.id))continue;if(item.fuel_tracker_id&&seenTrackerIds.has(item.fuel_tracker_id))continue;const dayStr=String(item.date||"").slice(0,10);const amtRound=Math.round(item.amount);const dayAmountKey=dayStr+"_"+amtRound;if(dayStr&&amtRound>0&&seenDayAmount.has(dayAmountKey))continue;if(item.id)seenRecordIds.add(item.id);if(item.fuel_tracker_id)seenTrackerIds.add(item.fuel_tracker_id);if(dayStr&&amtRound>0)seenDayAmount.add(dayAmountKey);canonicalBills.push(item);}const activeCards=(t||[]).filter(cd=>cd.status!=="Inactive");const cardBillsMap=new Map();activeCards.forEach(c=>cardBillsMap.set(c.id,[]));canonicalBills.forEach(bill=>{let matchedCard=activeCards.find(c=>c.id===bill.card_id);if(!matchedCard){const notes=String(bill.notes||"").toLowerCase();matchedCard=activeCards.find(c=>{const cardName=String(c.card_name||"").toLowerCase().trim();const last4=String(c.card_number_last4||"").trim();if(cardName&&cardName.length>5&&notes.includes(cardName))return true;if(last4&&last4.length===4&&notes.includes(last4)){if(c.card_name.toLowerCase().includes("phonepe")&&!notes.includes("phonepe"))return false;return true;}return false;});}if(matchedCard&&cardBillsMap.has(matchedCard.id)){cardBillsMap.get(matchedCard.id).push({id:bill.id,date:bill.date,amount:bill.amount,fuel_amount:bill.amount,waived_amount:bill.waived||bill.amount*0.01,notes:bill.notes});}});const enrichedCards=activeCards.map(d=>{const limit=Number(d.monthly_waiver_limit||2e4);const matching=cardBillsMap.get(d.id)||[];matching.sort((a,b)=>new Date(b.date||0).getTime()-new Date(a.date||0).getTime());const totalSpend=matching.reduce((acc,m)=>acc+Number(m.amount||0),0);const totalWaived=matching.reduce((acc,m)=>acc+Number(m.waived_amount||m.amount*0.01||0),0);const used=totalSpend;const avail=Math.max(0,limit-used);const pct=limit>0?Math.min(Math.round((used/limit)*100),100):0;return{...d,monthly_waiver_limit:limit,current_month_waiver_used:used,surcharge_saved:totalWaived>0?totalWaived:Math.round(used*0.01),bills_count:matching.length,recent_bills:matching.slice(0,3)};});const a=enrichedCards.reduce((acc,c)=>acc+c.monthly_waiver_limit,0);const s=enrichedCards.reduce((acc,c)=>acc+c.current_month_waiver_used,0);const totalSaved=enrichedCards.reduce((acc,c)=>acc+(c.surcharge_saved||0),0);const n=Math.max(0,a-s);const r=a>0?Math.min((s/a)*100,100):0;return e.jsxs("div",{className:"space-y-6 animate-in fade-in-50 duration-200",children:[e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-amber-950/40 via-muted/40 to-background p-5 rounded-2xl border border-amber-500/20",children:[e.jsxs("div",{children:[e.jsxs("h3",{className:"text-lg font-bold text-foreground flex items-center gap-2",children:[e.jsx(St,{className:"w-5 h-5 text-amber-400"}),"Monthly Surcharge Waiver Limit Tracking"]}),e.jsx("p",{className:"text-xs text-muted-foreground mt-1",children:"Track fuel surcharge waiver limit utilization across company credit cards(strictly resets on the 1st of every month,verified de-duplicated)."})]}),e.jsx("div",{className:"flex items-center gap-3",children:e.jsxs("div",{className:"px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-400 flex items-center gap-1.5",children:[e.jsx(ve,{className:"w-4 h-4"}),t.length+" Active Cards"]})})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-4 gap-4",children:[e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-muted-foreground uppercase",children:"Total Monthly Waiver Limit"}),e.jsx(Nt,{className:"w-4 h-4 text-primary"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-foreground tabular-nums",children:["₹",a.toLocaleString("en-IN")]}),e.jsx("p",{className:"text-[10px]text-muted-foreground mt-1",children:"Combined monthly waiver quota"})]})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-muted-foreground uppercase",children:"Monthly Spend Utilized"}),e.jsx(St,{className:"w-4 h-4 text-amber-400"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-amber-400 tabular-nums",children:["₹",s.toLocaleString("en-IN")]}),e.jsxs("p",{className:"text-[10px]text-muted-foreground mt-1",children:[r.toFixed(1),"% of monthly waiver quota used this month"]})]})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-emerald-400 uppercase",children:"Surcharge Waived/Saved"}),e.jsx(Ue,{className:"w-4 h-4 text-emerald-400"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-emerald-400 tabular-nums",children:["₹",Math.round(totalSaved).toLocaleString("en-IN")]}),e.jsx("p",{className:"text-[10px]text-muted-foreground mt-1",children:"1% bank surcharge fee savings"})]})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-cyan-400 uppercase",children:"Available Waiver Quota"}),e.jsx(Nt,{className:"w-4 h-4 text-cyan-400"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-cyan-400 tabular-nums",children:["₹",n.toLocaleString("en-IN")]}),e.jsx("p",{className:"text-[10px]text-muted-foreground mt-1",children:"Remaining fee-free headroom"})]})]}),]}),e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5",children:enrichedCards.map((d,g)=>{const l=d.monthly_waiver_limit>0?Math.min((d.current_month_waiver_used/d.monthly_waiver_limit)*100,100):0;const m=l>=100;const p=m?"bg-rose-500":l>=80?"bg-amber-500":"bg-emerald-500";const u=Math.max(0,d.monthly_waiver_limit-d.current_month_waiver_used);const o=d.current_month_waiver_used;return e.jsxs("div",{key:d.id||g,className:"p-4 rounded-xl border border-border bg-muted/10 space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{children:[e.jsx("span",{className:"font-bold text-foreground text-sm",children:d.card_name}),e.jsxs("p",{className:"text-xs text-muted-foreground font-mono mt-0.5",children:[d.bank_name||"Corporate Card"," •• ",d.card_number_last4||""]})]}),e.jsx("span",{className:"px-2.5 py-0.5 rounded-full text-[10px]font-bold border "+(m?"bg-rose-500/10 text-rose-400 border-rose-500/20":l>=80?"bg-amber-500/10 text-amber-400 border-amber-500/20":"bg-emerald-500/10 text-emerald-400 border-emerald-500/20"),children:m?"Limit Reached":l>=80?"Near Limit":"Available"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs("div",{className:"flex justify-between text-xs text-muted-foreground",children:[e.jsxs("span",{children:["Monthly Utilized(",d.bills_count||0," ",d.bills_count===1?"bill":"bills",")"]}),e.jsxs("span",{className:"font-semibold text-foreground tabular-nums text-[11px]",children:[l.toFixed(0),"%(₹",o.toLocaleString("en-IN"),")"]})]}),e.jsx("div",{className:"w-full h-2 rounded-full bg-muted overflow-hidden",children:e.jsx("div",{className:"h-full rounded-full transition-all duration-300 "+p,style:{width:Math.max(l,2)+"%"}})})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-2 pt-2 border-t border-border/40 text-xs",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px]text-muted-foreground block",children:"Available Waiver"}),e.jsxs("span",{className:"font-bold tabular-nums "+(m?"text-rose-400":"text-emerald-400"),children:["₹",u.toLocaleString("en-IN")]})]}),e.jsxs("div",{className:"text-right",children:[e.jsx("span",{className:"text-[10px]text-muted-foreground block",children:"Surcharge Saved"}),e.jsxs("span",{className:"font-bold text-amber-400 tabular-nums",children:["₹",Math.round(d.surcharge_saved||0).toLocaleString("en-IN")]})]})]}),d.recent_bills&&d.recent_bills.length>0&&e.jsxs("div",{className:"pt-2 border-t border-border/30 space-y-1",children:[e.jsx("span",{className:"text-[10px]text-muted-foreground font-semibold block",children:"Recent Fuel Bills on Card(This Month):"}),d.recent_bills.map((rb,rIdx)=>e.jsxs("div",{key:rb.id||rIdx,className:"flex justify-between items-center text-[11px]bg-muted/40 px-2 py-1 rounded-md border border-border/20",children:[e.jsxs("span",{className:"text-foreground truncate max-w-[140px]",children:[rb.date?String(rb.date).slice(5,10):""," • ",rb.notes||"Fuel Refill"]}),e.jsxs("span",{className:"font-bold text-amber-400 font-mono shrink-0",children:["₹",Number(rb.amount||rb.fuel_amount||0).toLocaleString("en-IN")]})]}))]})]});})})]});},qs=()=>{const{currentUser:O}=Je(),[M]=Yt(),o=Qt(),[u,K]=n.useState([]),[P,U]=n.useState({}),[T,p]=n.useState([]),[w,W]=n.useState([]),[c,A]=n.useState(!0),[G,C]=n.useState(null),[L,r]=n.useState(0),[a,i]=n.useState(!1),[m,k]=n.useState(!1),[D,$]=n.useState(null),[J,l]=n.useState(!1);n.useEffect(()=>{if(o.state?.scannedFuel){const t=o.state.scannedFuel;$({liters:t.liters||"",cost_per_liter:t.ratePerLiter||"",total_cost:t.totalAmount||"",date:t.date||new Date().toISOString().split("T")[0],fuel_station:t.vendor||"",truck_number:t.truckNumber||"",truck_id:t.truckNumber||"",receiptFile:t.receiptFile||null,receiptPreviewUrl:t.receiptPreviewUrl||""}),i(!0),window.history.replaceState({},document.title)}},[o.state]);const[b,Y]=n.useState(null),[V,re]=n.useState(null),[se,De]=n.useState(null),[Me,ot]=n.useState("all");n.useEffect(()=>{const t=M.get("truck")||M.get("truck_number")||M.get("truckId");t&&ot(t)},[M]);const[Ae,At]=n.useState(""),[Pe,Pt]=n.useState(""),[Te,Tt]=n.useState(""),[Ie,It]=n.useState(""),[ue,Et]=n.useState({key:"date",direction:"desc"}),[te,Ee]=n.useState({search:"",cardId:"All",status:"All",sortBy:"-date"}),Rt=async()=>{A(!0),C(null);try{console.log("Fetching fuel tracker data...");const[t,s,x,S,v]=await Promise.all([B.collection("fuel_tracker").getFullList({sort:"-date",$autoCancel:!1}),B.collection("trucks").getFullList({$autoCancel:!1}),B.collection("credit_cards").getFullList({$autoCancel:!1}).catch(()=>[]),B.collection("fuel_payments").getFullList({sort:te.sortBy||"-date",$autoCancel:!1}).catch(()=>[]),B.collection("expenses").getFullList({filter:'subcategory = "Fuel" || category = "Regular" || fuel_tracker_id != ""',$autoCancel:!1}).catch(()=>[])]),f={};x.forEach(h=>{f[h.id]=h}),p(x);const I={};s.forEach(h=>{I[h.id]=`${h.truck_name||"Unknown"} (${h.truck_number||""})`}),U(I);const de=t.map(h=>{const pe=h.distance_driven||0,me=h.liters||0,be=me>0?pe/me:0,_e=(v||[]).find(gt=>gt.fuel_tracker_id===h.id||gt.id===h.id),ft=_e&&_e.documents&&_e.documents.length>0?_e.documents:h.documents||[];return{...h,vehicle_name:I[h.truck_id]||h.truck_number||"Unknown",distance:pe,efficiency:be,liters:me,linked_expense:_e,documents:ft,has_bill:ft.length>0}});K(de);const _=new Set(S.map(h=>h.fuel_tracker_id||h.id)),Z=[];t.forEach(h=>{if((h.payment_method==="Credit Card"||h.credit_card_id)&&!_.has(h.id)){const pe=h.credit_card_id||(x.length>0?x[0].id:""),me=Number(h.total_cost)||0,be=me*.01;Z.push({id:`fuel_log_${h.id}`,date:h.date,card_id:pe,fuel_amount:me,surcharge_percentage:1,surcharge_amount:be,waived_amount:be,payment_status:"Completed",notes:`${I[h.truck_id]||h.truck_number||"Vehicle"} Fuel Refill (${h.liters||0}L)`,fuel_tracker_id:h.id,is_synthesized:!0})}}),v.forEach(h=>{if((h.credit_card_id||h.payment_method==="Credit Card")&&h.subcategory==="Fuel"&&!_.has(h.id)&&!_.has(h.fuel_tracker_id)){const pe=h.credit_card_id||(x.length>0?x[0].id:""),me=Number(h.amount)||0,be=me*.01;Z.push({id:`exp_${h.id}`,date:h.date,card_id:pe,fuel_amount:me,surcharge_percentage:1,surcharge_amount:be,waived_amount:be,payment_status:"Completed",notes:h.description||"Credit Card Fuel Expense",fuel_tracker_id:h.fuel_tracker_id||h.id,is_synthesized:!0})}});const Be=[...S,...Z].sort((h,pe)=>new Date(pe.date).getTime()-new Date(h.date).getTime());W(Be)}catch(t){console.error("Error fetching fuel data:",t),C("Failed to load fuel tracking data. Please try again.")}finally{A(!1)}};n.useEffect(()=>{Rt()},[L,te.sortBy]);const dt=async t=>{if(window.confirm("Are you sure you want to delete this fuel record?"))try{await B.collection("fuel_tracker").delete(t,{$autoCancel:!1}),R.success("Fuel log deleted successfully."),r(s=>s+1)}catch(s){console.error("Error deleting fuel log:",s),R.error("Failed to delete fuel log.")}},xt=async t=>{if(window.confirm("Are you sure you want to delete this payment log?"))try{if(String(t).startsWith("fuel_log_")){const s=t.replace("fuel_log_","");await B.collection("fuel_tracker").delete(s,{$autoCancel:!1})}else if(String(t).startsWith("exp_")){const s=t.replace("exp_","");await B.collection("expenses").delete(s,{$autoCancel:!1})}else await B.collection("fuel_payments").delete(t,{$autoCancel:!1});R.success("Payment log deleted successfully."),r(s=>s+1)}catch(s){console.error("Error deleting payment:",s),R.error("Failed to delete payment log.")}},Re=t=>{const s=T.find(x=>x.id===t);return s?`${s.card_name} (..${s.card_number_last4})`:"Unknown Card"},mt=t=>{switch(t){case"Paid":return e.jsx(E,{className:"bg-success/15 text-success border-success/30 hover:bg-success/20",children:"Paid"});case"Pending":return e.jsx(E,{className:"bg-warning/15 text-warning border-warning/30 hover:bg-warning/20",children:"Pending"});case"Failed":return e.jsx(E,{className:"bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/20",children:"Failed"});default:return e.jsx(E,{variant:"outline",children:t})}},Ne=t=>{let s="asc";ue.key===t&&ue.direction==="asc"&&(s="desc"),Et({key:t,direction:s})},Ot=()=>{try{const t=["Vehicle","Date","Distance (KMs)","Liters","Cost (₹)","Efficiency (km/l)","Payment Method","Notes"],s=le.map(f=>[f.vehicle_name,f.date?ae(new Date(f.date),"yyyy-MM-dd"):"",f.distance||0,f.liters||0,f.total_cost||0,f.efficiency?f.efficiency.toFixed(2):0,f.payment_method||"Cash",(f.notes||"").replace(/"/g,'""')]),x="data:text/csv;charset=utf-8,"+[t.join(","),...s.map(f=>f.map(I=>`"${I}"`).join(","))].join(`
+`),S=encodeURI(x),v=document.createElement("a");v.setAttribute("href",S),v.setAttribute("download",`Fuel_Refills_Export_${new Date().toISOString().substring(0,10)}.csv`),document.body.appendChild(v),v.click(),document.body.removeChild(v),R.success("Refill logs exported to CSV")}catch(t){console.error(t),R.error("Failed to export CSV")}},$t=()=>{try{const t=["Date","Card Used","Fuel Amount (₹)","Surcharge (₹)","Waived (₹)","Total Bill (₹)","Status","Notes"],s=xe.map(f=>{const I=f.fuel_amount||0,de=f.surcharge_amount||0,_=f.waived_amount||0,Z=I+de-_;return[f.date?ae(new Date(f.date),"yyyy-MM-dd"):"",Re(f.card_id),I,de,_,Z,f.payment_status||"Pending",(f.notes||"").replace(/"/g,'""')]}),x="data:text/csv;charset=utf-8,"+[t.join(","),...s.map(f=>f.map(I=>`"${I}"`).join(","))].join(`
+`),S=encodeURI(x),v=document.createElement("a");v.setAttribute("href",S),v.setAttribute("download",`Card_Payments_Export_${new Date().toISOString().substring(0,10)}.csv`),document.body.appendChild(v),v.click(),document.body.removeChild(v),R.success("Card payments exported to CSV")}catch(t){console.error(t),R.error("Failed to export CSV")}},le=n.useMemo(()=>{let t=[...u];return Me!=="all"&&(t=t.filter(s=>{if(s.truck_id===Me||s.truck_number===Me)return!0;const cln=(x)=>(x||"").replace(/\s+/g,"").toUpperCase();const trkEntry=Object.entries(P).find(([k,v])=>k===Me||cln(k)===cln(Me)||cln(v)===cln(Me));const allowed=[Me,trkEntry?.[0],trkEntry?.[1]].filter(Boolean).map(cln);return allowed.includes(cln(s.truck_id))||allowed.includes(cln(s.truck_number))||allowed.includes(cln(s.vehicle_name))})),Ae&&(t=t.filter(s=>!fs(ze(s.date),ze(Ae)))),Pe&&(t=t.filter(s=>!gs(ze(s.date),ze(Pe)))),Te&&(t=t.filter(s=>s.total_cost>=parseFloat(Te))),Ie&&(t=t.filter(s=>s.total_cost<=parseFloat(Ie))),t.sort((s,x)=>{let S=s[ue.key],v=x[ue.key];return ue.key==="date"&&(S=new Date(s.date).getTime(),v=new Date(x.date).getTime()),S<v?ue.direction==="asc"?-1:1:S>v?ue.direction==="asc"?1:-1:0}),t},[u,Me,Ae,Pe,Te,Ie,ue]),ge=n.useMemo(()=>{const t=le.reduce((I,de)=>I+(de.distance||0),0),s=le.reduce((I,de)=>I+(de.liters||0),0),x=s>0?(t/s).toFixed(2):0,S=le.filter(I=>I.efficiency>0).map(I=>I.efficiency),v=S.length>0?Math.max(...S).toFixed(2):0,f=S.length>0?Math.min(...S).toFixed(2):0;return{totalDistance:t,totalLiters:s,avgEfficiency:x,highestEff:v,lowestEff:f}},[le]),ut=n.useMemo(()=>{const t={};return le.forEach(s=>{t[s.truck_id]||(t[s.truck_id]={vehicle_name:s.vehicle_name,totalDistance:0,totalLiters:0,totalCost:0}),t[s.truck_id].totalDistance+=s.distance||0,t[s.truck_id].totalLiters+=s.liters||0,t[s.truck_id].totalCost+=s.total_cost||0}),Object.values(t).map(s=>({...s,avgEfficiency:s.totalLiters>0?(s.totalDistance/s.totalLiters).toFixed(2):0})).sort((s,x)=>x.totalDistance-s.totalDistance)},[le]),ht=n.useMemo(()=>le.filter(t=>t.efficiency>0).sort((t,s)=>new Date(t.date).getTime()-new Date(s.date).getTime()).map(t=>({date:ae(new Date(t.date),"MMM dd"),efficiency:parseFloat(t.efficiency.toFixed(2)),vehicle:t.vehicle_name,liters:t.liters,distance:t.distance})),[le]),xe=n.useMemo(()=>w.filter(t=>{const s=Re(t.card_id).toLowerCase(),x=(t.notes||"").toLowerCase(),S=te.search.toLowerCase(),v=x.includes(S)||s.includes(S),f=te.cardId==="All"||t.card_id===te.cardId,I=te.status==="All"||t.payment_status===te.status;return v&&f&&I}),[w,te,T]),Oe=n.useMemo(()=>{const t=xe.reduce((v,f)=>v+(f.fuel_amount||0),0),s=xe.reduce((v,f)=>v+(f.surcharge_amount||0),0),x=xe.reduce((v,f)=>v+(f.waived_amount||0),0),S=t+s-x;return{totalFuelAmount:t,totalSurcharge:s,totalWaived:x,grandTotal:S}},[xe]),he=n.useMemo(()=>{const t=u.reduce((_,Z)=>_+(Z.total_cost||0),0),s=u.reduce((_,Z)=>_+(Z.distance_driven||0),0),x=s>0?t/s:0,S=w.reduce((_,Z)=>_+(Z.surcharge_amount||0),0),v=w.reduce((_,Z)=>_+(Z.waived_amount||0),0),f={},I={};u.forEach(_=>{_.efficiency>0&&_.truck_id&&(f[_.truck_id]||(f[_.truck_id]=0,I[_.truck_id]=0),f[_.truck_id]+=_.efficiency,I[_.truck_id]++)}),Object.keys(f).forEach(_=>{f[_]=f[_]/I[_]});const de=[];return u.forEach(_=>{if(_.efficiency>0&&_.truck_id){const Z=f[_.truck_id]||0,Be=Z>0?(Z-_.efficiency)/Z*100:0;(Be>=30||_.efficiency<2)&&de.push({..._,avgEfficiency:Z,dropPercentage:Be})}}),{totalSpend:t,avgCostPerKm:x,totalSurcharges:S,totalWaived:v,anomalies:de}},[u,w]),et=n.useMemo(()=>{const t={};return u.forEach(s=>{s.truck_id&&s.distance_driven>0&&(t[s.truck_id]||(t[s.truck_id]={name:s.vehicle_name,totalCost:0,totalDistance:0}),t[s.truck_id].totalCost+=s.total_cost||0,t[s.truck_id].totalDistance+=s.distance_driven)}),Object.values(t).map(s=>({name:s.name.split(" ")[0],costPerKm:parseFloat((s.totalCost/s.totalDistance).toFixed(2))})).filter(s=>s.costPerKm>0).sort((s,x)=>x.costPerKm-s.costPerKm)},[u]),pt=n.useMemo(()=>{const t={};return u.forEach(s=>{if(s.date){const x=new Date(s.date),S=ae(x,"yyyy-MM"),v=ae(x,"MMM yyyy");t[S]||(t[S]={key:S,name:v,cost:0,liters:0}),t[S].cost+=s.total_cost||0,t[S].liters+=s.liters||0}}),Object.values(t).sort((s,x)=>s.key.localeCompare(x.key)).map(s=>({name:s.name,cost:parseFloat(s.cost.toFixed(0)),liters:parseFloat(s.liters.toFixed(0))})).slice(-6)},[u]),$e=n.useMemo(()=>{const t={};return u.forEach(s=>{const x=s.payment_method||"Cash";t[x]||(t[x]=0),t[x]+=s.total_cost||0}),Object.entries(t).map(([s,x])=>({name:s,value:parseFloat(x.toFixed(0))})).sort((s,x)=>x.value-s.value)},[u]);return G?e.jsxs("div",{className:"p-12 text-center flex flex-col items-center justify-center min-h-[60vh]",children:[e.jsx(es,{className:"w-12 h-12 text-destructive mx-auto mb-4 opacity-80"}),e.jsx("h2",{className:"text-2xl font-bold mb-2 text-foreground",children:"Failed to load data"}),e.jsx("p",{className:"text-muted-foreground mb-6 max-w-md",children:G}),e.jsx(y,{onClick:()=>r(t=>t+1),size:"lg",className:"rounded-xl shadow-sm",children:"Try Again"})]}):e.jsxs("div",{className:"p-3 sm:p-6 max-w-7xl mx-auto space-y-6 pb-36 md:pb-8 animate-in fade-in duration-500 font-sans",children:[e.jsx(ts,{children:e.jsx("title",{children:"Fuel Manager & Analytics | Dashboard"})}),e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-border/40 pb-5",children:[e.jsxs("div",{children:[e.jsxs("h1",{className:"text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-2",style:{letterSpacing:"-0.02em"},children:[e.jsx(fe,{className:"w-7 h-7 text-primary shrink-0"})," Fuel Tracker"]}),e.jsx("p",{className:"text-muted-foreground mt-0.5 text-xs sm:text-sm",children:"Monitor distance driven, fuel efficiency trends, and credit card payments."})]}),e.jsxs("div",{className:"flex items-center gap-2 w-full sm:w-auto",children:[e.jsx(y,{variant:"outline",size:"sm",onClick:()=>r(t=>t+1),className:"h-9 px-2.5 rounded-xl border-border text-muted-foreground hover:text-foreground",children:e.jsx(Lt,{className:"w-3.5 h-3.5"})}),e.jsxs(y,{variant:"outline",onClick:()=>k(!0),className:"flex-1 sm:flex-initial h-9 px-3.5 rounded-xl border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold text-xs",children:[e.jsx(ss,{className:"w-4 h-4 mr-1.5"})," AI Bill Scan"]}),e.jsxs(y,{onClick:()=>i(!0),className:"flex-1 sm:flex-initial h-9 px-4 shadow-sm rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs",children:[e.jsx(je,{className:"w-4 h-4 mr-1.5"})," Log Refill"]})]})]}),e.jsxs(xs,{defaultValue:"refills",className:"space-y-5",children:[e.jsx("div",{className:"w-full overflow-x-auto scrollbar-none pb-1",children:e.jsxs(ms,{className:"bg-muted/65 p-1 rounded-xl flex items-center gap-1 w-max min-w-full sm:min-w-0",children:[e.jsx(ye,{value:"fraud",className:"rounded-lg py-1.5 px-3 text-xs font-bold transition-all text-rose-400 data-[state=active]:bg-rose-950/50 data-[state=active]:text-rose-300 whitespace-nowrap",children:"🛡️ Fraud Sentinel"}),e.jsx(ye,{value:"benchmark",className:"rounded-lg py-1.5 px-3 text-xs font-semibold transition-all whitespace-nowrap",children:"🎯 Benchmark & Savings"}),e.jsx(ye,{value:"refills",className:"rounded-lg py-1.5 px-3 text-xs font-semibold transition-all whitespace-nowrap",children:"Refills & Efficiency"}),e.jsx(ye,{value:"stations",className:"rounded-lg py-1.5 px-3 text-xs font-semibold transition-all whitespace-nowrap",children:"⛽ Fuel Stations"}),e.jsx(ye,{value:"payments",className:"rounded-lg py-1.5 px-3 text-xs font-semibold transition-all whitespace-nowrap",children:"Card Payments"}),e.jsx(ye,{value:"waiver",className:"rounded-lg py-1.5 px-3 text-xs font-semibold transition-all whitespace-nowrap text-amber-400 data-[state=active]:bg-amber-950/50 data-[state=active]:text-amber-300",children:"💳 Waiver Limit"}),e.jsx(ye,{value:"analytics",className:"rounded-lg py-1.5 px-3 text-xs font-semibold transition-all whitespace-nowrap",children:"Advanced Analytics"})]})}),e.jsx(we,{value:"fraud",className:"space-y-6 outline-none animate-in fade-in-50 duration-200",children:e.jsx(Fs,{fuelLogs:u,trucks:P,loading:c,onRefresh:()=>r(t=>t+1)})}),e.jsx(we,{value:"benchmark",className:"space-y-6 outline-none animate-in fade-in-50 duration-200",children:e.jsx(Cs,{fuelLogs:u,trucks:P,loading:c})}),e.jsxs(we,{value:"refills",className:"space-y-6 outline-none animate-in fade-in-50 duration-200",children:[e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",children:[e.jsxs(N,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md hover:border-blue-500/20 transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500"}),e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-semibold text-muted-foreground uppercase tracking-wider",children:"Distance Driven"}),e.jsx(bt,{className:"w-4 h-4 text-blue-500 opacity-80"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"text-3xl font-extrabold tabular-nums text-blue-500",children:[ge.totalDistance.toLocaleString(void 0,{maximumFractionDigits:1})," ",e.jsx("span",{className:"text-sm font-normal text-muted-foreground",children:"km"})]})})]}),e.jsxs(N,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md hover:border-violet-500/20 transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500 to-purple-500"}),e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-semibold text-muted-foreground uppercase tracking-wider",children:"Fuel Consumed"}),e.jsx(fe,{className:"w-4 h-4 text-violet-500 opacity-80"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"text-3xl font-extrabold tabular-nums text-violet-500",children:[ge.totalLiters.toLocaleString(void 0,{maximumFractionDigits:1})," ",e.jsx("span",{className:"text-sm font-normal text-muted-foreground",children:"L"})]})})]}),e.jsxs(N,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md hover:border-emerald-500/20 transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500"}),e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-semibold text-muted-foreground uppercase tracking-wider",children:"Avg Efficiency"}),e.jsx(ve,{className:"w-4 h-4 text-emerald-500 opacity-80"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"text-3xl font-extrabold tabular-nums text-emerald-500",children:[ge.avgEfficiency," ",e.jsx("span",{className:"text-sm font-normal text-muted-foreground",children:"km/l"})]})})]}),e.jsxs(N,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md hover:border-amber-500/20 transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-500 to-orange-500"}),e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-semibold text-muted-foreground uppercase tracking-wider",children:"Efficiency Range"}),e.jsx(jt,{className:"w-4 h-4 text-amber-500 opacity-80"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"flex items-center gap-4 pt-1",children:[e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground uppercase font-semibold",children:"Lowest"}),e.jsxs("div",{className:"flex items-center text-warning font-bold text-lg tabular-nums",children:[e.jsx(Ue,{className:"w-3.5 h-3.5 mr-0.5"}),e.jsx("span",{children:ge.lowestEff})]})]}),e.jsx("div",{className:"w-[1px] h-8 bg-border/60"}),e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground uppercase font-semibold",children:"Highest"}),e.jsxs("div",{className:"flex items-center text-success font-bold text-lg tabular-nums",children:[e.jsx(jt,{className:"w-3.5 h-3.5 mr-0.5"}),e.jsx("span",{children:ge.highestEff})]})]})]})})]})]}),e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-3 gap-6",children:[e.jsxs(N,{className:"shadow-sm border-border/60 bg-card lg:col-span-2",children:[e.jsx(q,{className:"border-b border-border/30 pb-4",children:e.jsxs(H,{className:"text-lg font-semibold flex items-center gap-2",children:[e.jsx(ve,{className:"w-4 h-4 text-primary"})," Fuel Efficiency Trend"]})}),e.jsx(z,{className:"pt-6",children:c?e.jsx(F,{className:"h-[300px] w-full"}):ht.length>0?e.jsx("div",{className:"h-[300px] w-full",children:e.jsx(Ke,{width:"100%",height:"100%",children:e.jsxs(js,{data:ht,margin:{top:5,right:20,bottom:5,left:0},children:[e.jsx(at,{strokeDasharray:"3 3",stroke:"hsl(var(--border))",vertical:!1}),e.jsx(rt,{dataKey:"date",stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1}),e.jsx(Ge,{stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1,tickFormatter:t=>`${t}`}),e.jsx(We,{contentStyle:{backgroundColor:"hsl(var(--popover))",borderColor:"hsl(var(--border))",borderRadius:"8px",color:"hsl(var(--popover-foreground))"},itemStyle:{color:"hsl(var(--foreground))"},formatter:(t,s,x)=>[`${t} km/l`,`Efficiency (${x.payload.vehicle})`],labelStyle:{color:"hsl(var(--muted-foreground))",marginBottom:"4px"}}),e.jsx(wt,{type:"monotone",dataKey:"efficiency",stroke:"hsl(var(--primary))",strokeWidth:3,dot:{r:4,fill:"white",stroke:"hsl(var(--primary))",strokeWidth:2},activeDot:{r:6,strokeWidth:0}})]})})}):e.jsx("div",{className:"h-[300px] flex items-center justify-center text-muted-foreground border border-dashed rounded-xl border-border/50",children:"Not enough data to display trend chart."})})]}),e.jsxs(N,{className:"shadow-sm border-border/60 bg-card lg:col-span-1",children:[e.jsx(q,{className:"border-b border-border/30 pb-4",children:e.jsxs(H,{className:"text-lg font-semibold flex items-center gap-2",children:[e.jsx(bt,{className:"w-4 h-4 text-primary"})," Vehicle Summary"]})}),e.jsx(z,{className:"p-0",children:e.jsx("div",{className:"overflow-y-auto max-h-[320px] px-6 py-6 space-y-4",children:c?e.jsxs("div",{className:"space-y-4",children:[e.jsx(F,{className:"h-16 w-full"}),e.jsx(F,{className:"h-16 w-full"})]}):ut.length===0?e.jsx("div",{className:"text-center text-muted-foreground py-8",children:"No summary data available."}):ut.map((t,s)=>e.jsxs("div",{className:"flex flex-col p-4 rounded-xl border border-border/60 bg-muted/15 hover:bg-muted/30 transition-colors",children:[e.jsxs("div",{className:"font-semibold text-foreground mb-3 flex items-center justify-between",children:[e.jsx("span",{children:t.vehicle_name}),e.jsxs(E,{variant:"secondary",className:"bg-primary/10 text-primary border-none text-[10px] font-bold",children:[t.avgEfficiency," km/l"]})]}),e.jsxs("div",{className:"grid grid-cols-3 gap-2 text-xs",children:[e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"text-muted-foreground text-[10px]",children:"Distance"}),e.jsxs("span",{className:"font-medium tabular-nums mt-0.5",children:[t.totalDistance.toLocaleString()," km"]})]}),e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"text-muted-foreground text-[10px]",children:"Total Fuel"}),e.jsxs("span",{className:"font-medium tabular-nums mt-0.5",children:[t.totalLiters.toLocaleString()," L"]})]}),e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"text-muted-foreground text-[10px]",children:"Total Spend"}),e.jsxs("span",{className:"font-medium tabular-nums mt-0.5",children:["₹",t.totalCost.toLocaleString()]})]})]})]},s))})})]})]}),e.jsxs(N,{className:"shadow-sm border-border/60 bg-card overflow-hidden",children:[e.jsx(q,{className:"p-4 border-b border-border/50 bg-muted/10",children:e.jsxs("div",{className:"flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between",children:[e.jsxs("div",{className:"flex items-center justify-between w-full lg:w-auto gap-4",children:[e.jsxs("div",{className:"flex items-center gap-2 text-sm font-semibold",children:[e.jsx(as,{className:"w-4 h-4 text-primary"})," Filter Refill Logs"]}),e.jsxs(y,{onClick:Ot,variant:"outline",size:"sm",className:"rounded-xl border-primary/20 text-primary hover:bg-primary/5 h-8",children:[e.jsx(tt,{className:"w-3.5 h-3.5 mr-1.5"})," Export CSV"]})]}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-5 gap-3 w-full lg:w-auto",children:[e.jsxs(ne,{value:Me,onValueChange:ot,children:[e.jsx(ie,{className:"bg-background h-9 rounded-xl border-border/80",children:e.jsx(ce,{placeholder:"All Vehicles"})}),e.jsxs(oe,{children:[e.jsx(g,{value:"all",children:"All Vehicles"}),Object.entries(P).map(([t,s])=>e.jsx(g,{value:t,children:s},t))]})]}),e.jsx(ee,{type:"date",value:Ae,onChange:t=>At(t.target.value),className:"bg-background h-9 rounded-xl border-border/80",placeholder:"From Date"}),e.jsx(ee,{type:"date",value:Pe,onChange:t=>Pt(t.target.value),className:"bg-background h-9 rounded-xl border-border/80",placeholder:"To Date"}),e.jsx(ee,{type:"number",value:Te,onChange:t=>Tt(t.target.value),className:"bg-background h-9 rounded-xl border-border/80",placeholder:"Min Cost (₹)"}),e.jsx(ee,{type:"number",value:Ie,onChange:t=>It(t.target.value),className:"bg-background h-9 rounded-xl border-border/80",placeholder:"Max Cost (₹)"})]})]})}),e.jsxs(z,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(Ce,{children:[e.jsx(Le,{className:"bg-muted/30",children:e.jsxs(X,{children:[e.jsx(j,{className:"cursor-pointer hover:bg-muted/50 transition-colors",onClick:()=>Ne("vehicle_name"),children:"Vehicle"}),e.jsx(j,{className:"cursor-pointer hover:bg-muted/50 transition-colors",onClick:()=>Ne("date"),children:"Date"}),e.jsx(j,{className:"text-right cursor-pointer hover:bg-muted/50 transition-colors",onClick:()=>Ne("distance"),children:"Distance (KMs)"}),e.jsx(j,{className:"text-right cursor-pointer hover:bg-muted/50 transition-colors",onClick:()=>Ne("liters"),children:"Liters"}),e.jsx(j,{className:"text-right cursor-pointer hover:bg-muted/50 transition-colors",onClick:()=>Ne("total_cost"),children:"Cost"}),e.jsx(j,{className:"text-right cursor-pointer hover:bg-muted/50 transition-colors",onClick:()=>Ne("efficiency"),children:"Efficiency (km/l)"}),e.jsx(j,{children:"Payment Method"}),e.jsx(j,{className:"text-center",children:"Receipt / Bill"}),e.jsx(j,{className:"text-right pr-6",children:"Actions"})]})}),e.jsx(Fe,{children:c?Array.from({length:4}).map((t,s)=>e.jsxs(X,{children:[e.jsx(d,{children:e.jsx(F,{className:"h-4 w-32"})}),e.jsx(d,{children:e.jsx(F,{className:"h-4 w-20"})}),e.jsx(d,{className:"text-right",children:e.jsx(F,{className:"h-4 w-16 ml-auto"})}),e.jsx(d,{className:"text-right",children:e.jsx(F,{className:"h-4 w-12 ml-auto"})}),e.jsx(d,{className:"text-right",children:e.jsx(F,{className:"h-4 w-16 ml-auto"})}),e.jsx(d,{className:"text-right",children:e.jsx(F,{className:"h-4 w-16 ml-auto"})}),e.jsx(d,{children:e.jsx(F,{className:"h-4 w-24"})}),e.jsx(d,{className:"text-center",children:e.jsx(F,{className:"h-6 w-16 mx-auto"})}),e.jsx(d,{className:"text-right",children:e.jsx(F,{className:"h-8 w-8 ml-auto"})})]},s)):le.length===0?e.jsx(X,{children:e.jsxs(d,{colSpan:9,className:"h-48 text-center text-muted-foreground",children:[e.jsx(fe,{className:"w-10 h-10 mb-3 opacity-20 mx-auto text-primary"}),e.jsx("p",{children:"No fuel records found matching your criteria."})]})}):le.map(t=>e.jsxs(X,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(d,{className:"font-semibold text-foreground",children:t.vehicle_name}),e.jsx(d,{className:"whitespace-nowrap text-muted-foreground text-xs",children:ae(new Date(t.date),"MMM dd, yyyy")}),e.jsx(d,{className:"text-right tabular-nums",children:t.distance?t.distance.toLocaleString():"-"}),e.jsx(d,{className:"text-right tabular-nums",children:t.liters?t.liters.toLocaleString():"-"}),e.jsxs(d,{className:"text-right font-medium tabular-nums text-foreground",children:["₹",t.total_cost?.toLocaleString()]}),e.jsx(d,{className:"text-right tabular-nums",children:t.efficiency>0?e.jsx(E,{variant:"outline",className:t.efficiency>ge.avgEfficiency?"text-success border-success/30 bg-success/5 font-bold":"text-warning border-warning/30 bg-warning/5 font-bold",children:t.efficiency.toFixed(2)}):"-"}),e.jsx(d,{className:"text-xs",children:e.jsx(E,{variant:"secondary",className:"bg-muted text-muted-foreground font-medium border border-border/80",children:t.payment_method||"Cash"})}),e.jsx(d,{className:"text-center",children:t.documents&&t.documents.length>0?e.jsxs(y,{variant:"outline",size:"sm",onClick:()=>{const s=t.documents[0],x=t.linked_expense||{id:t.id,collectionName:"expenses"};De({log:t,name:s,count:t.documents.length,documents:t.documents,previewUrl:B.files.getUrl(x,s)})},className:"h-7 px-2.5 text-[11px] font-bold border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 gap-1 rounded-lg shadow-xs",title:"View attached fuel bill receipt",children:[e.jsx(st,{className:"w-3.5 h-3.5"}),e.jsxs("span",{children:["Bill (",t.documents.length,")"]})]}):e.jsxs(y,{variant:"ghost",size:"sm",onClick:()=>{$(t),i(!0)},className:"h-7 px-2 text-[10px] text-muted-foreground hover:text-primary gap-1 opacity-60 hover:opacity-100",title:"Attach Bill / Receipt",children:[e.jsx(je,{className:"w-3 h-3"}),e.jsx("span",{children:"+ Bill"})]})}),e.jsx(d,{className:"text-right pr-6",children:e.jsxs("div",{className:"flex items-center justify-end gap-1",children:[e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>{$(t),i(!0)},className:"text-muted-foreground hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-lg",title:"Edit Fuel Record",children:e.jsx(Ve,{className:"w-4 h-4"})}),e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>dt(t.id),className:"text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8 rounded-lg",title:"Delete Record",children:e.jsx(ke,{className:"w-4 h-4"})})]})})]},t.id))})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/30",children:c?e.jsxs("div",{className:"space-y-4 p-4",children:[e.jsx(F,{className:"h-28 w-full rounded-2xl"}),e.jsx(F,{className:"h-28 w-full rounded-2xl"})]}):le.length===0?e.jsxs("div",{className:"text-center text-muted-foreground py-16",children:[e.jsx(fe,{className:"w-12 h-12 mb-3 opacity-20 mx-auto text-primary"}),e.jsx("p",{className:"text-sm font-semibold",children:"No fuel records found."})]}):le.map(t=>e.jsxs("div",{className:"p-4 space-y-4 bg-card/10 hover:bg-muted/5 transition-all duration-200",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsxs("p",{className:"font-extrabold text-sm text-foreground flex items-center gap-2",children:[e.jsx("span",{className:"w-2.5 h-2.5 rounded-full bg-primary shrink-0 animate-pulse"}),t.vehicle_name]}),e.jsxs("p",{className:"text-[10px] text-muted-foreground font-semibold pl-4",children:["📅 ",t.date?ae(new Date(t.date),"dd MMM yyyy, hh:mm a"):"-"]})]}),t.efficiency>0?e.jsxs(E,{variant:"outline",className:`font-black text-xs px-2 py-0.5 rounded-lg border ${t.efficiency>ge.avgEfficiency?"text-emerald-400 border-emerald-500/30 bg-emerald-500/5 animate-pulse":"text-amber-400 border-amber-500/30 bg-amber-500/5"}`,children:[t.efficiency.toFixed(2)," km/l"]}):e.jsx(E,{variant:"outline",className:"text-slate-500 border-slate-800 text-[10px] font-mono",children:"No Stats"})]}),e.jsxs("div",{className:"grid grid-cols-3 gap-2 bg-slate-900/60 p-3 rounded-2xl border border-border/40 text-xs",children:[e.jsxs("div",{className:"text-center space-y-0.5",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground uppercase font-black tracking-wider block",children:"Distance"}),e.jsx("span",{className:"font-bold text-foreground font-mono",children:t.distance?`${t.distance.toLocaleString()} km`:"-"})]}),e.jsxs("div",{className:"text-center space-y-0.5 border-l border-r border-white/5",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground uppercase font-black tracking-wider block",children:"Fuel Qty"}),e.jsx("span",{className:"font-bold text-foreground font-mono",children:t.liters?`${t.liters.toLocaleString()} L`:"-"})]}),e.jsxs("div",{className:"text-center space-y-0.5",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground uppercase font-black tracking-wider block",children:"Total Cost"}),e.jsxs("span",{className:"font-black text-primary font-mono",children:["₹",t.total_cost?.toLocaleString()]})]})]}),(t.notes||t.payment_method)&&e.jsxs("div",{className:"space-y-2 pl-2",children:[t.notes&&e.jsxs("p",{className:"text-[11px] text-muted-foreground leading-relaxed bg-slate-900/40 p-2.5 rounded-xl border border-border/30 italic",children:["💬 ",t.notes]}),e.jsxs("div",{className:"flex justify-between items-center text-[10px] text-muted-foreground",children:[e.jsx("span",{children:"Payment Method:"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(E,{variant:"secondary",className:"bg-slate-800 text-slate-300 font-mono text-[9px] px-2 py-0",children:t.payment_method||"Cash"}),t.documents&&t.documents.length>0&&e.jsxs(E,{variant:"outline",onClick:()=>{const s=t.documents[0],x=t.linked_expense||{id:t.id,collectionName:"expenses"};De({log:t,name:s,count:t.documents.length,documents:t.documents,previewUrl:B.files.getUrl(x,s)})},className:"border-primary/40 bg-primary/10 text-primary text-[9px] cursor-pointer",children:["🧾 Bill (",t.documents.length,")"]})]})]})]}),e.jsxs("div",{className:"flex items-center justify-between gap-2 pt-1 border-t border-border/20",children:[t.documents&&t.documents.length>0?e.jsxs(y,{variant:"outline",size:"sm",onClick:()=>{const s=t.documents[0],x=t.linked_expense||{id:t.id,collectionName:"expenses"};De({log:t,name:s,count:t.documents.length,documents:t.documents,previewUrl:B.files.getUrl(x,s)})},className:"h-7 text-xs border-primary/40 bg-primary/10 text-primary flex items-center gap-1 font-bold rounded-xl px-2.5",children:[e.jsx(st,{className:"w-3 h-3"})," View Bill"]}):e.jsxs(y,{variant:"ghost",size:"sm",onClick:()=>{$(t),i(!0)},className:"h-7 text-xs text-muted-foreground hover:text-primary flex items-center gap-1 font-semibold rounded-xl px-2 opacity-70",children:[e.jsx(je,{className:"w-3 h-3"})," Attach Bill"]}),e.jsxs("div",{className:"flex items-center gap-1",children:[e.jsxs(y,{variant:"ghost",size:"sm",onClick:()=>{$(t),i(!0)},className:"h-8 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary flex items-center gap-1.5 font-bold rounded-xl px-3",children:[e.jsx(Ve,{className:"w-3.5 h-3.5"})," Edit"]}),e.jsxs(y,{variant:"ghost",size:"sm",onClick:()=>dt(t.id),className:"h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1.5 font-bold rounded-xl px-3",children:[e.jsx(ke,{className:"w-3.5 h-3.5"})," Delete"]})]})]})]},t.id))})]})]})]}),e.jsxs(we,{value:"payments",className:"space-y-6 outline-none animate-in fade-in-50 duration-200",children:[e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4",children:[e.jsxs("div",{children:[e.jsxs("h3",{className:"text-lg font-bold text-foreground flex items-center gap-2",children:[e.jsx(St,{className:"w-5 h-5 text-primary"})," Credit Card Fuel Transactions"]}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Log and audit your business credit card fuel expenses."})]}),e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsxs(y,{onClick:$t,variant:"outline",size:"sm",className:"rounded-xl border-primary/20 text-primary hover:bg-primary/5",children:[e.jsx(tt,{className:"w-3.5 h-3.5 mr-1.5"})," Export CSV"]}),e.jsxs(y,{onClick:()=>{Y(null),l(!0)},size:"sm",className:"rounded-xl bg-primary text-primary-foreground font-semibold",children:[e.jsx(je,{className:"w-3.5 h-3.5 mr-1.5"})," Add Payment Log"]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-4 gap-6",children:[e.jsxs(N,{className:"shadow-sm border-border/60 bg-card",children:[e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-medium text-muted-foreground",children:"Fuel Amount"}),e.jsx(Nt,{className:"w-4 h-4 text-muted-foreground opacity-55"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"text-2xl font-bold tabular-nums text-foreground",children:["₹",Oe.totalFuelAmount.toLocaleString("en-IN",{minimumFractionDigits:2})]})})]}),e.jsxs(N,{className:"shadow-sm border-border/60 bg-card",children:[e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-medium text-muted-foreground",children:"Surcharge"}),e.jsx(je,{className:"w-4 h-4 text-warning opacity-70"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"text-2xl font-bold tabular-nums text-foreground",children:["₹",Oe.totalSurcharge.toLocaleString("en-IN",{minimumFractionDigits:2})]})})]}),e.jsxs(N,{className:"shadow-sm border-border/60 bg-card",children:[e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-medium text-muted-foreground",children:"Surcharge Waived"}),e.jsx(Ue,{className:"w-4 h-4 text-success opacity-70"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"text-2xl font-bold tabular-nums text-success",children:["₹",Oe.totalWaived.toLocaleString("en-IN",{minimumFractionDigits:2})]})})]}),e.jsxs(N,{className:"shadow-sm border-border bg-primary/5 border-primary/20",children:[e.jsxs(q,{className:"pb-2 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-sm font-medium text-primary",children:"Grand Total Bill"}),e.jsx(He,{className:"w-4 h-4 text-primary opacity-80"})]}),e.jsx(z,{children:c?e.jsx(F,{className:"h-8 w-24"}):e.jsxs("div",{className:"text-2xl font-black tabular-nums text-primary",children:["₹",Oe.grandTotal.toLocaleString("en-IN",{minimumFractionDigits:2})]})})]})]}),e.jsxs("div",{className:"flex flex-col md:flex-row gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-sm",children:[e.jsxs("div",{className:"relative flex-1",children:[e.jsx(it,{className:"absolute left-3 top-3 h-4 w-4 text-muted-foreground"}),e.jsx(ee,{placeholder:"Search notes or cards...",className:"pl-9 bg-input text-foreground rounded-xl border-border/80 h-10",value:te.search,onChange:t=>Ee({...te,search:t.target.value})})]}),e.jsxs(ne,{value:te.cardId,onValueChange:t=>Ee({...te,cardId:t}),children:[e.jsx(ie,{className:"w-full md:w-[200px] bg-input text-foreground rounded-xl border-border/80 h-10",children:e.jsx(ce,{placeholder:"All Cards"})}),e.jsxs(oe,{children:[e.jsx(g,{value:"All",children:"All Cards"}),T.map(t=>e.jsxs(g,{value:t.id,children:[t.card_name," (..",t.card_number_last4,")"]},t.id))]})]}),e.jsxs(ne,{value:te.status,onValueChange:t=>Ee({...te,status:t}),children:[e.jsx(ie,{className:"w-full md:w-[140px] bg-input text-foreground rounded-xl border-border/80 h-10",children:e.jsx(ce,{placeholder:"Status"})}),e.jsxs(oe,{children:[e.jsx(g,{value:"All",children:"All Status"}),e.jsx(g,{value:"Pending",children:"Pending"}),e.jsx(g,{value:"Paid",children:"Paid"}),e.jsx(g,{value:"Failed",children:"Failed"})]})]}),e.jsxs(ne,{value:te.sortBy,onValueChange:t=>Ee({...te,sortBy:t}),children:[e.jsx(ie,{className:"w-full md:w-[150px] bg-input text-foreground rounded-xl border-border/80 h-10",children:e.jsx(ce,{placeholder:"Sort by"})}),e.jsxs(oe,{children:[e.jsx(g,{value:"-date",children:"Date (Newest)"}),e.jsx(g,{value:"date",children:"Date (Oldest)"}),e.jsx(g,{value:"-fuel_amount",children:"Amount (High)"})]})]})]}),e.jsx(N,{className:"rounded-xl overflow-hidden shadow-sm border border-border/60",children:e.jsxs(z,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(Ce,{children:[e.jsx(Le,{className:"bg-muted/50",children:e.jsxs(X,{children:[e.jsx(j,{children:"Date"}),e.jsx(j,{children:"Card Used"}),e.jsx(j,{className:"text-right",children:"Fuel Amount"}),e.jsx(j,{className:"text-right",children:"Surcharge"}),e.jsx(j,{className:"text-right",children:"Waived"}),e.jsx(j,{className:"text-right",children:"Total Bill"}),e.jsx(j,{className:"text-center",children:"Status"}),e.jsx(j,{children:"Notes"}),e.jsx(j,{className:"text-right pr-6",children:"Actions"})]})}),e.jsx(Fe,{children:c?e.jsx(X,{children:e.jsxs(d,{colSpan:9,className:"text-center py-12 text-muted-foreground",children:[e.jsx(ve,{className:"w-5 h-5 animate-spin mx-auto mb-2 text-primary"})," Loading payments..."]})}):xe.length===0?e.jsx(X,{children:e.jsx(d,{colSpan:9,className:"text-center py-12 text-muted-foreground",children:"No transaction logs found."})}):xe.map(t=>{const s=Number(t.fuel_amount)||0,x=Number(t.surcharge_amount)||0,S=Number(t.waived_amount||t.surcharge_waiver_amount||0),v=s+x-S;return e.jsxs(X,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(d,{className:"font-semibold text-foreground whitespace-nowrap text-xs",children:t.date?ae(new Date(t.date),"dd MMM yyyy"):"-"}),e.jsx(d,{className:"text-sm font-medium",children:Re(t.card_id)}),e.jsxs(d,{className:"text-right tabular-nums",children:["₹",s.toLocaleString("en-IN",{minimumFractionDigits:2})]}),e.jsxs(d,{className:"text-right text-muted-foreground tabular-nums",children:["₹",x.toLocaleString("en-IN",{minimumFractionDigits:2}),t.surcharge_percentage>0&&e.jsxs("span",{className:"text-[10px] ml-1 block opacity-75",children:["(",t.surcharge_percentage,"%)"]})]}),e.jsxs(d,{className:"text-right text-success tabular-nums",children:["₹",S.toLocaleString("en-IN",{minimumFractionDigits:2})]}),e.jsxs(d,{className:"text-right font-bold tabular-nums",children:["₹",v.toLocaleString("en-IN",{minimumFractionDigits:2})]}),e.jsx(d,{className:"text-center",children:mt(t.payment_status)}),e.jsx(d,{className:"text-muted-foreground text-xs max-w-[150px] truncate",title:t.notes,children:t.notes||"-"}),e.jsx(d,{className:"text-right pr-6",children:e.jsxs("div",{className:"flex justify-end gap-1",children:[e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>{Y(t),l(!0)},className:"hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-lg",children:e.jsx(Ve,{className:"w-4 h-4"})}),e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>xt(t.id),className:"hover:bg-destructive/10 hover:text-destructive text-destructive h-8 w-8 rounded-lg",children:e.jsx(ke,{className:"w-4 h-4"})})]})})]},t.id)})})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/40",children:c?e.jsxs("div",{className:"p-8 text-center text-muted-foreground",children:[e.jsx(ve,{className:"w-5 h-5 animate-spin mx-auto mb-2 text-primary"})," Loading payments..."]}):xe.length===0?e.jsx("div",{className:"p-8 text-center text-muted-foreground text-xs font-semibold",children:"No transaction logs found."}):xe.map(t=>{const s=Number(t.fuel_amount)||0,x=Number(t.surcharge_amount)||0,S=Number(t.waived_amount||t.surcharge_waiver_amount||0),v=s+x-S;return e.jsxs("div",{className:"p-4 space-y-3 relative text-xs",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"font-semibold text-foreground",children:t.date?ae(new Date(t.date),"dd MMM yyyy"):"-"}),mt(t.payment_status)]}),e.jsxs("div",{className:"flex justify-between items-center border-t border-b border-white/5 py-2",children:[e.jsxs("div",{className:"space-y-0.5",children:[e.jsx("span",{className:"text-muted-foreground block text-[10px]",children:"Card Used"}),e.jsx("span",{className:"font-bold text-foreground",children:Re(t.card_id)})]}),e.jsxs("div",{className:"text-right space-y-0.5",children:[e.jsx("span",{className:"text-muted-foreground block text-[10px]",children:"Total Bill"}),e.jsxs("span",{className:"font-black text-sm text-foreground",children:["₹",v.toLocaleString("en-IN",{minimumFractionDigits:2})]})]})]}),e.jsxs("div",{className:"flex justify-between items-center text-[10px] text-muted-foreground",children:[e.jsxs("span",{children:["Fuel: ₹",s.toLocaleString()," • Surcharge: ₹",x.toLocaleString()]}),e.jsxs("div",{className:"flex gap-1",children:[e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>{Y(t),l(!0)},className:"hover:bg-primary/10 hover:text-primary h-7 w-7 rounded-lg",children:e.jsx(Ve,{className:"w-3.5 h-3.5"})}),e.jsx(y,{variant:"ghost",size:"icon",onClick:()=>xt(t.id),className:"hover:bg-destructive/10 hover:text-destructive text-destructive h-7 w-7 rounded-lg",children:e.jsx(ke,{className:"w-3.5 h-3.5"})})]})]})]},t.id)})})]})})]}),e.jsx(we,{value:"waiver",className:"space-y-6 outline-none animate-in fade-in-50 duration-200",children:e.jsx(Ws,{cards:T,transactions:w,fuelLogs:u})}),e.jsxs(we,{value:"analytics",className:"space-y-6 outline-none animate-in fade-in-50 duration-200",children:[e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6",children:[e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-muted-foreground uppercase",children:"Refill Cost (All-Time)"}),e.jsx(Nt,{className:"w-4 h-4 text-emerald-500"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-foreground tabular-nums",children:["₹",he.totalSpend.toLocaleString("en-IN",{maximumFractionDigits:0})]}),e.jsx("p",{className:"text-[10px] text-muted-foreground mt-1",children:"Total spend recorded on refills"})]})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-muted-foreground uppercase",children:"Cost per KM (Avg)"}),e.jsx(ve,{className:"w-4 h-4 text-primary"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-foreground tabular-nums",children:["₹",he.avgCostPerKm.toFixed(2)," ",e.jsx("span",{className:"text-xs font-medium text-muted-foreground",children:"/km"})]}),e.jsx("p",{className:"text-[10px] text-muted-foreground mt-1",children:"Average running cost for fuel"})]})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-muted-foreground uppercase",children:"Surcharges Paid"}),e.jsx(je,{className:"w-4 h-4 text-warning"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-foreground tabular-nums",children:["₹",he.totalSurcharges.toLocaleString("en-IN",{maximumFractionDigits:0})]}),e.jsx("p",{className:"text-[10px] text-muted-foreground mt-1",children:"Total bank surcharge card fees"})]})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-muted-foreground uppercase",children:"Surcharges Waived"}),e.jsx(Ue,{className:"w-4 h-4 text-success"})]}),e.jsxs(z,{children:[e.jsxs("div",{className:"text-2xl font-black text-success tabular-nums",children:["₹",he.totalWaived.toLocaleString("en-IN",{maximumFractionDigits:0})]}),e.jsx("p",{className:"text-[10px] text-muted-foreground mt-1",children:"Total money saved / waived"})]})]}),e.jsxs(N,{className:"shadow-sm border bg-destructive/5 border-destructive/20",children:[e.jsxs(q,{className:"pb-1.5 flex flex-row items-center justify-between",children:[e.jsx(H,{className:"text-xs font-semibold text-destructive uppercase",children:"Fuel Alerts"}),e.jsx(Se,{className:"w-4 h-4 text-destructive animate-pulse"})]}),e.jsxs(z,{children:[e.jsx("div",{className:"text-2xl font-black text-destructive tabular-nums",children:he.anomalies.length}),e.jsx("p",{className:"text-[10px] text-muted-foreground mt-1",children:"Refills with anomalous efficiency"})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-3 gap-6",children:[e.jsxs(N,{className:"shadow-sm border-border bg-card lg:col-span-2",children:[e.jsx(q,{children:e.jsxs(H,{className:"text-base font-bold flex items-center gap-2",children:[e.jsx(_t,{className:"w-4 h-4 text-primary"})," Running Cost per KM (₹/KM)"]})}),e.jsx(z,{className:"pt-2",children:et.length>0?e.jsx("div",{className:"h-[280px] w-full",children:e.jsx(Ke,{width:"100%",height:"100%",children:e.jsxs(_t,{data:et,margin:{top:15,right:10,bottom:5,left:-10},children:[e.jsx(at,{strokeDasharray:"3 3",stroke:"readonly",vertical:!1}),e.jsx(rt,{dataKey:"name",fontSize:11,stroke:"hsl(var(--muted-foreground))",tickLine:!1}),e.jsx(Ge,{fontSize:11,stroke:"hsl(var(--muted-foreground))",tickLine:!1,axisLine:!1,label:{value:"₹/km",angle:-90,position:"insideLeft",offset:0,style:{fontSize:10,fill:"hsl(var(--muted-foreground))"}}}),e.jsx(We,{formatter:t=>[`₹${t}/km`,"Fuel Cost per KM"],contentStyle:{backgroundColor:"hsl(var(--popover))",borderColor:"hsl(var(--border))",borderRadius:"8px",color:"hsl(var(--popover-foreground))"}}),e.jsx(vt,{dataKey:"costPerKm",radius:[6,6,0,0],children:et.map((t,s)=>e.jsx(yt,{fill:t.costPerKm>he.avgCostPerKm?"#F59E0B":"#10B981"},`cell-${s}`))})]})})}):e.jsx("div",{className:"h-[280px] flex items-center justify-center text-muted-foreground border border-dashed rounded-xl border-border/50",children:"Not enough distance data to calculate Running Cost per KM."})})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card lg:col-span-1",children:[e.jsx(q,{children:e.jsx(H,{className:"text-base font-bold",children:"Spend Share by Payment Mode"})}),e.jsx(z,{className:"pt-2 flex flex-col items-center",children:$e.length>0?e.jsxs(e.Fragment,{children:[e.jsx("div",{className:"h-[220px] w-full flex justify-center",children:e.jsx(Ke,{width:"100%",height:"100%",children:e.jsxs(Ns,{children:[e.jsx(vs,{data:$e,cx:"50%",cy:"50%",innerRadius:55,outerRadius:80,paddingAngle:3,dataKey:"value",children:$e.map((t,s)=>e.jsx(yt,{fill:qe[s%qe.length]},`cell-${s}`))}),e.jsx(We,{formatter:t=>`₹${t.toLocaleString()}`})]})})}),e.jsx("div",{className:"grid grid-cols-2 gap-3 w-full text-xs mt-3 pt-3 border-t border-border/50",children:$e.map((t,s)=>e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("div",{className:"w-2.5 h-2.5 rounded-full shrink-0",style:{backgroundColor:qe[s%qe.length]}}),e.jsxs("span",{className:"text-muted-foreground truncate",children:[t.name,":"]}),e.jsxs("span",{className:"font-semibold text-foreground ml-auto tabular-nums",children:["₹",t.value.toLocaleString()]})]},s))})]}):e.jsx("div",{className:"h-[280px] flex items-center justify-center text-muted-foreground",children:"No payment data recorded."})})]})]}),e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-3 gap-6",children:[e.jsxs(N,{className:"shadow-sm border-border bg-card lg:col-span-2",children:[e.jsx(q,{children:e.jsxs(H,{className:"text-base font-bold flex items-center gap-2",children:[e.jsx(rs,{className:"w-4 h-4 text-primary"})," Monthly Cost & Liter Trend"]})}),e.jsx(z,{className:"pt-2",children:pt.length>0?e.jsx("div",{className:"h-[280px] w-full",children:e.jsx(Ke,{width:"100%",height:"100%",children:e.jsxs(ys,{data:pt,margin:{top:15,right:-5,bottom:5,left:-10},children:[e.jsx(at,{strokeDasharray:"3 3",stroke:"hsl(var(--border))",vertical:!1}),e.jsx(rt,{dataKey:"name",fontSize:11,stroke:"hsl(var(--muted-foreground))",tickLine:!1}),e.jsx(Ge,{yAxisId:"left",fontSize:11,stroke:"hsl(var(--muted-foreground))",tickLine:!1,axisLine:!1,label:{value:"Cost (₹)",angle:-90,position:"insideLeft",offset:0,style:{fontSize:10,fill:"hsl(var(--muted-foreground))"}}}),e.jsx(Ge,{yAxisId:"right",orientation:"right",fontSize:11,stroke:"hsl(var(--muted-foreground))",tickLine:!1,axisLine:!1,label:{value:"Volume (L)",angle:90,position:"insideRight",offset:0,style:{fontSize:10,fill:"hsl(var(--muted-foreground))"}}}),e.jsx(We,{contentStyle:{backgroundColor:"hsl(var(--popover))",borderColor:"hsl(var(--border))",borderRadius:"8px",color:"hsl(var(--popover-foreground))"},formatter:(t,s)=>s==="cost"?[`₹${t.toLocaleString()}`,"Spent (₹)"]:[`${t.toLocaleString()} L`,"Volume (Liters)"]}),e.jsx(bs,{verticalAlign:"top",height:36,iconSize:10,fontSize:11}),e.jsx(vt,{yAxisId:"left",dataKey:"cost",name:"cost",fill:"hsl(var(--primary))",opacity:.8,radius:[4,4,0,0]}),e.jsx(wt,{yAxisId:"right",dataKey:"liters",name:"liters",stroke:"#EC4899",strokeWidth:3,dot:{r:4,fill:"white",stroke:"#EC4899",strokeWidth:2}})]})})}):e.jsx("div",{className:"h-[280px] flex items-center justify-center text-muted-foreground border border-dashed rounded-xl border-border/50",children:"Not enough monthly historical records."})})]}),e.jsxs(N,{className:"shadow-sm border-border bg-card lg:col-span-1",children:[e.jsx(q,{className:"pb-3 border-b border-border/30",children:e.jsxs(H,{className:"text-base font-bold text-destructive flex items-center gap-2",children:[e.jsx(Se,{className:"w-4 h-4 text-destructive animate-pulse"})," Anomalous Fuel Usage"]})}),e.jsx(z,{className:"p-0",children:e.jsx("div",{className:"overflow-y-auto max-h-[300px] px-6 py-6 space-y-4",children:he.anomalies.length===0?e.jsxs("div",{className:"text-center text-muted-foreground py-12 flex flex-col items-center justify-center h-full min-h-[150px]",children:[e.jsx(ve,{className:"w-8 h-8 mx-auto mb-3 opacity-20 text-success"}),e.jsx("p",{className:"text-xs",children:"No efficiency anomalies detected."}),e.jsx("p",{className:"text-[10px] text-muted-foreground mt-1",children:"Fleet is performing optimally!"})]}):he.anomalies.map((t,s)=>e.jsxs("div",{className:"p-4 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2 hover:bg-destructive/10 transition-colors",children:[e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"font-bold text-foreground",children:t.vehicle_name}),e.jsx("span",{className:"text-[10px] text-muted-foreground",children:ae(new Date(t.date),"dd MMM yyyy")})]}),e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsxs("div",{className:"space-y-0.5",children:[e.jsx("p",{className:"text-[10px] text-muted-foreground",children:"Fuel Efficiency"}),e.jsxs("p",{className:"text-sm font-bold text-destructive tabular-nums",children:[t.efficiency.toFixed(2)," km/l"]})]}),e.jsxs("div",{className:"text-right space-y-0.5",children:[e.jsx("p",{className:"text-[10px] text-muted-foreground",children:"Avg for Vehicle"}),e.jsxs("p",{className:"text-sm font-bold text-foreground tabular-nums",children:[t.avgEfficiency.toFixed(2)," km/l"]})]})]}),e.jsxs("div",{className:"text-[10px] bg-destructive/10 text-destructive font-medium p-1.5 rounded border border-destructive/10 flex items-center gap-1",children:[e.jsx(Ue,{className:"w-3.5 h-3.5 shrink-0"}),e.jsxs("span",{children:["Efficiency is ",t.dropPercentage.toFixed(0),"% below average!"]})]})]},s))})})]})]})]}),e.jsx(we,{value:"stations",className:"space-y-6 outline-none animate-in fade-in-50 duration-200",children:e.jsx(ks,{onRefreshRefills:()=>r(t=>t+1)})})]}),e.jsx(us,{isOpen:a,onClose:()=>{i(!1),$(null)},onSuccess:()=>r(t=>t+1),savedCards:T,editLog:D}),e.jsx(ws,{isOpen:J,onClose:()=>l(!1),transaction:b,cards:T,onSuccess:()=>r(t=>t+1)}),V&&e.jsx(Mt,{isOpen:!!V,onClose:()=>re(null),log:V,onSuccess:()=>r(t=>t+1)}),se&&e.jsx(Ze,{open:!!se,onOpenChange:()=>De(null),children:e.jsxs(Xe,{className:"sm:max-w-3xl bg-zinc-950 border-zinc-800 text-white p-5",children:[e.jsxs(Ye,{className:"border-b border-zinc-800 pb-3 flex flex-row items-center justify-between",children:[e.jsxs("div",{children:[e.jsxs(Qe,{className:"text-base font-bold text-white flex items-center gap-2",children:[e.jsx(st,{className:"w-4 h-4 text-primary"}),"Fuel Bill Receipt: ",se.log?.vehicle_name||se.log?.truck_number]}),e.jsxs("p",{className:"text-xs text-zinc-400",children:["📅 ",se.log?.date?ae(new Date(se.log.date),"dd MMM yyyy"):""," • ⛽ ",se.log?.liters," Liters • ₹",se.log?.total_cost?.toLocaleString("en-IN")]})]}),e.jsx("div",{className:"flex items-center gap-2",children:se.previewUrl&&e.jsx(y,{variant:"outline",size:"sm",className:"h-8 text-xs border-zinc-700 bg-zinc-900 text-zinc-200 hover:text-white",asChild:!0,children:e.jsxs("a",{href:se.previewUrl,target:"_blank",rel:"noopener noreferrer",download:!0,children:[e.jsx(tt,{className:"w-3.5 h-3.5 mr-1.5"}),"Download Receipt"]})})})]}),e.jsx("div",{className:"min-h-[350px] max-h-[70vh] flex items-center justify-center p-3 overflow-auto bg-black/50 rounded-xl border border-zinc-900",children:(se.name||"").toLowerCase().endsWith(".pdf")?e.jsx("iframe",{src:se.previewUrl,title:"Receipt PDF",className:"w-full h-[60vh] rounded-lg border border-zinc-800"}):se.previewUrl?e.jsx("img",{src:se.previewUrl,alt:se.name,className:"max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl"}):e.jsxs("div",{className:"text-zinc-500 text-sm flex flex-col items-center gap-2",children:[e.jsx(ls,{className:"w-10 h-10 opacity-30"}),e.jsx("p",{children:"No receipt image available"})]})})]})}),m&&e.jsx(hs,{isOpen:m,onClose:()=>k(!1),onApplyScan:t=>{console.log("Applying scanned diesel bill data into LogFuelModal:",t),k(!1),$({liters:t.liters||"",cost_per_liter:t.ratePerLiter||"",total_cost:t.totalAmount||"",date:t.date||new Date().toISOString().split("T")[0],fuel_station:t.vendor||"",truck_number:t.truckNumber||"",truck_id:t.truckNumber||"",receiptFile:t.receiptFile||null,receiptPreviewUrl:t.receiptPreviewUrl||""}),i(!0)}})]})};export{qs as default};

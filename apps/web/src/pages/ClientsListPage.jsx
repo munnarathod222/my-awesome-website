@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Filter, MoreHorizontal, Trash2, Edit2, Eye, Download, Users, Building, User, Store, ShieldCheck, MapPin } from 'lucide-react';
+import { Search, Plus, Filter, MoreHorizontal, Trash2, Edit2, Eye, Download, Users, Building, User, Store, ShieldCheck, MapPin, Mail, Phone, Star, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -26,6 +28,7 @@ export default function ClientsListPage() {
   
   const [pagination, setPagination] = useState({ page: 1, perPage: 25, total: 0 });
   const [portalModalClient, setPortalModalClient] = useState(null);
+  const [podAddressModalClient, setPodAddressModalClient] = useState(null);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -304,6 +307,15 @@ export default function ClientsListPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-amber-500 hover:bg-amber-500/10"
+                            title="Manage POD Courier Addresses"
+                            onClick={() => setPodAddressModalClient(client)}
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
                           {(client.google_maps_url || client.google_map_link || client.location_url || client.address) && (
                             <Button
                               variant="ghost"
@@ -327,7 +339,16 @@ export default function ClientsListPage() {
                             <DropdownMenuContent align="end" className="w-[180px]">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              {(client.google_maps_url || client.google_map_link || client.location_url || client.address) && (
+                              <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-amber-500 hover:bg-amber-500/10"
+                            title="Manage POD Courier Addresses"
+                            onClick={() => setPodAddressModalClient(client)}
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          {(client.google_maps_url || client.google_map_link || client.location_url || client.address) && (
                                 <DropdownMenuItem 
                                   onClick={() => {
                                     const target = client.google_maps_url || client.google_map_link || client.location_url || [client.address, client.city, client.state].filter(Boolean).join(', ');
@@ -338,6 +359,9 @@ export default function ClientsListPage() {
                                   <MapPin className="h-4 w-4 mr-2 text-rose-500" /> Open Location
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuItem onClick={() => setPodAddressModalClient(client)} className="cursor-pointer text-amber-600 dark:text-amber-400 font-semibold">
+                                <Mail className="h-4 w-4 mr-2 text-amber-500" /> POD Courier Addresses
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setPortalModalClient(client)} className="cursor-pointer text-primary font-semibold">
                                 <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Setup Portal Login
                               </DropdownMenuItem>
@@ -401,6 +425,9 @@ export default function ClientsListPage() {
                         <DropdownMenuContent align="end" className="w-[160px]">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setPodAddressModalClient(client)} className="cursor-pointer text-amber-600 dark:text-amber-400 font-semibold">
+                            <Mail className="h-4 w-4 mr-2 text-amber-500" /> POD Addresses
+                          </DropdownMenuItem>
                           <DropdownMenuItem asChild className="cursor-pointer">
                             <Link to={`/client/${client.id}`}><Eye className="h-4 w-4 mr-2" /> View Details</Link>
                           </DropdownMenuItem>
@@ -485,6 +512,452 @@ export default function ClientsListPage() {
           onSuccess={fetchClients}
         />
       )}
+
+      {podAddressModalClient && (
+        <ClientPodAddressesModal
+          isOpen={!!podAddressModalClient}
+          onClose={() => setPodAddressModalClient(null)}
+          client={podAddressModalClient}
+        />
+      )}
     </div>
+  );
+}
+
+function ClientPodAddressesModal({ isOpen, onClose, client }) {
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const clientDisplayName = client?.company_name || client?.client_name || '';
+
+  const emptyForm = () => ({
+    title: '',
+    company_name: clientDisplayName,
+    attention_to: 'Billing & POD Clearance Desk',
+    contact_person: client?.contact_person || '',
+    phone: client?.phone || '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    is_default: addresses.length === 0
+  });
+
+  const [form, setForm] = useState(emptyForm);
+
+  const loadAddresses = async () => {
+    if (!client?.id) return;
+    setLoading(true);
+    try {
+      const safeName = clientDisplayName.replace(/"/g, '\\"');
+      const filter = safeName
+        ? `client_id = "${client.id}" || company_name = "${safeName}" || client_name = "${safeName}"`
+        : `client_id = "${client.id}"`;
+      const res = await pb.collection('courier_addresses').getFullList({
+        filter,
+        sort: '-is_default,-created',
+        $autoCancel: false
+      });
+      setAddresses(res);
+    } catch (err) {
+      console.error('Failed to load POD addresses:', err);
+      toast.error('Failed to load POD courier addresses');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && client) {
+      setShowForm(false);
+      setEditingId(null);
+      loadAddresses();
+    }
+  }, [isOpen, client?.id]);
+
+  const openAddForm = (prefillFromClient = false) => {
+    setEditingId(null);
+    if (prefillFromClient && client) {
+      setForm({
+        title: `${clientDisplayName} - Main Office`,
+        company_name: clientDisplayName,
+        attention_to: client.contact_person ? `${client.contact_person} (Billing Desk)` : 'Billing & POD Clearance Desk',
+        contact_person: client.contact_person || '',
+        phone: client.phone || '',
+        address_line1: client.address || '',
+        address_line2: client.gst_number ? `GSTIN: ${client.gst_number}` : '',
+        city: client.city || '',
+        state: client.state || '',
+        pincode: client.postal_code || client.pincode || '',
+        is_default: addresses.length === 0
+      });
+    } else {
+      setForm({
+        title: '',
+        company_name: clientDisplayName,
+        attention_to: 'Billing & POD Clearance Desk',
+        contact_person: client?.contact_person || '',
+        phone: client?.phone || '',
+        address_line1: '',
+        address_line2: '',
+        city: '',
+        state: '',
+        pincode: '',
+        is_default: addresses.length === 0
+      });
+    }
+    setShowForm(true);
+  };
+
+  const openEditForm = (addr) => {
+    setEditingId(addr.id);
+    setForm({
+      title: addr.title || '',
+      company_name: addr.company_name || clientDisplayName,
+      attention_to: addr.attention_to || '',
+      contact_person: addr.contact_person || '',
+      phone: addr.phone || '',
+      address_line1: addr.address_line1 || '',
+      address_line2: addr.address_line2 || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      pincode: addr.pincode || '',
+      is_default: Boolean(addr.is_default)
+    });
+    setShowForm(true);
+  };
+
+  const clearOtherDefaults = async (excludeId = null) => {
+    const others = addresses.filter(a => a.is_default && a.id !== excludeId);
+    for (const o of others) {
+      await pb.collection('courier_addresses').update(o.id, { is_default: false }, { $autoCancel: false }).catch(() => {});
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!form.address_line1.trim()) {
+      toast.error('Address Line 1 is required');
+      return;
+    }
+    if (!form.city.trim()) {
+      toast.error('City is required');
+      return;
+    }
+    if (!form.phone.trim()) {
+      toast.error('Mobile / Phone number is required');
+      return;
+    }
+    setSaving(true);
+    try {
+      if (form.is_default) {
+        await clearOtherDefaults(editingId);
+      }
+      const payload = {
+        title: form.title.trim() || `${form.company_name.trim() || clientDisplayName} (${form.city.trim()})`,
+        company_name: form.company_name.trim() || clientDisplayName,
+        attention_to: form.attention_to.trim(),
+        contact_person: form.contact_person.trim(),
+        phone: form.phone.trim(),
+        email: client?.email || '',
+        address_line1: form.address_line1.trim(),
+        address_line2: form.address_line2.trim(),
+        city: form.city.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.trim(),
+        category: 'Client POD Desk',
+        client_id: client.id,
+        client_name: client.client_name || clientDisplayName,
+        is_default: Boolean(form.is_default)
+      };
+
+      if (editingId) {
+        await pb.collection('courier_addresses').update(editingId, payload, { $autoCancel: false });
+        toast.success('POD courier address updated');
+      } else {
+        await pb.collection('courier_addresses').create(payload, { $autoCancel: false });
+        toast.success('POD courier address added');
+      }
+      setShowForm(false);
+      setEditingId(null);
+      await loadAddresses();
+    } catch (err) {
+      console.error('Failed to save POD address:', err);
+      toast.error('Failed to save POD courier address');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSetDefault = async (addr) => {
+    try {
+      await clearOtherDefaults(addr.id);
+      await pb.collection('courier_addresses').update(addr.id, { is_default: true }, { $autoCancel: false });
+      toast.success(`"${addr.title || addr.city}" set as default POD address`);
+      await loadAddresses();
+    } catch (err) {
+      console.error('Failed to set default:', err);
+      toast.error('Failed to update default address');
+    }
+  };
+
+  const handleDeleteAddr = async (addr) => {
+    if (!window.confirm(`Delete POD address "${addr.title || addr.address_line1}"?`)) return;
+    try {
+      await pb.collection('courier_addresses').delete(addr.id, { $autoCancel: false });
+      toast.success('POD address deleted');
+      await loadAddresses();
+    } catch (err) {
+      console.error('Failed to delete POD address:', err);
+      toast.error('Failed to delete POD address');
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !saving && onClose()}>
+      <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <Mail className="w-5 h-5 text-amber-500" />
+            POD Courier Addresses — {clientDisplayName}
+          </DialogTitle>
+          <DialogDescription>
+            Add multiple POD delivery addresses for this client. Mark any one as default for quick selection during dispatch.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {!showForm && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground font-medium">
+                {addresses.length} saved POD {addresses.length === 1 ? 'address' : 'addresses'}
+              </span>
+              <div className="flex gap-2">
+                {client?.address && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => openAddForm(true)}>
+                    <Building className="w-3.5 h-3.5 mr-1.5" /> Copy from Client Profile
+                  </Button>
+                )}
+                <Button type="button" size="sm" onClick={() => openAddForm(false)}>
+                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Add POD Address
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {showForm ? (
+            <form onSubmit={handleSave} className="space-y-3 p-4 rounded-xl border border-border bg-muted/20">
+              <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                <h4 className="font-bold text-sm">{editingId ? 'Edit POD Courier Address' : 'New POD Courier Address'}</h4>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setShowForm(false); setEditingId(null); }}>
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Address Label / Branch Name</Label>
+                  <Input
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    placeholder="e.g. Bangalore Billing Desk"
+                    className="bg-background h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Company / Recipient Name *</Label>
+                  <Input
+                    required
+                    value={form.company_name}
+                    onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+                    placeholder="Company Name"
+                    className="bg-background h-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Attention / Desk</Label>
+                  <Input
+                    value={form.attention_to}
+                    onChange={(e) => setForm({ ...form, attention_to: e.target.value })}
+                    placeholder="e.g. Billing Desk"
+                    className="bg-background h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Contact Person</Label>
+                  <Input
+                    value={form.contact_person}
+                    onChange={(e) => setForm({ ...form, contact_person: e.target.value })}
+                    placeholder="Contact Name"
+                    className="bg-background h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Mobile / Phone Number *</Label>
+                  <Input
+                    required
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="e.g. 9538874625"
+                    className="bg-background h-9 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Address Line 1 *</Label>
+                <Input
+                  required
+                  value={form.address_line1}
+                  onChange={(e) => setForm({ ...form, address_line1: e.target.value })}
+                  placeholder="Door No, Street, Building, Area"
+                  className="bg-background h-9 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Address Line 2 / Landmark (Optional)</Label>
+                <Input
+                  value={form.address_line2}
+                  onChange={(e) => setForm({ ...form, address_line2: e.target.value })}
+                  placeholder="Landmark, Floor, Sector"
+                  className="bg-background h-9 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">City *</Label>
+                  <Input
+                    required
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    placeholder="City"
+                    className="bg-background h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">State</Label>
+                  <Input
+                    value={form.state}
+                    onChange={(e) => setForm({ ...form, state: e.target.value })}
+                    placeholder="State"
+                    className="bg-background h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Pincode</Label>
+                  <Input
+                    value={form.pincode}
+                    onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                    placeholder="e.g. 560002"
+                    className="bg-background h-9 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={form.is_default}
+                  onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
+                  className="rounded border-border"
+                />
+                <span>Make this the default POD courier address for {clientDisplayName}</span>
+              </label>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => { setShowForm(false); setEditingId(null); }} disabled={saving}>
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={saving}>
+                  {saving ? 'Saving...' : (editingId ? 'Update Address' : 'Save Address')}
+                </Button>
+              </div>
+            </form>
+          ) : loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+          ) : addresses.length === 0 ? (
+            <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground space-y-2">
+              <MapPin className="w-8 h-8 mx-auto opacity-30" />
+              <p className="text-sm font-medium text-foreground">No POD courier addresses added yet</p>
+              <p className="text-xs">Add one or copy from the client&apos;s main profile address.</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {addresses.map((addr) => (
+                <div
+                  key={addr.id}
+                  className={`p-3.5 rounded-xl border transition-all ${
+                    addr.is_default
+                      ? 'border-amber-500/50 bg-amber-500/5'
+                      : 'border-border bg-background/60'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-foreground">{addr.title || addr.company_name}</span>
+                        {addr.is_default && (
+                          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 text-[10px] font-bold">
+                            <Star className="w-3 h-3 mr-1 fill-amber-500" /> Default
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-foreground/90">
+                        {addr.company_name}
+                        {addr.attention_to ? ` • Attn: ${addr.attention_to}` : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {[addr.address_line1, addr.address_line2].filter(Boolean).join(', ')}
+                        {(addr.city || addr.state || addr.pincode) ? ` — ${[addr.city, addr.state].filter(Boolean).join(', ')}${addr.pincode ? ' - ' + addr.pincode : ''}` : ''}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs pt-0.5">
+                        {addr.contact_person && (
+                          <span className="text-muted-foreground">Contact: <strong className="text-foreground">{addr.contact_person}</strong></span>
+                        )}
+                        {addr.phone && (
+                          <span className="font-mono font-semibold text-emerald-500 flex items-center gap-1">
+                            <Phone className="w-3 h-3" /> {addr.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!addr.is_default && (
+                        <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => handleSetDefault(addr)}>
+                          Set Default
+                        </Button>
+                      )}
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditForm(addr)} title="Edit Address">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteAddr(addr)} title="Delete Address">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

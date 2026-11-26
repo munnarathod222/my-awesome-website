@@ -24,7 +24,7 @@ import {
   O as CardContent,
   p as pb,
   t as toast
-} from "./index-DLxf9dwO.js";
+} from "./index-F7L3R9.js";
 import "./vendor-radix-BQCqNqg0.js";
 import "./vendor-pdf-DtmgLs_2.js";
 const { useState, useEffect, useMemo, useRef } = React;
@@ -162,6 +162,24 @@ function LorryReceiptsPodHubPage() {
   });
   const [savingCourier, setSavingCourier] = useState(false);
   const [courierFilter, setCourierFilter] = useState("all");
+  const [courierAddresses, setCourierAddresses] = useState([]);
+  const [selectedCourierAddressId, setSelectedCourierAddressId] = useState("");
+  const [loadingCourierAddresses, setLoadingCourierAddresses] = useState(false);
+  const [showAddCourierAddr, setShowAddCourierAddr] = useState(false);
+  const [savingNewCourierAddr, setSavingNewCourierAddr] = useState(false);
+  const [newCourierAddr, setNewCourierAddr] = useState({
+    title: "",
+    company_name: "",
+    attention_to: "Billing & POD Clearance Desk",
+    contact_person: "",
+    phone: "",
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    pincode: "",
+    is_default: false
+  });
 
   const [newLrNumber, setNewLrNumber] = useState("");
   const [createForm, setCreateForm] = useState({
@@ -815,8 +833,10 @@ function LorryReceiptsPodHubPage() {
     }
   };
   
-  const handleOpenCourierModal = (trip) => {
+  const handleOpenCourierModal = async (trip) => {
     setCourierModalTrip(trip);
+    setShowAddCourierAddr(false);
+    const cl = getClientForTrip(trip);
     const client = getClientName(trip);
     setCourierForm({
       partner: trip.pod_courier_partner || trip.hpod_courier_name || "DTDC",
@@ -826,6 +846,122 @@ function LorryReceiptsPodHubPage() {
       notes: trip.pod_courier_notes || "",
       isDelivered: trip.pod_hardcopy_status === "Delivered to Client" || trip.hpod_status === "Delivered to Hub"
     });
+
+    setLoadingCourierAddresses(true);
+    try {
+      let saved = [];
+      if (cl?.id || client) {
+        const parts = [];
+        if (cl?.id) parts.push(`client_id = "${cl.id}"`);
+        if (client && client !== "Direct Consignment") {
+          const safeName = client.replace(/"/g, '\\"');
+          parts.push(`company_name = "${safeName}"`);
+          parts.push(`client_name = "${safeName}"`);
+        }
+        if (parts.length > 0) {
+          saved = await pb.collection("courier_addresses").getFullList({
+            filter: parts.join(" || "),
+            sort: "-is_default,-created",
+            $autoCancel: false
+          }).catch(() => []);
+        }
+      }
+      const list = [...saved];
+      if (cl && (cl.address || cl.city || cl.phone)) {
+        list.push({
+          id: "__client_profile__",
+          title: "Client Profile Address (Main)",
+          company_name: cl.company_name || cl.client_name || client,
+          attention_to: cl.contact_person ? (cl.contact_person + " (Billing Desk)") : (client + " Billing Desk"),
+          contact_person: cl.contact_person || "",
+          phone: cl.phone || "",
+          address_line1: cl.address || "",
+          address_line2: "",
+          city: cl.city || "",
+          state: cl.state || "",
+          pincode: cl.postal_code || cl.pincode || "",
+          is_default: saved.length === 0,
+          is_profile_fallback: true
+        });
+      }
+      setCourierAddresses(list);
+      const preferred = (trip.pod_courier_address_id && list.find(a => a.id === trip.pod_courier_address_id))
+        || list.find(a => a.is_default)
+        || list[0]
+        || null;
+      setSelectedCourierAddressId(preferred ? preferred.id : "");
+      if (preferred && !trip.pod_courier_recipient) {
+        setCourierForm(prev => ({
+          ...prev,
+          recipient: preferred.attention_to || preferred.contact_person || prev.recipient
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to load courier addresses:", err);
+      setCourierAddresses([]);
+      setSelectedCourierAddressId("");
+    } finally {
+      setLoadingCourierAddresses(false);
+    }
+  };
+
+  const handleSelectCourierAddress = (addr) => {
+    setSelectedCourierAddressId(addr.id);
+    setCourierForm(prev => ({
+      ...prev,
+      recipient: addr.attention_to || addr.contact_person || prev.recipient
+    }));
+  };
+
+  const handleSaveQuickCourierAddress = async () => {
+    if (!courierModalTrip) return;
+    const cl = getClientForTrip(courierModalTrip);
+    const cName = getClientName(courierModalTrip);
+    if (!newCourierAddr.address_line1.trim() || !newCourierAddr.city.trim() || !newCourierAddr.phone.trim()) {
+      toast.error("Address, City, and Mobile Number are required.");
+      return;
+    }
+    setSavingNewCourierAddr(true);
+    try {
+      if (newCourierAddr.is_default) {
+        const toClear = courierAddresses.filter(a => a.is_default && !a.is_profile_fallback);
+        for (const item of toClear) {
+          await pb.collection("courier_addresses").update(item.id, { is_default: false }, { $autoCancel: false }).catch(() => {});
+        }
+      }
+      const created = await pb.collection("courier_addresses").create({
+        title: newCourierAddr.title.trim() || ((newCourierAddr.company_name.trim() || cName) + " (" + newCourierAddr.city.trim() + ")"),
+        company_name: newCourierAddr.company_name.trim() || cName,
+        attention_to: newCourierAddr.attention_to.trim(),
+        contact_person: newCourierAddr.contact_person.trim(),
+        phone: newCourierAddr.phone.trim(),
+        email: cl?.email || "",
+        address_line1: newCourierAddr.address_line1.trim(),
+        address_line2: newCourierAddr.address_line2.trim(),
+        city: newCourierAddr.city.trim(),
+        state: newCourierAddr.state.trim(),
+        pincode: newCourierAddr.pincode.trim(),
+        category: "Client POD Desk",
+        client_id: cl?.id || "",
+        client_name: cl?.client_name || cName,
+        is_default: Boolean(newCourierAddr.is_default)
+      }, { $autoCancel: false });
+      toast.success("New POD address saved!");
+      setShowAddCourierAddr(false);
+      setCourierAddresses(prev => {
+        const base = newCourierAddr.is_default ? prev.map(a => ({ ...a, is_default: false })) : prev;
+        return [created, ...base];
+      });
+      setSelectedCourierAddressId(created.id);
+      setCourierForm(prev => ({
+        ...prev,
+        recipient: created.attention_to || created.contact_person || prev.recipient
+      }));
+    } catch (err) {
+      toast.error("Failed to save address: " + (err?.message || "Error"));
+    } finally {
+      setSavingNewCourierAddr(false);
+    }
   };
 
   const handleSaveCourier = async () => {
@@ -869,14 +1005,17 @@ function LorryReceiptsPodHubPage() {
       date: trip.pod_courier_date || (trip.hpod_couriered_date ? trip.hpod_couriered_date.split(" ")[0].split("T")[0] : "") || new Date().toISOString().split("T")[0],
       recipient: trip.pod_courier_recipient || ""
     };
-    const cl = getClientForTrip(trip);
-    const cName = getClientName(trip);
-    const addr = cl?.address || trip.destination || "Central Industrial Area";
-    const city = cl?.city || (addr.toLowerCase().includes("hubli") ? "Hubli" : (addr.toLowerCase().includes("pune") ? "Pune" : "Hyderabad"));
-    const state = cl?.state || (addr.toLowerCase().includes("hubli") ? "Karnataka" : (addr.toLowerCase().includes("pune") ? "Maharashtra" : "Telangana"));
-    const pincode = cl?.pincode || (addr.toLowerCase().includes("hubli") ? "580024" : (addr.toLowerCase().includes("pune") ? "411001" : "500070"));
-    const phone = cl?.phone || "040-27801234";
-    const attn = f.recipient || (cName + " Central Billing Clearance Desk");
+      const cl = getClientForTrip(trip);
+    const selAddr = courierAddresses.find(a => a.id === selectedCourierAddressId) || null;
+    const cName = selAddr?.company_name || getClientName(trip);
+    const addrLine1 = selAddr?.address_line1 || cl?.address || trip.destination || "";
+    const addrLine2 = selAddr?.address_line2 || "";
+    const city = selAddr?.city || cl?.city || "";
+    const state = selAddr?.state || cl?.state || "";
+    const pincode = selAddr?.pincode || cl?.postal_code || cl?.pincode || "";
+    const phone = selAddr?.phone || cl?.phone || "";
+    const contactPerson = selAddr?.contact_person || cl?.contact_person || "";
+    const attn = f.recipient || selAddr?.attention_to || contactPerson || (cName + " Billing Desk");
     const truck = trip.truck_number || "FLEET";
     const tripId = trip.trip_id || trip.id?.slice(0, 8);
     const lrNum = getLrNumber(trip);
@@ -890,8 +1029,11 @@ function LorryReceiptsPodHubPage() {
       return;
     }
 
-    const qrData = encodeURIComponent("JAI BHAVANI CARGO | POD COURIER\nTO: " + cName + " (" + city + ")\nTRIP: #" + tripId + "\nTRUCK: " + truck + "\nLR: " + lrNum + "\nAWB: " + awb);
-    const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + qrData;
+    const qrData = encodeURIComponent("JAI BHAVANI CARGO | POD COURIER\nTO: " + cName + (city ? " (" + city + ")" : "") + "\nTRIP: #" + tripId + "\nTRUCK: " + truck + "\nLR: " + lrNum + "\nAWB: " + awb);
+    const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=" + qrData;
+
+    const fullAddrHtml = [addrLine1, addrLine2].filter(Boolean).join(", ")
+      + ((city || state || pincode) ? ("<br/>" + [city, state].filter(Boolean).join(", ") + (pincode ? " - " + pincode : "")) : "");
 
     printWin.document.write(`
       <!DOCTYPE html>
@@ -899,91 +1041,101 @@ function LorryReceiptsPodHubPage() {
         <head>
           <title>Courier Slip - ${cName} - ${tripId}</title>
           <style>
-            @page { size: A5 portrait; margin: 8mm; }
+            @page { size: A4 portrait; margin: 6mm; }
             * { box-sizing: border-box; }
             body {
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-              margin: 0; padding: 12px; color: #0f172a; background: #fff;
+              margin: 0; padding: 0; color: #0f172a; background: #fff;
+            }
+            .half-page {
+              width: 100%;
+              height: 138mm;
+              max-height: 138mm;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
             }
             .label-card {
-              border: 2px solid #000; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;
+              border: 2px solid #000; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; height: 100%;
             }
             .header-bar {
-              display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px;
+              display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #000; padding-bottom: 5px; margin-bottom: 6px;
             }
-            .brand-title { font-size: 18px; font-weight: 900; letter-spacing: 0.5px; margin: 0; }
-            .brand-sub { font-size: 10px; color: #475569; margin: 2px 0 0 0; font-weight: 600; }
-            .courier-badge { border: 1.5px solid #000; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; text-align: right; background: #f1f5f9; }
+            .brand-title { font-size: 16px; font-weight: 900; letter-spacing: 0.4px; margin: 0; }
+            .brand-sub { font-size: 9px; color: #475569; margin: 1px 0 0 0; font-weight: 600; }
+            .courier-badge { border: 1.5px solid #000; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800; text-align: right; background: #f1f5f9; }
             .ref-grid {
-              display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 4px; margin-bottom: 10px; font-size: 11px;
+              display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 4px 6px; border-radius: 4px; margin-bottom: 6px; font-size: 10px;
             }
-            .ref-item strong { display: block; color: #64748b; font-size: 9px; text-transform: uppercase; }
+            .ref-item strong { display: block; color: #64748b; font-size: 8px; text-transform: uppercase; }
             .ref-item span { font-weight: 800; color: #0f172a; font-family: monospace; }
             .to-section {
-              background: #fff; border: 2px solid #000; border-radius: 6px; padding: 12px 14px; margin-bottom: 10px;
+              background: #fff; border: 1.5px solid #000; border-radius: 5px; padding: 8px 10px; margin-bottom: 6px; flex: 1; display: flex; flex-direction: column; justify-content: center;
             }
-            .to-tag { display: inline-block; background: #000; color: #fff; font-size: 11px; font-weight: 900; padding: 2px 6px; border-radius: 3px; margin-bottom: 4px; }
-            .to-name { font-size: 17px; font-weight: 900; color: #000; margin: 4px 0; }
-            .to-attention { font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
-            .to-address { font-size: 12px; color: #334155; line-height: 1.35; margin: 4px 0; }
-            .to-phone { font-size: 13px; font-weight: 800; color: #000; margin-top: 4px; font-family: monospace; }
+            .to-tag { display: inline-block; background: #000; color: #fff; font-size: 9px; font-weight: 900; padding: 1px 5px; border-radius: 3px; margin-bottom: 3px; width: fit-content; }
+            .to-name { font-size: 15px; font-weight: 900; color: #000; margin: 2px 0; }
+            .to-attention { font-size: 11px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+            .to-address { font-size: 11px; color: #334155; line-height: 1.3; margin: 2px 0; }
+            .to-phone { font-size: 11.5px; font-weight: 800; color: #000; margin-top: 3px; font-family: monospace; }
             .from-section {
-              border-top: 1.5px dashed #64748b; padding-top: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10.5px;
+              border-top: 1px dashed #64748b; padding-top: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px;
             }
-            .from-tag { font-weight: 900; color: #475569; font-size: 9px; text-transform: uppercase; }
-            .from-name { font-weight: 800; color: #0f172a; font-size: 12px; }
-            .from-address { color: #475569; margin-top: 1px; }
+            .from-tag { font-weight: 900; color: #475569; font-size: 8px; text-transform: uppercase; }
+            .from-name { font-weight: 800; color: #0f172a; font-size: 11px; }
+            .from-address { color: #475569; margin-top: 1px; line-height: 1.25; }
             .urgent-banner {
-              border: 1px solid #000; background: #f8fafc; text-align: center; font-weight: 900; font-size: 10px; padding: 4px; border-radius: 4px; letter-spacing: 0.5px; margin-top: 8px;
+              border: 1px solid #000; background: #f8fafc; text-align: center; font-weight: 900; font-size: 9px; padding: 3px 4px; border-radius: 4px; letter-spacing: 0.3px;
             }
-            .qr-box { text-align: center; margin-left: 8px; }
-            .qr-box img { width: 75px; height: 75px; border: 1px solid #000; }
+            .qr-box { text-align: center; margin-left: 8px; shrink: 0; }
+            .qr-box img { width: 58px; height: 58px; border: 1px solid #000; display: block; }
             @media print { body { margin: 0; padding: 0; } }
           </style>
         </head>
         <body>
-          <div class="label-card">
-            <div class="header-bar">
-              <div>
-                <h1 class="brand-title">JAI BHAVANI CARGO</h1>
-                <p class="brand-sub">Express Logistics & Fleet Contractors</p>
+          <div class="half-page">
+            <div class="label-card">
+              <div class="header-bar">
+                <div>
+                  <h1 class="brand-title">JAI BHAVANI CARGO</h1>
+                  <p class="brand-sub">Express Logistics & Fleet Contractors</p>
+                </div>
+                <div class="courier-badge">
+                  <div>${partner.toUpperCase()} COURIER</div>
+                  ${awb ? '<div style="font-family: monospace; font-size: 10px;">AWB: ' + awb + '</div>' : ''}
+                </div>
               </div>
-              <div class="courier-badge">
-                <div>${partner.toUpperCase()} COURIER</div>
-                ${awb ? '<div style="font-family: monospace; font-size: 11px;">AWB: ' + awb + '</div>' : ''}
+
+              <div class="ref-grid">
+                <div class="ref-item"><strong>Date:</strong><span>${date}</span></div>
+                <div class="ref-item"><strong>Trip ID:</strong><span>${tripId}</span></div>
+                <div class="ref-item"><strong>Truck #:</strong><span>${truck}</span></div>
+                <div class="ref-item"><strong>LR Consignment:</strong><span>${lrNum || 'N/A'}</span></div>
               </div>
-            </div>
 
-            <div class="ref-grid">
-              <div class="ref-item"><strong>Date:</strong><span>${date}</span></div>
-              <div class="ref-item"><strong>Trip ID:</strong><span>${tripId}</span></div>
-              <div class="ref-item"><strong>Truck #:</strong><span>${truck}</span></div>
-              <div class="ref-item"><strong>LR Consignment:</strong><span>${lrNum || 'N/A'}</span></div>
-            </div>
-
-            <div class="to-section">
-              <span class="to-tag">DELIVER TO:</span>
-              <div class="to-name">${cName}</div>
-              <div class="to-attention">Attn: ${attn}</div>
-              <div class="to-address">${addr}<br/>${city}, ${state} - ${pincode}</div>
-              <div class="to-phone">📞 Contact: ${phone}</div>
-            </div>
-
-            <div class="from-section">
-              <div>
-                <div class="from-tag">FROM (SENDER):</div>
-                <div class="from-name">JAI BHAVANI CARGO (Head Office)</div>
-                <div class="from-address">Plot No. 12, Behind HP Petrol Pump, Autonagar, Hyderabad, Telangana - 500070</div>
-                <div class="from-address">Desk In-charge: Vinod Kumar Rathod (MD) • Ph: +91 7794072244 / 9440072244</div>
+              <div class="to-section">
+                <span class="to-tag">DELIVER TO:</span>
+                <div class="to-name">${cName}</div>
+                <div class="to-attention">Attn: ${attn}${contactPerson && !attn.includes(contactPerson) ? ' • ' + contactPerson : ''}</div>
+                <div class="to-address">${fullAddrHtml || 'Address not specified'}</div>
+                ${phone ? '<div class="to-phone">📞 Mobile / Contact: ' + phone + '</div>' : ''}
               </div>
-              <div class="qr-box">
-                <img src="${qrUrl}" alt="QR" />
-                <div style="font-size: 7px; color: #64748b; font-weight: 700; margin-top: 1px;">SCAN REF</div>
-              </div>
-            </div>
 
-            <div class="urgent-banner">
-              ⚠️ CONTENTS: ORIGINAL PROOF OF DELIVERY (POD) & BILLING INVOICE — HANDLE WITH CARE ⚠️
+              <div class="from-section">
+                <div>
+                  <div class="from-tag">FROM (SENDER):</div>
+                  <div class="from-name">${companySettings?.company_name || "JAI BHAVANI CARGO"}</div>
+                  <div class="from-address">${companySettings?.company_address || ""}</div>
+                  ${(companySettings?.signatory_name || companySettings?.company_phone) ? '<div class="from-address">' + [companySettings?.signatory_name ? ('Desk In-charge: ' + companySettings.signatory_name + (companySettings?.signatory_title ? ' (' + companySettings.signatory_title + ')' : '')) : '', companySettings?.company_phone ? ('Ph: ' + companySettings.company_phone) : ''].filter(Boolean).join(' • ') + '</div>' : ''}
+                </div>
+                <div class="qr-box">
+                  <img src="${qrUrl}" alt="QR" />
+                  <div style="font-size: 6.5px; color: #64748b; font-weight: 700; margin-top: 1px;">SCAN REF</div>
+                </div>
+              </div>
+
+              <div class="urgent-banner">
+                ⚠️ CONTENTS: ORIGINAL PROOF OF DELIVERY (POD) & BILLING INVOICE — HANDLE WITH CARE ⚠️
+              </div>
             </div>
           </div>
           <script>
@@ -2509,7 +2661,7 @@ function LorryReceiptsPodHubPage() {
   className: "fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4",
   style: { zIndex: 99999 }
 }, /* @__PURE__ */ React.createElement("div", {
-  className: "bg-[#0b141a] border border-blue-500/30 rounded-3xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl text-slate-100 font-sans"
+  className: "bg-[#0b141a] border border-blue-500/30 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl text-slate-100 font-sans"
 },
   /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3" },
     /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" },
@@ -2542,6 +2694,141 @@ function LorryReceiptsPodHubPage() {
         );
   })(),
   
+  /* @__PURE__ */ React.createElement("div", { className: "space-y-2 p-3 rounded-2xl bg-slate-900/70 border border-slate-800" },
+    /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" },
+      /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-200 flex items-center gap-1.5" }, "📍 Select POD Delivery Address:"),
+      /* @__PURE__ */ React.createElement("button", {
+        type: "button",
+        onClick: () => {
+          const cl = getClientForTrip(courierModalTrip);
+          const cName = getClientName(courierModalTrip);
+          setNewCourierAddr({
+            title: "",
+            company_name: cName,
+            attention_to: "Billing & POD Clearance Desk",
+            contact_person: cl?.contact_person || "",
+            phone: cl?.phone || "",
+            address_line1: "",
+            address_line2: "",
+            city: "",
+            state: "",
+            pincode: "",
+            is_default: courierAddresses.filter(a => !a.is_profile_fallback).length === 0
+          });
+          setShowAddCourierAddr(!showAddCourierAddr);
+        },
+        className: "text-[11px] font-bold text-amber-400 hover:text-amber-300 cursor-pointer"
+      }, showAddCourierAddr ? "✕ Close" : "+ Add New Address")
+    ),
+    showAddCourierAddr ? /* @__PURE__ */ React.createElement("div", { className: "space-y-2 pt-2 border-t border-slate-800" },
+      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" },
+        /* @__PURE__ */ React.createElement("input", {
+          type: "text",
+          placeholder: "Label (e.g. Bangalore Branch)",
+          value: newCourierAddr.title,
+          onChange: (e) => setNewCourierAddr({ ...newCourierAddr, title: e.target.value }),
+          className: "h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+        }),
+        /* @__PURE__ */ React.createElement("input", {
+          type: "text",
+          placeholder: "Mobile / Phone Number *",
+          value: newCourierAddr.phone,
+          onChange: (e) => setNewCourierAddr({ ...newCourierAddr, phone: e.target.value }),
+          className: "h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-white"
+        })
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" },
+        /* @__PURE__ */ React.createElement("input", {
+          type: "text",
+          placeholder: "Attention / Desk",
+          value: newCourierAddr.attention_to,
+          onChange: (e) => setNewCourierAddr({ ...newCourierAddr, attention_to: e.target.value }),
+          className: "h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+        }),
+        /* @__PURE__ */ React.createElement("input", {
+          type: "text",
+          placeholder: "Contact Person",
+          value: newCourierAddr.contact_person,
+          onChange: (e) => setNewCourierAddr({ ...newCourierAddr, contact_person: e.target.value }),
+          className: "h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+        })
+      ),
+      /* @__PURE__ */ React.createElement("input", {
+        type: "text",
+        placeholder: "Address Line 1 *",
+        value: newCourierAddr.address_line1,
+        onChange: (e) => setNewCourierAddr({ ...newCourierAddr, address_line1: e.target.value }),
+        className: "w-full h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+      }),
+      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2" },
+        /* @__PURE__ */ React.createElement("input", {
+          type: "text",
+          placeholder: "City *",
+          value: newCourierAddr.city,
+          onChange: (e) => setNewCourierAddr({ ...newCourierAddr, city: e.target.value }),
+          className: "h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+        }),
+        /* @__PURE__ */ React.createElement("input", {
+          type: "text",
+          placeholder: "State",
+          value: newCourierAddr.state,
+          onChange: (e) => setNewCourierAddr({ ...newCourierAddr, state: e.target.value }),
+          className: "h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+        }),
+        /* @__PURE__ */ React.createElement("input", {
+          type: "text",
+          placeholder: "Pincode",
+          value: newCourierAddr.pincode,
+          onChange: (e) => setNewCourierAddr({ ...newCourierAddr, pincode: e.target.value }),
+          className: "h-8 px-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-white"
+        })
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pt-1" },
+        /* @__PURE__ */ React.createElement("label", { className: "flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer" },
+          /* @__PURE__ */ React.createElement("input", {
+            type: "checkbox",
+            checked: newCourierAddr.is_default,
+            onChange: (e) => setNewCourierAddr({ ...newCourierAddr, is_default: e.target.checked })
+          }),
+          "Make Default"
+        ),
+        /* @__PURE__ */ React.createElement("button", {
+          type: "button",
+          disabled: savingNewCourierAddr,
+          onClick: handleSaveQuickCourierAddress,
+          className: "px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer"
+        }, savingNewCourierAddr ? "Saving..." : "Save & Select")
+      )
+    ) : loadingCourierAddresses ? /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400" }, "Loading client POD addresses...") : courierAddresses.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400" }, "No saved addresses found. Click + Add New Address above.") : /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 max-h-40 overflow-y-auto pr-1" },
+      courierAddresses.map(addr => {
+        const isSelected = selectedCourierAddressId === addr.id;
+        return /* @__PURE__ */ React.createElement("div", {
+          key: addr.id,
+          onClick: () => handleSelectCourierAddress(addr),
+          className: "p-2.5 rounded-xl border cursor-pointer transition text-xs flex items-start gap-2.5 " + (isSelected ? "bg-blue-500/15 border-blue-500 text-white" : "bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-600")
+        },
+          /* @__PURE__ */ React.createElement("input", {
+            type: "radio",
+            name: "pod_courier_addr",
+            checked: isSelected,
+            onChange: () => handleSelectCourierAddress(addr),
+            className: "mt-0.5 accent-blue-500 cursor-pointer"
+          }),
+          /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 space-y-0.5" },
+            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
+              /* @__PURE__ */ React.createElement("span", { className: "font-bold text-white" }, addr.title || addr.company_name),
+              addr.is_default ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] font-bold uppercase" }, "Default") : null
+            ),
+            /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-300 leading-snug" },
+              [addr.address_line1, addr.address_line2, addr.city, addr.state].filter(Boolean).join(", ") + (addr.pincode ? " - " + addr.pincode : "")
+            ),
+            addr.phone ? /* @__PURE__ */ React.createElement("p", { className: "text-[11px] font-mono font-bold text-emerald-400" }, "📞 " + addr.phone + (addr.contact_person ? " • " + addr.contact_person : "")) : null
+          )
+        );
+      })
+    )
+  ),
+
   /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5" },
     /* @__PURE__ */ React.createElement("label", { className: "text-xs font-bold text-slate-300 block" }, "Courier Company:"),
     /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5" },
