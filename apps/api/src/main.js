@@ -176,6 +176,55 @@ auditRouter.post('/reset', (req, res) => {
 
 app.use('/api/audit', auditRouter);
 
+// Global Express API Mutation Interceptor (tracks Marketplace, Corridors, Payroll, Profile, Trips, Invoices, etc.)
+app.use('/api', (req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !req.path.startsWith('/audit') && !req.path.startsWith('/health')) {
+    const reqBodySnapshot = (req.body && typeof req.body === 'object') ? { ...req.body } : null;
+    res.on('finish', () => {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        try {
+          const segs = req.path.split('/').filter(Boolean);
+          const mod = (segs[0] || 'API').toUpperCase();
+          const act = req.method === 'DELETE' ? 'DELETE' : req.method === 'POST' ? 'CREATE' : 'UPDATE';
+          let actor = {
+            id: req.headers['x-actor-id'] || 'usr_admin',
+            name: req.headers['x-actor-name'] || 'Portal User',
+            email: req.headers['x-actor-email'] || '',
+            role: req.headers['x-actor-role'] || 'admin'
+          };
+          const authHeader = req.headers['authorization'] || '';
+          if (authHeader.includes('.')) {
+            try {
+              const parts = authHeader.replace(/^Bearer\s+/i, '').split('.');
+              if (parts[1]) {
+                const dec = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+                if (dec.id) actor.id = dec.id;
+                if (dec.email) actor.email = dec.email;
+                if (dec.name) actor.name = dec.name;
+              }
+            } catch (_) {}
+          }
+          auditService.ingestEvent({
+            module: mod,
+            entity_type: segs.slice(0, 2).join('/').toUpperCase() || mod,
+            entity_id: segs[segs.length - 1] || 'action',
+            action: act,
+            outcome: 'SUCCESS',
+            severity: act === 'DELETE' ? 'HIGH' : 'INFO',
+            details: `${req.method} /api${req.path}`,
+            actor,
+            new_values: reqBodySnapshot
+          }, {
+            ip: req.ip || req.socket?.remoteAddress,
+            userAgent: req.headers['user-agent']
+          });
+        } catch (_) {}
+      }
+    });
+  }
+  next();
+});
+
 // ── Enterprise MNC Organization & User Management Endpoints ─────
 const orgRouter = express.Router();
 

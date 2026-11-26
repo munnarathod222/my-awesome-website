@@ -1,10 +1,50 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
+const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+let _auditDb = null;
+function getAuditDb() {
+  if (_auditDb) return _auditDb;
+  try {
+    const { DatabaseSync } = require('node:sqlite');
+    const candidates = [
+      global.dbFilePath,
+      process.env.PB_DATA_DIR ? path.join(process.env.PB_DATA_DIR, 'data.db') : null,
+      path.resolve(process.cwd(), '../pocketbase/pb_data/data.db'),
+      path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+      path.resolve(process.cwd(), 'pb_data/data.db'),
+      '/data/data.db',
+      '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+    ].filter(p => p && fs.existsSync(p));
+    if (candidates.length > 0) {
+      const db = new DatabaseSync(candidates[0]);
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS audit_events (
+          id TEXT PRIMARY KEY,
+          sequence_number INTEGER,
+          timestamp TEXT,
+          module TEXT,
+          entity_type TEXT,
+          entity_id TEXT,
+          action TEXT,
+          outcome TEXT,
+          severity TEXT,
+          details TEXT,
+          event_json TEXT
+        )
+      `);
+      _auditDb = db;
+      return db;
+    }
+  } catch (_) {}
+  return null;
+}
 
 // Ensure data directory exists
 const DATA_DIR = path.resolve(__dirname, '../../../../data');
@@ -32,6 +72,17 @@ function loadLedgers() {
   } catch (e) {
     eventsCache = [];
   }
+  if (eventsCache.length === 0) {
+    try {
+      const db = getAuditDb();
+      if (db) {
+        const rows = db.prepare('SELECT event_json FROM audit_events ORDER BY sequence_number ASC LIMIT 1000').all();
+        if (rows && rows.length > 0) {
+          eventsCache = rows.map(r => JSON.parse(r.event_json));
+        }
+      }
+    } catch (_) {}
+  }
 
   try {
     if (fs.existsSync(ALERTS_FILE)) {
@@ -57,7 +108,23 @@ function loadLedgers() {
 loadLedgers();
 
 function saveEvents() {
-  fs.writeFileSync(EVENTS_FILE, JSON.stringify(eventsCache, null, 2), 'utf8');
+  try {
+    fs.writeFileSync(EVENTS_FILE, JSON.stringify(eventsCache, null, 2), 'utf8');
+  } catch (_) {}
+  try {
+    const db = getAuditDb();
+    const last = eventsCache[eventsCache.length - 1];
+    if (db && last) {
+      db.prepare(`
+        INSERT OR REPLACE INTO audit_events (id, sequence_number, timestamp, module, entity_type, entity_id, action, outcome, severity, details, event_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        last.id, last.sequence_number || 0, last.timestamp || '', last.module || '',
+        last.entity_type || '', last.entity_id || '', last.action || '',
+        last.outcome || '', last.severity || '', last.details || '', JSON.stringify(last)
+      );
+    }
+  } catch (_) {}
 }
 function saveAlerts() {
   fs.writeFileSync(ALERTS_FILE, JSON.stringify(alertsCache, null, 2), 'utf8');
