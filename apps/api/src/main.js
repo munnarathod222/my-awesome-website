@@ -5942,7 +5942,7 @@ const serveInvoicePdf = async (req, res) => {
     const invNumber = invRecord?.invoice_number || trip?.invoice_no || `INV-${String(tripRef).replace(/^TRIP-?/i, '')}`;
     const clientName = invRecord?.customer_name || trip?.expand?.client_id?.client_name || trip?.client_name || 'Amazon';
     const clientAddr = invRecord?.customer_address || trip?.destination || 'mhyd';
-    const clientPhone = invRecord?.customer_phone || trip?.expand?.client_id?.phone || '+918106729777';
+    const clientPhone = invRecord?.customer_phone || trip?.expand?.client_id?.phone || '';
     const clientEmail = invRecord?.customer_email || trip?.expand?.client_id?.email || 'raghunathrathod346@gmail.com';
     const amount = Number(invRecord?.total_amount || trip?.revenue || trip?.total_freight || trip?.freight_rate || 17100);
     const tripDateRaw = invRecord?.invoice_date || trip?.date || trip?.created || new Date().toISOString();

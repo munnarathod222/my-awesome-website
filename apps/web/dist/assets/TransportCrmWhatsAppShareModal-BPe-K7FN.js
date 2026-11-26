@@ -29,7 +29,7 @@ GSTIN: 36DPXPR9171A1Z8
 Address: Plot no 3, Patel nagar, Ghatkesar, Hyderabad - 501301
 Bank: HDFC BANK | A/C: 50200117182677 | IFSC: HDFC0004480 | Branch: GHATKESAR
 
-For bookings & dispatch: +91 7794072244 / +91 8106729777`:c||`Hello *${a}* (${n}), message from Jai Bhavani Cargo.`},C=l.useMemo(()=>s.length===0?"":s.map(t=>{const a=t.phone?` [Phone: ${t.phone}]`:"";return`${d(t)}${a}`}).join(`
+For bookings & dispatch: +91 7794072244`:c||`Hello *${a}* (${n}), message from Jai Bhavani Cargo.`},C=l.useMemo(()=>s.length===0?"":s.map(t=>{const a=t.phone?` [Phone: ${t.phone}]`:"";return`${d(t)}${a}`}).join(`
 
 --------------------------------------------------
 
