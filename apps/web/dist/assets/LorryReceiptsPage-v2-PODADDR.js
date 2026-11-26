@@ -884,7 +884,7 @@ function LorryReceiptsPodHubPage() {
         if (parts.length > 0) {
           saved = await pb.collection("courier_addresses").getFullList({
             filter: parts.join(" || "),
-            sort: "-is_default,-created",
+            sort: "-is_default",
             $autoCancel: false
           }).catch(() => []);
         }

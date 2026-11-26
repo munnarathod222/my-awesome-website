@@ -559,7 +559,7 @@ function ClientPodAddressesModal({ isOpen, onClose, client }) {
         : `client_id = "${client.id}"`;
       const res = await pb.collection('courier_addresses').getFullList({
         filter,
-        sort: '-is_default,-created',
+        sort: '-is_default',
         $autoCancel: false
       });
       setAddresses(res);
