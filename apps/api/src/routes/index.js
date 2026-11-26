@@ -28,6 +28,7 @@ import ownerInboxRouter from './ownerInbox.js';
 import ticketsRouter from './tickets.js';
 import reservationsRouter from './reservations.js';
 import corridorsRouter from './corridors.js';
+import marketplaceRouter from './marketplace.js';
 
 const router = Router();
 
@@ -35,6 +36,8 @@ export default () => {
     router.get('/health', healthCheck);
     router.use('/corridors', corridorsRouter);
     router.use('/api/corridors', corridorsRouter);
+    router.use('/marketplace', marketplaceRouter);
+    router.use('/api/marketplace', marketplaceRouter);
     router.use('/owner-inbox', ownerInboxRouter);
     router.use('/api/owner-inbox', ownerInboxRouter);
     router.use('/tickets', ticketsRouter);
