@@ -425,19 +425,20 @@ function Ls(){const[t,i]=d.useState([]),[bankDetailsMap,setBankDetailsMap]=d.use
       const now = new Date();
       await F.collection("payroll").create({
         employee_id: empRow.id,
+        employee_id_relation: empRow.id,
         employee_name: empRow.name || "Staff",
         designation: empRow.position || empRow.employee_type || "Staff",
         base_salary: Number(empRow.baseSalary || 0),
         gross_salary: Number(empRow.grossSalary || empRow.baseSalary || 0),
         driver_advances: Number(empRow.totalAdvances || 0),
         net_salary: amt,
-        payment_status: "Paid",
-        status: "Paid",
-        payment_date: now.toISOString().split("T")[0],
+        total_salary: amt,
+        payment_status: "paid",
+        status: "Approved",
+        payment_date: now.toISOString(),
         payroll_month: now.getMonth() + 1,
         payroll_year: now.getFullYear(),
-        cycle_range: (empRow.cycleInfo && empRow.cycleInfo.formattedCycleRange) || "Monthly",
-        notes: "Settled via Corporate Payroll Desk"
+        remarks: "Settled via Corporate Payroll Desk (" + ((empRow.cycleInfo && empRow.cycleInfo.formattedCycleRange) || "Monthly") + ")"
       }, { $autoCancel: false });
       for (const adv of (empRow.pendingAdvances || [])) {
         await F.collection("advances").update(adv.id, { remaining_balance: 0, status: "Settled", settled_date: now.toISOString() }, { $autoCancel: false }).catch(() => null);
