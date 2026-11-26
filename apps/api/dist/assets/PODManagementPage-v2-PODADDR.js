@@ -1008,7 +1008,7 @@ function LorryReceiptsPodHubPage() {
       const cl = getClientForTrip(trip);
     const selAddr = courierAddresses.find(a => a.id === selectedCourierAddressId) || null;
     const cName = selAddr?.company_name || getClientName(trip);
-    const addrLine1 = selAddr?.address_line1 || cl?.address || trip.destination || "";
+    const addrLine1 = selAddr?.address_line1 || selAddr?.address || cl?.address || trip.destination || "";
     const addrLine2 = selAddr?.address_line2 || "";
     const city = selAddr?.city || cl?.city || "";
     const state = selAddr?.state || cl?.state || "";
@@ -1049,36 +1049,33 @@ function LorryReceiptsPodHubPage() {
             }
             .half-page {
               width: 100%;
-              height: 138mm;
               max-height: 138mm;
               overflow: hidden;
-              display: flex;
-              flex-direction: column;
             }
             .label-card {
-              border: 2px solid #000; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; height: 100%;
+              border: 2px solid #000; border-radius: 6px; padding: 10px 14px; display: flex; flex-direction: column;
             }
             .header-bar {
-              display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #000; padding-bottom: 5px; margin-bottom: 6px;
+              display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 7px;
             }
             .brand-title { font-size: 16px; font-weight: 900; letter-spacing: 0.4px; margin: 0; }
             .brand-sub { font-size: 9px; color: #475569; margin: 1px 0 0 0; font-weight: 600; }
-            .courier-badge { border: 1.5px solid #000; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 800; text-align: right; background: #f1f5f9; }
+            .courier-badge { border: 1.5px solid #000; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; text-align: right; background: #f1f5f9; }
             .ref-grid {
-              display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 4px 6px; border-radius: 4px; margin-bottom: 6px; font-size: 10px;
+              display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 5px 8px; border-radius: 4px; margin-bottom: 7px; font-size: 10px;
             }
             .ref-item strong { display: block; color: #64748b; font-size: 8px; text-transform: uppercase; }
             .ref-item span { font-weight: 800; color: #0f172a; font-family: monospace; }
             .to-section {
-              background: #fff; border: 1.5px solid #000; border-radius: 5px; padding: 8px 10px; margin-bottom: 6px; flex: 1; display: flex; flex-direction: column; justify-content: center;
+              background: #fff; border: 1.5px solid #000; border-radius: 5px; padding: 10px 12px; margin-bottom: 7px;
             }
-            .to-tag { display: inline-block; background: #000; color: #fff; font-size: 9px; font-weight: 900; padding: 1px 5px; border-radius: 3px; margin-bottom: 3px; width: fit-content; }
-            .to-name { font-size: 15px; font-weight: 900; color: #000; margin: 2px 0; }
-            .to-attention { font-size: 11px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
-            .to-address { font-size: 11px; color: #334155; line-height: 1.3; margin: 2px 0; }
-            .to-phone { font-size: 11.5px; font-weight: 800; color: #000; margin-top: 3px; font-family: monospace; }
+            .to-tag { display: inline-block; background: #000; color: #fff; font-size: 9.5px; font-weight: 900; padding: 2px 6px; border-radius: 3px; margin-bottom: 4px; width: fit-content; }
+            .to-name { font-size: 16px; font-weight: 900; color: #000; margin: 2px 0; }
+            .to-attention { font-size: 11.5px; font-weight: 700; color: #1e293b; margin-bottom: 3px; }
+            .to-address { font-size: 11.5px; color: #334155; line-height: 1.35; margin: 2px 0; }
+            .to-phone { font-size: 12px; font-weight: 800; color: #000; margin-top: 4px; font-family: monospace; }
             .from-section {
-              border-top: 1px dashed #64748b; padding-top: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px;
+              border-top: 1px dashed #64748b; padding-top: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 9.5px;
             }
             .from-tag { font-weight: 900; color: #475569; font-size: 8px; text-transform: uppercase; }
             .from-name { font-weight: 800; color: #0f172a; font-size: 11px; }
@@ -1116,7 +1113,7 @@ function LorryReceiptsPodHubPage() {
                 <span class="to-tag">DELIVER TO:</span>
                 <div class="to-name">${cName}</div>
                 <div class="to-attention">Attn: ${attn}${contactPerson && !attn.includes(contactPerson) ? ' • ' + contactPerson : ''}</div>
-                <div class="to-address">${fullAddrHtml || 'Address not specified'}</div>
+                ${fullAddrHtml ? '<div class="to-address">' + fullAddrHtml + '</div>' : ''}
                 ${phone ? '<div class="to-phone">📞 Mobile / Contact: ' + phone + '</div>' : ''}
               </div>
 
