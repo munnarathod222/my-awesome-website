@@ -527,13 +527,19 @@ function LorryReceiptsPodHubPage() {
     if (!window.confirm("Are you sure you want to remove this POD page?")) return;
     setUploadingTripId(trip.id);
     try {
-      const formData = new FormData();
-      formData.append("pod_file.-", fileName);
       const remainingFiles = getPodFiles(trip).filter(f => f !== fileName);
+      const updatePayload = { "pod_file-": [fileName] };
       if (remainingFiles.length === 0 && (!trip.pod_link || trip.pod_link.trim() === "")) {
-        formData.append("pod_status", "Pending");
+        updatePayload.pod_status = "Pending";
       }
-      const updatedTrip = await pb.collection("trip_logs").update(trip.id, formData);
+      let updatedTrip = await pb.collection("trip_logs").update(trip.id, updatePayload);
+      if (getPodFiles(updatedTrip).includes(fileName)) {
+        const fallbackPayload = { pod_file: remainingFiles };
+        if (remainingFiles.length === 0 && (!trip.pod_link || trip.pod_link.trim() === "")) {
+          fallbackPayload.pod_status = "Pending";
+        }
+        updatedTrip = await pb.collection("trip_logs").update(trip.id, fallbackPayload);
+      }
       toast.success("Page removed successfully.");
       const updatedFiles = getPodFiles(updatedTrip);
       if (updatedFiles.length === 0) {
