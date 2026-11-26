@@ -617,7 +617,7 @@ export default function RoutesPage() {
                           <div className="text-left w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Up Origin</div>
                             <a
-                              href={formatMapUrl('', route.start_location)}
+                              href={mapDetails.originMapUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
@@ -637,7 +637,7 @@ export default function RoutesPage() {
                           <div className="text-right w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Up Dest</div>
                             <a
-                              href={formatMapUrl('', route.end_location)}
+                              href={mapDetails.destMapUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
@@ -654,7 +654,7 @@ export default function RoutesPage() {
                           <div className="text-left w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Down Origin</div>
                             <a
-                              href={formatMapUrl('', route.down_start_location)}
+                              href={route.down_start_location_map_link ? formatMapUrl(route.down_start_location_map_link) : (mapDetails.destMapUrl || formatMapUrl('', route.down_start_location))}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
@@ -674,7 +674,7 @@ export default function RoutesPage() {
                           <div className="text-right w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Down Dest</div>
                             <a
-                              href={formatMapUrl('', route.down_end_location)}
+                              href={route.down_end_location_map_link ? formatMapUrl(route.down_end_location_map_link) : (mapDetails.originMapUrl || formatMapUrl('', route.down_end_location))}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
