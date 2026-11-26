@@ -2420,23 +2420,35 @@ function LorryReceiptsPodHubPage() {
         ) : null
       ),
 
-      /* Multi-page Thumbnail Bar (if docFiles.length > 1) */
-      docFiles.length > 1 ? /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-slate-950 border-t border-slate-800 flex items-center gap-2 overflow-x-auto" },
+      /* Multi-page Thumbnail Bar with individual delete (one-by-one) */
+      docFiles.length >= 1 ? /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-slate-950 border-t border-slate-800 flex items-center gap-2 overflow-x-auto" },
         docFiles.map((file, idx) => {
           const thumbIsActive = idx === activeIdx;
           const thumbIsPdf = file && file.toLowerCase().endsWith(".pdf");
-          return /* @__PURE__ */ React.createElement("button", {
+          const canDeleteThumb = viewingPodDoc.trip && file && !(typeof file === "string" && file.startsWith("http"));
+          return /* @__PURE__ */ React.createElement("div", {
             key: idx,
-            onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: idx }),
-            className: "px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer border " + (
+            className: "inline-flex items-center rounded-lg border transition " + (
               thumbIsActive
                 ? "bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400/40"
                 : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
-            ),
-            title: "View Page " + (idx + 1)
+            )
           },
-            /* @__PURE__ */ React.createElement("span", null, "Page " + (idx + 1)),
-            thumbIsPdf ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-rose-400 uppercase font-mono" }, "PDF") : null
+            /* @__PURE__ */ React.createElement("button", {
+              type: "button",
+              onClick: () => setViewingPodDoc({ ...viewingPodDoc, activeIndex: idx }),
+              className: "px-2.5 py-1.5 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer",
+              title: "View Page " + (idx + 1)
+            },
+              /* @__PURE__ */ React.createElement("span", null, "Page " + (idx + 1)),
+              thumbIsPdf ? /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-rose-400 uppercase font-mono" }, "PDF") : null
+            ),
+            canDeleteThumb ? /* @__PURE__ */ React.createElement("button", {
+              type: "button",
+              onClick: (ev) => { ev.stopPropagation(); handleDeletePodPage(viewingPodDoc.trip, file); },
+              className: "pr-2 pl-1 py-1.5 text-rose-400 hover:text-rose-300 text-xs font-bold cursor-pointer",
+              title: "Delete Page " + (idx + 1)
+            }, "\u2715") : null
           );
         })
       ) : null,

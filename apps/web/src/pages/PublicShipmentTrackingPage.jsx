@@ -1012,6 +1012,37 @@ export default function PublicShipmentTrackingPage() {
                     {trip.trip_status || 'Active'}
                   </Badge>
                 </div>
+
+                {(trip.seal_number || trip.seal_photo) && (
+                  <div className="sm:col-span-2 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold">Container / Truck Seal Verification</span>
+                      <h4 className="font-bold text-sm text-white">
+                        {trip.seal_number ? `Seal #: ${trip.seal_number}` : 'Seal Photo Attached'}
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        {trip.seal_photo ? 'Verified tamper-proof seal image captured at dispatch' : 'Seal number recorded for this consignment'}
+                      </p>
+                    </div>
+                    {trip.seal_photo && (
+                      <a
+                        href={pb.files.getURL(trip, trip.seal_photo)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 shrink-0 group"
+                      >
+                        <img
+                          src={pb.files.getURL(trip, trip.seal_photo)}
+                          alt="Truck Seal"
+                          className="w-16 h-16 object-cover rounded-xl border border-cyan-500/40 group-hover:scale-105 transition"
+                        />
+                        <span className="px-3 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold group-hover:bg-cyan-500/25">
+                          View Seal Photo
+                        </span>
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
           </motion.div>
