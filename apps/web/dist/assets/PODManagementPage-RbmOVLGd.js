@@ -2255,42 +2255,41 @@ function LorryReceiptsPodHubPage() {
         ),
         /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: "10px", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 } },
           /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", padding: "8px 10px", backgroundColor: "#ffffff" } },
-            /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, textTransform: "uppercase", color: "#0f172a", display: "block", marginBottom: "4px", fontSize: "8.5px", borderBottom: "1px solid #e2e8f0", paddingBottom: "3px" } }, "PAYMENT, GST & BANKING DETAILS"),
-            /* @__PURE__ */ React.createElement("div", { style: { lineHeight: 1.45, color: "#334155" } },
-              /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "Freight Terms: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, freight.paymentTerms)),
+            /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, textTransform: "uppercase", color: "#0f172a", display: "block", marginBottom: "4px", fontSize: "8.5px", borderBottom: "1px solid #e2e8f0", paddingBottom: "3px" } }, "CONSIGNMENT & GST DECLARATION"),
+            /* @__PURE__ */ React.createElement("div", { style: { lineHeight: 1.5, color: "#334155" } },
+              /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "Billing Mode: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, freight.paymentTerms)),
               /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "GST Liability: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, "Reverse Charge Mechanism (RCM) u/s 9(3) CGST Act, 2017")),
-              /* @__PURE__ */ React.createElement("div", { style: { marginTop: "5px", paddingTop: "5px", borderTop: "1px dashed #cbd5e1", fontSize: "8.8px" } },
-                /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, display: "block", fontSize: "8px", textTransform: "uppercase" } }, "BANK REMITTANCE DETAILS"),
-                /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Bank: ", /* @__PURE__ */ React.createElement("b", null, companySettings.bank_name), " | A/C: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.account_number)),
-                /* @__PURE__ */ React.createElement("span", { style: { display: "block", color: "#0f172a" } }, "IFSC: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.ifsc_code), " | Branch: ", /* @__PURE__ */ React.createElement("b", null, companySettings.branch_name))
-              )
+              /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "Transit Risk: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, "Owner's Risk (Goods insured by Consignor / Consignee)")),
+              /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: "8.5px", color: "#64748b" } }, "Note: Signed Consignee Copy / POD is mandatory for freight settlement.")
             )
           ),
-          /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", padding: "8px 10px", backgroundColor: "#f8fafc" } },
-            /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, textTransform: "uppercase", color: "#0f172a", display: "block", marginBottom: "4px", fontSize: "8.5px", borderBottom: "1px solid #e2e8f0", paddingBottom: "3px" } }, "FREIGHT CHARGES SUMMARY"),
-            /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0" } },
-              /* @__PURE__ */ React.createElement("span", { style: { color: "#334155" } }, "Basic Freight"),
-              /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 700, color: "#0f172a" } }, "\u20B9", freight.basic.toLocaleString("en-IN"))
-            ),
-            /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } },
-              /* @__PURE__ */ React.createElement("span", { style: { color: "#334155" } }, "Hamali / Handling Charges"),
-              /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 600, color: "#0f172a" } }, "\u20B9", freight.hamali.toLocaleString("en-IN"))
-            ),
-            /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } },
-              /* @__PURE__ */ React.createElement("span", { style: { color: "#334155" } }, "Less: Advance Received"),
-              /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 700, color: freight.advance > 0 ? "#047857" : "#475569" } }, freight.advance > 0 ? "-\u20B9" + freight.advance.toLocaleString("en-IN") : "\u20B90")
+          /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", padding: "8px 10px", backgroundColor: "#f8fafc", display: "flex", flexDirection: "column", justifyContent: "space-between" } },
+            /* @__PURE__ */ React.createElement("div", null,
+              /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, textTransform: "uppercase", color: "#0f172a", display: "block", marginBottom: "4px", fontSize: "8.5px", borderBottom: "1px solid #e2e8f0", paddingBottom: "3px" } }, "FREIGHT & RATE PARTICULARS"),
+              /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2.5px 0" } },
+                /* @__PURE__ */ React.createElement("span", { style: { color: "#334155" } }, "Freight Charges"),
+                /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 800, color: "#0f172a" } }, "AS AGREED")
+              ),
+              /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2.5px 0", borderTop: "1px solid #e2e8f0" } },
+                /* @__PURE__ */ React.createElement("span", { style: { color: "#334155" } }, "Hamali / Detention"),
+                /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 700, color: "#0f172a" } }, "AS PER CONTRACT")
+              ),
+              /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2.5px 0", borderTop: "1px solid #e2e8f0" } },
+                /* @__PURE__ */ React.createElement("span", { style: { color: "#334155" } }, "Payment Basis"),
+                /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 700, color: "#0f172a" } }, viewingLr.client_payment_status === "Paid" ? "PRE-PAID" : viewingLr.client_payment_status === "To Pay" ? "TO PAY" : "TO BE BILLED (TBB)")
+              )
             ),
             /* @__PURE__ */ React.createElement("div", { style: {
               display: "flex",
               justifyContent: "space-between",
-              padding: "6px 0 4px",
+              padding: "6px 0 2px",
               marginTop: "4px",
               borderTop: "2px solid #0f172a",
-              fontSize: "11px",
+              fontSize: "10.5px",
               fontWeight: 900
             } },
-              /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Net Balance Payable"),
-              /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#0f172a" } }, "\u20B9", freight.balance.toLocaleString("en-IN"))
+              /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "TOTAL FREIGHT"),
+              /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#0f172a", letterSpacing: "0.5px" } }, "AS AGREED")
             )
           )
         ),
