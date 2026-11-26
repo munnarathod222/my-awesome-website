@@ -238,6 +238,30 @@ async function getSqliteDb() {
 
     if (candidates.length > 0) {
       _cachedSqliteDb = new DatabaseSync(candidates[0]);
+      try {
+        _cachedSqliteDb.exec(`
+          CREATE TABLE IF NOT EXISTS user_profiles (
+            id TEXT PRIMARY KEY,
+            user_id TEXT,
+            user_email TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            full_name TEXT,
+            phone_number TEXT,
+            company_name TEXT,
+            job_title TEXT,
+            department TEXT,
+            address TEXT,
+            city TEXT,
+            state TEXT,
+            postal_code TEXT,
+            status TEXT,
+            profile_picture TEXT,
+            created TEXT,
+            updated TEXT
+          )
+        `);
+      } catch (_) {}
       return _cachedSqliteDb;
     }
   } catch (err) {
@@ -359,10 +383,13 @@ router.get('/profile', pocketbaseAuth, async (req, res) => {
     }
 
     const isOps = userEmail.includes('operations');
-    const fName = (profile.full_name && profile.full_name !== 'Jai Bhavani Operations') ? profile.full_name : (isOps ? 'Vinod kumar Rathod' : 'Munna Rathod');
+    const hasSavedRow = Boolean(profile && profile.updated);
+    const fName = (profile.full_name && profile.full_name !== 'Jai Bhavani Operations')
+      ? profile.full_name
+      : (isOps ? 'Vinod kumar Rathod' : 'Munna Rathod');
     const parts = fName.split(' ');
-    const firstN = parts[0] || (isOps ? 'Vinod kumar' : 'Munna');
-    const lastN = parts.slice(1).join(' ') || 'Rathod';
+    const firstN = (hasSavedRow && profile.first_name) ? profile.first_name : (parts[0] || (isOps ? 'Vinod kumar' : 'Munna'));
+    const lastN = (hasSavedRow && profile.last_name !== undefined && profile.last_name !== null) ? profile.last_name : (parts.slice(1).join(' ') || 'Rathod');
 
     return res.json({
       success: true,
@@ -373,14 +400,14 @@ router.get('/profile', pocketbaseAuth, async (req, res) => {
         first_name: firstN,
         last_name: lastN,
         full_name: fName,
-        phone_number: profile.phone_number || '+91 99086 52525',
-        company_name: profile.company_name || 'Jai Bhavani Cargo',
-        job_title: profile.job_title || (isOps ? 'Chief Operations Officer (COO)' : 'Managing Director & Founder'),
-        department: profile.department || (isOps ? 'Fleet Operations & Logistics Hub' : 'Executive Management'),
-        address: profile.address || 'Plot No. 12, Commercial Transport Nagar',
-        city: profile.city || 'Hyderabad',
-        state: profile.state || 'Telangana',
-        postal_code: profile.postal_code || '500040',
+        phone_number: hasSavedRow ? (profile.phone_number ?? '') : (profile.phone_number || '+91 99086 52525'),
+        company_name: hasSavedRow ? (profile.company_name ?? '') : (profile.company_name || 'Jai Bhavani Cargo'),
+        job_title: hasSavedRow ? (profile.job_title ?? '') : (profile.job_title || (isOps ? 'Chief Operations Officer (COO)' : 'Managing Director & Founder')),
+        department: hasSavedRow ? (profile.department ?? '') : (profile.department || (isOps ? 'Fleet Operations & Logistics Hub' : 'Executive Management')),
+        address: hasSavedRow ? (profile.address ?? '') : (profile.address || 'Plot No. 12, Commercial Transport Nagar'),
+        city: hasSavedRow ? (profile.city ?? '') : (profile.city || 'Hyderabad'),
+        state: hasSavedRow ? (profile.state ?? '') : (profile.state || 'Telangana'),
+        postal_code: hasSavedRow ? (profile.postal_code ?? '') : (profile.postal_code || '500040'),
         status: profile.status || 'active',
         profile_picture: profile.profile_picture || '',
         created: profile.created || '2026-08-31 21:44:59',
