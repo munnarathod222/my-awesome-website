@@ -2150,6 +2150,9 @@ return e.jsxs(e.Fragment,{children:[
   h.useEffect(() => {
     if (isAuthed) b();
   }, [isAuthed, isClient, userClientId]);
+  h.useEffect(() => {
+    if (r) D(r);
+  }, [r]);
 
   const N = async T => {
     if (!T) {
@@ -2205,20 +2208,24 @@ return e.jsxs(e.Fragment,{children:[
       return;
     }
 
-    // 🛡️ SECURITY CHECK: Non-staff public viewers must provide either a valid URL token key OR a matching LR Number
     const effectiveToken = urlKey;
-    const hasValidTokenParam = Boolean(effectiveToken);
-
-    if (!isStaff && !isClient && !hasValidTokenParam && !lrToCheck) {
-      P("🔒 Security Verification Required: Please enter your Consignment Note / LR Number below along with your Trip ID to track this shipment.");
-      d(null);
-      return;
-    }
+    const hasValidTokenParam = Boolean(effectiveToken || r);
 
     l(!0), P(null);
     try {
       const _ = C.replace(/["'\\]/g, "");
       let W = null;
+      if (!isStaff && !isClient) {
+        try {
+          const pubRes = await fetch("/api/trips/public-track/" + encodeURIComponent(_) + (effectiveToken ? "?key=" + encodeURIComponent(effectiveToken) : ""));
+          const pubJson = await pubRes.json().catch(() => null);
+          if (pubRes.ok && pubJson && pubJson.success && pubJson.trip) {
+            W = pubJson.trip;
+          } else if (pubRes.status === 403 && pubJson?.error) {
+            d(null); P(pubJson.error); l(!1); return;
+          }
+        } catch (_) {}
+      }
       if (/^[a-z0-9]{15}$/i.test(_))
         try {
           W = await $.collection("trip_logs").getOne(_, {
@@ -2261,6 +2268,13 @@ return e.jsxs(e.Fragment,{children:[
           I && (W = I);
         } catch {}
 
+      if (!W) {
+        try {
+          const pubRes = await fetch("/api/trips/public-track/" + encodeURIComponent(_) + (effectiveToken ? "?key=" + encodeURIComponent(effectiveToken) : ""));
+          const pubJson = await pubRes.json().catch(() => null);
+          if (pubRes.ok && pubJson && pubJson.success && pubJson.trip) W = pubJson.trip;
+        } catch (_) {}
+      }
       if (!W) {
         d(null);
         P(`No consignment found matching "${C}". Please check your Reference / Trip ID.`);

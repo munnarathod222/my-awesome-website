@@ -467,4 +467,84 @@ router.post('/:id/vendor-settlement', async (req, res) => {
   }
 });
 
+// Public read-only shipment tracking endpoint for shared tracking links
+router.get('/public-track/:ref', async (req, res) => {
+  try {
+    const rawRef = String(req.params.ref || '').replace(/["'\\]/g, '').trim();
+    if (!rawRef) return res.status(400).json({ success: false, error: 'Tracking reference is required' });
+
+    let trip = null;
+    if (/^[a-z0-9]{15}$/i.test(rawRef)) {
+      trip = await pb.collection('trip_logs').getOne(rawRef, { expand: 'client_id,route_id', $autoCancel: false }).catch(() => null);
+    }
+    if (!trip) {
+      const found = await pb.collection('trip_logs').getList(1, 1, {
+        filter: `trip_id ~ "${rawRef}" || client_trip_id ~ "${rawRef}" || lr_number ~ "${rawRef}" || waybill_no ~ "${rawRef}"`,
+        expand: 'client_id,route_id',
+        sort: '-created',
+        $autoCancel: false
+      }).catch(() => ({ items: [] }));
+      if (found.items && found.items.length > 0) trip = found.items[0];
+    }
+
+    if (!trip) {
+      return res.status(404).json({ success: false, error: `No consignment found matching "${rawRef}"` });
+    }
+
+    const reqKey = String(req.query.key || req.query.token || '').trim();
+    if (reqKey && trip.tracking_token && reqKey.toLowerCase() !== String(trip.tracking_token).trim().toLowerCase()) {
+      return res.status(403).json({ success: false, error: 'Invalid tracking security key' });
+    }
+
+    const safeTrip = {
+      id: trip.id,
+      collectionId: trip.collectionId,
+      collectionName: trip.collectionName,
+      trip_id: trip.trip_id,
+      client_trip_id: trip.client_trip_id,
+      lr_number: trip.lr_number,
+      waybill_no: trip.waybill_no,
+      date: trip.date,
+      origin: trip.origin,
+      destination: trip.destination,
+      route: trip.route,
+      kms: trip.kms,
+      truck_number: trip.truck_number,
+      driver_name: trip.driver_name,
+      driver_phone: trip.driver_phone,
+      trip_status: trip.trip_status,
+      status: trip.status,
+      client_payment_status: trip.client_payment_status,
+      seal_number: trip.seal_number,
+      seal_numbers: trip.seal_numbers,
+      seal_photo: trip.seal_photo,
+      seal_photo_file: trip.seal_photo_file,
+      seal_photo_url: trip.seal_photo_url,
+      pod_file: trip.pod_file,
+      pod_link: trip.pod_link,
+      pod_courier_awb: trip.pod_courier_awb,
+      pod_courier_partner: trip.pod_courier_partner,
+      pod_courier_tracking_no: trip.pod_courier_tracking_no,
+      gps_tracking_link: trip.gps_tracking_link,
+      gps_link_expiry: trip.gps_link_expiry,
+      route_waypoints: trip.route_waypoints,
+      tracking_token: trip.tracking_token,
+      client_name: trip.expand?.client_id?.company_name || trip.expand?.client_id?.client_name || trip.client_name || 'Client Shipment',
+      expand: trip.expand ? {
+        client_id: trip.expand.client_id ? {
+          id: trip.expand.client_id.id,
+          client_name: trip.expand.client_id.client_name,
+          company_name: trip.expand.client_id.company_name
+        } : undefined,
+        route_id: trip.expand.route_id || undefined
+      } : undefined
+    };
+
+    return res.json({ success: true, trip: safeTrip });
+  } catch (err) {
+    logger.error('Public tracking error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
