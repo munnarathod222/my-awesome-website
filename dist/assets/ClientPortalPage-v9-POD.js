@@ -25,8 +25,9 @@ function jbcGetTripSealInfo(t) {
     ""
   ).trim();
   let sealFile = "";
-  if (Array.isArray(t.seal_photo)) sealFile = String(t.seal_photo[0] || "").trim();
-  else if (typeof t.seal_photo === "string") sealFile = t.seal_photo.trim();
+  const rawSeal=t.seal_photo_file||t.seal_photo||"";
+  if (Array.isArray(rawSeal)) sealFile = String(rawSeal[0] || "").trim();
+  else if (typeof rawSeal === "string") sealFile = rawSeal.trim();
   const sealUrl = sealFile
     ? ((N.files.getUrl ? N.files.getUrl(t, sealFile) : N.files.getURL(t, sealFile)) || ("/api/files/trip_logs/" + t.id + "/" + sealFile))
     : String(t.seal_photo_url || "").trim();
