@@ -479,7 +479,7 @@ router.get('/public-track/:ref', async (req, res) => {
     }
     if (!trip) {
       const found = await pb.collection('trip_logs').getList(1, 1, {
-        filter: `trip_id ~ "${rawRef}" || client_trip_id ~ "${rawRef}" || lr_number ~ "${rawRef}" || waybill_no ~ "${rawRef}"`,
+        filter: `trip_id ~ "${rawRef}" || client_trip_id ~ "${rawRef}" || lr_number ~ "${rawRef}"`,
         expand: 'client_id,route_id',
         sort: '-created',
         $autoCancel: false
